@@ -300,6 +300,34 @@
     }
     .setup-chip-remove { cursor: pointer; opacity: 0.7; font-size: 0.7rem; }
     .setup-chip-remove:hover { opacity: 1; }
+    /* Setup filter dropdown */
+    .setup-dropdown { position: relative; }
+    .setup-dropdown-btn {
+      background: var(--bg3); border: 1px solid var(--border);
+      color: var(--text); border-radius: 6px; padding: 6px 28px 6px 10px;
+      font-size: 0.82rem; cursor: pointer; white-space: nowrap;
+      min-width: 100px; text-align: left; position: relative;
+    }
+    .setup-dropdown-btn::after {
+      content: '▾'; position: absolute; right: 9px; top: 50%;
+      transform: translateY(-50%); color: var(--muted); font-size: 0.75rem;
+    }
+    .setup-dropdown-btn:hover { border-color: var(--teal); }
+    .setup-dropdown-btn.has-selection { border-color: var(--teal); color: var(--teal); }
+    .setup-dropdown-panel {
+      position: absolute; top: calc(100% + 4px); left: 0;
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 6px 0; min-width: 160px;
+      z-index: 200; box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    }
+    .setup-dropdown-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 7px 14px; cursor: pointer; font-size: 0.82rem;
+      transition: background 0.1s;
+    }
+    .setup-dropdown-item:hover { background: var(--bg3); }
+    .setup-dropdown-item input[type="checkbox"] { accent-color: var(--teal); cursor: pointer; }
+    .setup-dropdown-divider { height: 1px; background: var(--border); margin: 4px 0; }
     /* Setup badges in table */
     .setup-badge {
       display: inline-block; padding: 2px 7px; border-radius: 20px; font-size: 0.68rem;
@@ -652,7 +680,10 @@
     </div>
     <div class="filter-group" id="f-setup-group" style="display:none">
       <label>Setup</label>
-      <div class="toggle-group" id="f-setup"></div>
+      <div class="setup-dropdown" id="f-setup-dropdown">
+        <button class="setup-dropdown-btn" id="f-setup-btn">All</button>
+        <div class="setup-dropdown-panel" id="f-setup-panel" style="display:none"></div>
+      </div>
     </div>
     <button class="reset-btn" id="reset-btn">Reset Filters</button>
   </div>
@@ -1428,24 +1459,42 @@ const state = {
 };
 
 function renderSetupFilter() {
-  const all = [...state.allTrades, ...state.openTrades];
+  const all  = [...state.allTrades, ...state.openTrades];
   const used = [...new Set(all.flatMap(t => t.setups || []))].sort();
-  const group = document.getElementById('f-setup');
   const groupWrap = document.getElementById('f-setup-group');
   groupWrap.style.display = used.length ? '' : 'none';
-  // Rebuild buttons preserving active state
-  group.innerHTML = used.map(s => {
-    const active = state.filters.setups.has(s) ? ' active' : '';
-    return `<button class="toggle-btn${active}" data-val="${s}">${s}</button>`;
-  }).join('');
-  group.querySelectorAll('.toggle-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const v = btn.dataset.val;
-      if (state.filters.setups.has(v)) state.filters.setups.delete(v);
-      else state.filters.setups.add(v);
-      btn.classList.toggle('active');
+  if (!used.length) return;
+
+  const panel = document.getElementById('f-setup-panel');
+  const btn   = document.getElementById('f-setup-btn');
+
+  // Update button label
+  const sel = state.filters.setups;
+  btn.textContent = sel.size === 0 ? 'All' : sel.size === 1 ? [...sel][0] : `${sel.size} selected`;
+  btn.classList.toggle('has-selection', sel.size > 0);
+
+  // Rebuild checkboxes
+  panel.innerHTML = used.map(s => `
+    <label class="setup-dropdown-item">
+      <input type="checkbox" value="${s}" ${sel.has(s) ? 'checked' : ''}>
+      ${s}
+    </label>
+  `).join('') + (sel.size > 0 ? `
+    <div class="setup-dropdown-divider"></div>
+    <label class="setup-dropdown-item" id="setup-clear-row" style="color:var(--muted)">
+      Clear selection
+    </label>` : '');
+
+  panel.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+    cb.addEventListener('change', () => {
+      if (cb.checked) sel.add(cb.value); else sel.delete(cb.value);
+      renderSetupFilter();
       refresh();
     });
+  });
+  const clearRow = panel.querySelector('#setup-clear-row');
+  if (clearRow) clearRow.addEventListener('click', () => {
+    sel.clear(); renderSetupFilter(); refresh();
   });
 }
 
@@ -1663,6 +1712,16 @@ document.querySelectorAll('#f-status .toggle-btn').forEach(btn => {
     else state.filters.statuses.delete(val);
     refresh();
   });
+});
+
+document.getElementById('f-setup-btn').addEventListener('click', e => {
+  e.stopPropagation();
+  const panel = document.getElementById('f-setup-panel');
+  panel.style.display = panel.style.display === 'none' ? '' : 'none';
+});
+document.addEventListener('click', e => {
+  const dd = document.getElementById('f-setup-dropdown');
+  if (dd && !dd.contains(e.target)) document.getElementById('f-setup-panel').style.display = 'none';
 });
 
 document.getElementById('reset-btn').addEventListener('click', () => {
