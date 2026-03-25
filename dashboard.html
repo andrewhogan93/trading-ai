@@ -313,10 +313,24 @@
     .chart-modal-footer {
       display: flex; align-items: center; justify-content: space-between;
       padding: 12px 20px; border-top: 1px solid var(--border);
-      min-height: 48px;
+      min-height: 48px; gap: 12px;
     }
-    .chart-status { font-size: 0.82rem; color: var(--muted); }
+    .chart-status { font-size: 0.82rem; color: var(--muted); flex: 1; }
     .chart-status.error { color: var(--red); }
+    .chart-key-row { display: flex; gap: 8px; align-items: center; flex: 1; }
+    .chart-key-row input {
+      background: var(--bg3); border: 1px solid var(--border);
+      color: var(--text); border-radius: 6px; padding: 6px 10px;
+      font-size: 0.82rem; outline: none; flex: 1; min-width: 0;
+    }
+    .chart-key-row input:focus { border-color: var(--teal); }
+    .chart-key-row a { font-size: 0.78rem; color: var(--teal); white-space: nowrap; }
+    .chart-key-save {
+      background: var(--teal); color: var(--bg); border: none;
+      border-radius: 6px; padding: 6px 14px; cursor: pointer;
+      font-size: 0.82rem; font-weight: 600; white-space: nowrap;
+    }
+    .chart-key-save:hover { opacity: 0.85; }
 
     /* Empty state */
     .empty-row td {
@@ -612,7 +626,12 @@
       </div>
       <div id="chart-container"></div>
       <div class="chart-modal-footer">
-        <span class="chart-status" id="chart-status"></span>
+        <span class="chart-status" id="chart-status" style="display:none"></span>
+        <div class="chart-key-row" id="chart-key-row" style="display:none">
+          <a href="https://finnhub.io/register" target="_blank">Get free key ↗</a>
+          <input type="text" id="chart-key-input" placeholder="Paste Finnhub API key…">
+          <button class="chart-key-save" id="chart-key-save-btn">Save</button>
+        </div>
         <button class="modal-save-btn" id="chart-edit-btn">Edit Trade</button>
       </div>
     </div>
@@ -1639,6 +1658,23 @@ function closeChartModal() {
   chartModalFp = null;
 }
 
+const FINNHUB_KEY_STORAGE = 'finnhub_api_key';
+
+function getFinnhubKey() {
+  return localStorage.getItem(FINNHUB_KEY_STORAGE) || '';
+}
+
+function showChartStatus(msg, isError) {
+  const el = document.getElementById('chart-status');
+  el.textContent = msg;
+  el.className   = 'chart-status' + (isError ? ' error' : '');
+  el.style.display = msg ? '' : 'none';
+}
+
+function showKeyRow(show) {
+  document.getElementById('chart-key-row').style.display = show ? '' : 'none';
+}
+
 function openChartModal(fp) {
   const trade = [...state.allTrades, ...state.openTrades].find(t => t._fp === fp);
   if (!trade) return;
@@ -1650,58 +1686,68 @@ function openChartModal(fp) {
   document.getElementById('chart-modal-title').textContent =
     `${trade.symbol} · ${trade.side} · ${fmtDate(trade.openDate)}${closeLabel}${pnlLabel}`;
 
-  // Show modal with loading state
   document.getElementById('chart-modal').style.display = '';
-  const statusEl = document.getElementById('chart-status');
-  statusEl.textContent = 'Loading chart data…';
-  statusEl.className   = 'chart-status';
+  showChartStatus('', false);
+  showKeyRow(false);
 
+  const apiKey = getFinnhubKey();
+  if (!apiKey) {
+    showKeyRow(true);
+    showChartStatus('A free Finnhub API key is required to load charts.', false);
+    return;
+  }
+
+  fetchAndRenderChart(trade, apiKey);
+}
+
+function fetchAndRenderChart(trade, apiKey) {
   // Destroy previous chart
   const container = document.getElementById('chart-container');
   if (chartInstance) { chartInstance.remove(); chartInstance = null; }
   container.innerHTML = '';
 
+  showChartStatus('Loading chart data…', false);
+  showKeyRow(false);
+
   // Time window: ±1.5 days around the trade
   const DAY_S    = 86400;
   const openSec  = Math.floor(trade.openDate.getTime()  / 1000);
   const closeSec = Math.floor((trade.closeDate || new Date()).getTime() / 1000);
-  const period1  = openSec  - 1.5 * DAY_S;
-  const period2  = closeSec + 1.5 * DAY_S;
+  const period1  = openSec  - Math.round(1.5 * DAY_S);
+  const period2  = closeSec + Math.round(1.5 * DAY_S);
   const holdMs   = trade.holdMs || (closeSec - openSec) * 1000;
-  const interval = holdMs < 86400000 ? '5m' : holdMs < 7 * 86400000 ? '1h' : '1d';
+  // Finnhub resolutions: 1 5 15 30 60 D W M
+  const resolution = holdMs < 86400000 ? '5' : holdMs < 7 * 86400000 ? '60' : 'D';
 
-  const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(trade.symbol)}` +
-                   `?interval=${interval}&period1=${Math.floor(period1)}&period2=${Math.floor(period2)}`;
-  const url = `https://corsproxy.io/?${encodeURIComponent(yahooUrl)}`;
+  const url = `https://finnhub.io/api/v1/stock/candle` +
+    `?symbol=${encodeURIComponent(trade.symbol)}&resolution=${resolution}` +
+    `&from=${period1}&to=${period2}&token=${apiKey}`;
 
   fetch(url)
     .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
     .then(data => {
-      const result = data?.chart?.result?.[0];
-      if (!result || !result.timestamp) throw new Error('No data returned');
+      if (data.s === 'no_data') throw new Error('No chart data in this date range');
+      if (data.s !== 'ok' || !data.t) throw new Error('Unexpected response from Finnhub');
 
-      const ts = result.timestamp;
-      const q  = result.indicators.quote[0];
-      const candles = ts.map((t, i) => ({
-        time: t,
-        open:  q.open[i],
-        high:  q.high[i],
-        low:   q.low[i],
-        close: q.close[i],
-      })).filter(c => c.open != null && c.high != null && c.low != null && c.close != null);
+      const candles = data.t.map((t, i) => ({
+        time:  t,
+        open:  data.o[i],
+        high:  data.h[i],
+        low:   data.l[i],
+        close: data.c[i],
+      })).filter(c => c.open != null);
 
-      if (!candles.length) throw new Error('No candles in range');
+      if (!candles.length) throw new Error('No candles returned');
 
-      // Create chart
       chartInstance = LightweightCharts.createChart(container, {
         width:  container.clientWidth,
         height: 400,
-        layout:   { background: { color: '#16213e' }, textColor: '#7a8ba0' },
-        grid:     { vertLines: { color: 'rgba(168,218,220,0.07)' },
-                    horzLines: { color: 'rgba(168,218,220,0.07)' } },
+        layout:    { background: { color: '#16213e' }, textColor: '#7a8ba0' },
+        grid:      { vertLines: { color: 'rgba(168,218,220,0.07)' },
+                     horzLines: { color: 'rgba(168,218,220,0.07)' } },
         crosshair: { mode: 1 },
         rightPriceScale: { borderColor: 'rgba(168,218,220,0.12)' },
-        timeScale: { borderColor: 'rgba(168,218,220,0.12)', timeVisible: true },
+        timeScale:       { borderColor: 'rgba(168,218,220,0.12)', timeVisible: true },
       });
 
       const series = chartInstance.addCandlestickSeries({
@@ -1711,7 +1757,7 @@ function openChartModal(fp) {
       });
       series.setData(candles);
 
-      // Build entry/exit markers
+      // Entry / exit markers
       const nearestTime = targetSec => candles.reduce((best, c) =>
         Math.abs(c.time - targetSec) < Math.abs(best.time - targetSec) ? c : best
       ).time;
@@ -1731,15 +1777,12 @@ function openChartModal(fp) {
                          shape: 'arrowUp',   text: `Exit $${fmtPrice(trade.avgExitPrice)}` });
       }
       series.setMarkers(markers);
-
-      // Fit visible range to the trade window with a little padding
       chartInstance.timeScale().setVisibleRange({ from: period1, to: period2 });
 
-      statusEl.textContent = '';
+      showChartStatus('', false);
     })
     .catch(err => {
-      statusEl.textContent = `Chart unavailable: ${err.message}`;
-      statusEl.className   = 'chart-status error';
+      showChartStatus(`Chart unavailable: ${err.message}`, true);
     });
 }
 
@@ -1751,6 +1794,14 @@ document.getElementById('chart-edit-btn').addEventListener('click', () => {
   const fp = chartModalFp;
   closeChartModal();
   openEditModal(fp);
+});
+document.getElementById('chart-key-save-btn').addEventListener('click', () => {
+  const key = document.getElementById('chart-key-input').value.trim();
+  if (!key) return;
+  localStorage.setItem(FINNHUB_KEY_STORAGE, key);
+  showKeyRow(false);
+  const trade = [...state.allTrades, ...state.openTrades].find(t => t._fp === chartModalFp);
+  if (trade) fetchAndRenderChart(trade, key);
 });
 
 // ================================================================
