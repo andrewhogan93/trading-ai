@@ -1670,8 +1670,9 @@ function openChartModal(fp) {
   const holdMs   = trade.holdMs || (closeSec - openSec) * 1000;
   const interval = holdMs < 86400000 ? '5m' : holdMs < 7 * 86400000 ? '1h' : '1d';
 
-  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(trade.symbol)}` +
-              `?interval=${interval}&period1=${Math.floor(period1)}&period2=${Math.floor(period2)}`;
+  const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(trade.symbol)}` +
+                   `?interval=${interval}&period1=${Math.floor(period1)}&period2=${Math.floor(period2)}`;
+  const url = `https://corsproxy.io/?${encodeURIComponent(yahooUrl)}`;
 
   fetch(url)
     .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
