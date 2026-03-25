@@ -1754,6 +1754,13 @@ function makeChart(container, candles, markers, visibleFrom, visibleTo) {
     crosshair: { mode: 1 },
     rightPriceScale: { borderColor: 'rgba(168,218,220,0.12)' },
     timeScale:       { borderColor: 'rgba(168,218,220,0.12)', timeVisible: true },
+    localization: {
+      timeFormatter: t => new Date(t * 1000).toLocaleString('en-US', {
+        timeZone: 'America/New_York',
+        month: 'short', day: 'numeric',
+        hour: 'numeric', minute: '2-digit', hour12: false,
+      }),
+    },
   });
   const series = chart.addCandlestickSeries({
     upColor: '#4ade80', downColor: '#f87171',
@@ -1764,6 +1771,35 @@ function makeChart(container, candles, markers, visibleFrom, visibleTo) {
   if (markers.length) series.setMarkers(markers);
   chart.timeScale().setVisibleRange({ from: visibleFrom, to: visibleTo });
   return chart;
+}
+
+function addDayLines(chart, container, candles) {
+  const boundaries = [];
+  let prevDay = null;
+  for (const c of candles) {
+    const day = new Date(c.time * 1000).toLocaleDateString('en-US', { timeZone: 'America/New_York' });
+    if (prevDay && day !== prevDay) boundaries.push(c.time);
+    prevDay = day;
+  }
+  if (!boundaries.length) return;
+
+  container.style.position = 'relative';
+  const lines = boundaries.map(() => {
+    const el = document.createElement('div');
+    el.style.cssText = 'position:absolute;top:0;bottom:0;width:1px;background:rgba(168,218,220,0.18);pointer-events:none;z-index:10';
+    container.appendChild(el);
+    return el;
+  });
+
+  function positionLines() {
+    boundaries.forEach((t, i) => {
+      const x = chart.timeScale().timeToCoordinate(t);
+      lines[i].style.left = (x != null ? x : -999) + 'px';
+    });
+  }
+
+  positionLines();
+  chart.timeScale().subscribeVisibleTimeRangeChange(positionLines);
 }
 
 function fetchAndRenderChart(trade, apiKey) {
@@ -1809,8 +1845,27 @@ function fetchAndRenderChart(trade, apiKey) {
                        shape: 'arrowUp',   text: `Exit $${fmtPrice(trade.avgExitPrice)}` });
     }
 
-    chartInstance    = makeChart(mainContainer, mainCandles, markers,  period1, period2);
-    spyChartInstance = makeChart(spyContainer,  spyCandles,  [],        period1, period2);
+    const spyMarkers = [];
+    if (trade.side === 'Long') {
+      spyMarkers.push({ time: nearestTime(spyCandles, openSec),  position: 'belowBar', color: '#4ade80',
+                        shape: 'arrowUp',   text: 'Entry' });
+      if (trade.closeDate && trade.avgExitPrice != null)
+        spyMarkers.push({ time: nearestTime(spyCandles, closeSec), position: 'aboveBar', color: '#f87171',
+                          shape: 'arrowDown', text: 'Exit' });
+    } else {
+      spyMarkers.push({ time: nearestTime(spyCandles, openSec),  position: 'aboveBar', color: '#f87171',
+                        shape: 'arrowDown', text: 'Entry' });
+      if (trade.closeDate && trade.avgExitPrice != null)
+        spyMarkers.push({ time: nearestTime(spyCandles, closeSec), position: 'belowBar', color: '#4ade80',
+                          shape: 'arrowUp',   text: 'Exit' });
+    }
+
+    chartInstance    = makeChart(mainContainer, mainCandles, markers,     period1, period2);
+    spyChartInstance = makeChart(spyContainer,  spyCandles,  spyMarkers,  period1, period2);
+    if (span !== 'day') {
+      addDayLines(chartInstance,    mainContainer, mainCandles);
+      addDayLines(spyChartInstance, spyContainer,  spyCandles);
+    }
     showChartStatus('', false);
   }).catch(err => {
     showChartStatus(`Chart unavailable: ${err.message}`, true);
