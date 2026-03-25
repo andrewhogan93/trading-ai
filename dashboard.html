@@ -367,6 +367,19 @@
     .rule-fail { color: var(--red); }
     .rule-na   { color: var(--muted); font-size: 0.85rem; font-weight: 400; }
 
+    /* ── WALK-AWAY COLUMNS ── */
+    .walkaway-hdr {
+      width: 46px; text-align: center;
+      font-size: 0.72rem; letter-spacing: 0.3px; color: var(--muted);
+    }
+    .walkaway-cell {
+      text-align: center; font-size: 0.78rem; font-weight: 600;
+      padding: 0 4px !important; white-space: nowrap;
+    }
+    .wa-pos { color: var(--green); }
+    .wa-neg { color: var(--red); }
+    .wa-na  { color: var(--muted); font-weight: 400; }
+
     /* ── ACTION CELL (edit icon per row) ── */
     .action-cell { width: 36px; text-align: center; padding: 0 4px !important; }
     .edit-icon-btn {
@@ -746,6 +759,10 @@
           <th data-key="holdMs">Hold Time <span class="sort-icon">↕</span></th>
           <th class="rule-col-hdr" title="SPY Rule: Long only when SPY up; Short only when SPY down">SPY</th>
           <th class="rule-col-hdr" title="VWAP Rule: Long only above VWAP M5; Short only below VWAP M5">VWAP</th>
+          <th class="walkaway-hdr" title="Walk-away: additional % return if held 5 more minutes">+5m</th>
+          <th class="walkaway-hdr" title="Walk-away: additional % return if held 15 more minutes">+15m</th>
+          <th class="walkaway-hdr" title="Walk-away: additional % return if held 30 more minutes">+30m</th>
+          <th class="walkaway-hdr" title="Walk-away: additional % return if held 1 more hour">+1hr</th>
           <th style="width:36px"></th>
         </tr>
       </thead>
@@ -1381,7 +1398,7 @@ function renderTable(trades, sortKey, sortDir) {
 
   const tbody = document.getElementById('t-body');
   if (!trades.length) {
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="16">No trades match the current filters.</td></tr>';
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="21">No trades match the current filters.</td></tr>';
     return;
   }
 
@@ -1413,6 +1430,15 @@ function renderTable(trades, sortKey, sortDir) {
       : v
         ? '<td class="rule-cell rule-ok">✓</td>'
         : '<td class="rule-cell rule-fail">✗</td>';
+    const walkCell   = key => {
+      if (!rc) return '<td class="walkaway-cell wa-na">—</td>';
+      const v = rc[key];
+      if (v === 'na')   return '<td class="walkaway-cell wa-na">N/A</td>';
+      if (v == null)    return '<td class="walkaway-cell wa-na">—</td>';
+      const cls = v >= 0 ? 'wa-pos' : 'wa-neg';
+      const sign = v >= 0 ? '+' : '';
+      return `<td class="walkaway-cell ${cls}">${sign}${v.toFixed(2)}%</td>`;
+    };
 
     return `<tr data-fp="${fp}">
       <td>${statusBadge}</td>
@@ -1431,6 +1457,10 @@ function renderTable(trades, sortKey, sortDir) {
       <td>${holdDisp}</td>
       ${ruleCell(rc ? rc.spy  : null)}
       ${ruleCell(rc ? rc.vwap : null)}
+      ${walkCell('w5')}
+      ${walkCell('w15')}
+      ${walkCell('w30')}
+      ${walkCell('w60')}
       <td class="action-cell"><button class="edit-icon-btn" data-fp="${fp}" title="Edit trade">✎</button></td>
     </tr>`;
   }).join('');
@@ -1926,9 +1956,9 @@ function loadRulesCache() {
   try { return JSON.parse(localStorage.getItem(RULES_CACHE_KEY)) || {}; }
   catch { return {}; }
 }
-function saveRuleResult(fp, spy, vwap) {
+function saveRuleResult(fp, spy, vwap, walkaway) {
   const cache = loadRulesCache();
-  cache[fp] = { spy, vwap };
+  cache[fp] = { spy, vwap, ...walkaway };
   localStorage.setItem(RULES_CACHE_KEY, JSON.stringify(cache));
 }
 
@@ -2079,6 +2109,31 @@ function addDayLines(chart, container, candles) {
   chart.timeScale().subscribeVisibleTimeRangeChange(positionLines);
 }
 
+function computeWalkaway(m5Candles, closeSec, trade) {
+  const na = { w5: 'na', w15: 'na', w30: 'na', w60: 'na' };
+  if (trade.type === 'Option') return na;
+  if (!trade.closeDate || trade.avgExitPrice == null || !m5Candles) return { w5: null, w15: null, w30: null, w60: null };
+
+  const exitDateEST = new Date(closeSec * 1000).toLocaleDateString('en-US', { timeZone: 'America/New_York' });
+  const dayCandles  = m5Candles.filter(c =>
+    new Date(c.time * 1000).toLocaleDateString('en-US', { timeZone: 'America/New_York' }) === exitDateEST
+  );
+  if (!dayCandles.length) return { w5: null, w15: null, w30: null, w60: null };
+
+  let exitIdx = 0, minDiff = Infinity;
+  dayCandles.forEach((c, i) => { const d = Math.abs(c.time - closeSec); if (d < minDiff) { minDiff = d; exitIdx = i; } });
+
+  const sign = trade.side === 'Long' ? 1 : -1;
+  const calc = offset => {
+    const idx   = Math.min(exitIdx + offset, dayCandles.length - 1);
+    const price = dayCandles[idx].close;
+    const addPnL = sign * (price - trade.avgExitPrice) * trade.size;
+    return trade.cost > 0 ? (addPnL / trade.cost) * 100 : 0;
+  };
+
+  return { w5: calc(1), w15: calc(3), w30: calc(6), w60: calc(12) };
+}
+
 function fetchAndRenderChart(trade, apiKey) {
   if (chartInstance)    { chartInstance.remove();    chartInstance    = null; }
   if (spyChartInstance) { spyChartInstance.remove(); spyChartInstance = null; }
@@ -2104,12 +2159,21 @@ function fetchAndRenderChart(trade, apiKey) {
     ? Promise.resolve(null)
     : polygonFetch(trade.symbol, 5, 'minute', openSec - DAY_S, openSec + DAY_S, apiKey).catch(() => null);
 
+  // For walk-away: need M5 on the exit day — skip for options, skip if same day as entry
+  const openDateEST_  = new Date(openSec  * 1000).toLocaleDateString('en-US', { timeZone: 'America/New_York' });
+  const closeDateEST_ = new Date(closeSec * 1000).toLocaleDateString('en-US', { timeZone: 'America/New_York' });
+  const m5ClosePromise = (trade.type === 'Option' || span === 'minute' || !trade.closeDate || openDateEST_ === closeDateEST_)
+    ? Promise.resolve(null)
+    : polygonFetch(trade.symbol, 5, 'minute', closeSec - DAY_S, closeSec + DAY_S, apiKey).catch(() => null);
+
   Promise.all([
     polygonFetch(trade.symbol, mult, span, period1, period2, apiKey),
     polygonFetch('SPY',        mult, span, period1, period2, apiKey),
     m5Promise,
-  ]).then(([mainCandles, spyCandles, rawM5]) => {
-    const m5Candles = span === 'minute' ? mainCandles : rawM5;
+    m5ClosePromise,
+  ]).then(([mainCandles, spyCandles, rawM5, rawM5Close]) => {
+    const m5Candles      = span === 'minute' ? mainCandles : rawM5;
+    const m5CloseCandles = span === 'minute' ? mainCandles : (rawM5Close || rawM5);
 
     const nearestTime = (candles, targetSec) => candles.reduce((best, c) =>
       Math.abs(c.time - targetSec) < Math.abs(best.time - targetSec) ? c : best
@@ -2212,8 +2276,11 @@ function fetchAndRenderChart(trade, apiKey) {
       }
     }
 
+    // Walk-away analysis
+    const walkaway = computeWalkaway(m5CloseCandles, closeSec, trade);
+
     // Persist results so the table columns can show them without re-fetching
-    saveRuleResult(trade._fp, spyFollowed, vwapFollowed);
+    saveRuleResult(trade._fp, spyFollowed, vwapFollowed, walkaway);
     refresh();
 
     ruleEl.innerHTML = `
