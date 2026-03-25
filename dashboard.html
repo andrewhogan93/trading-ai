@@ -422,7 +422,11 @@
       <header>
         <h1>TRADING DASHBOARD</h1>
         <span class="period" id="period-label"></span>
-        <button class="reload-btn" id="reload-btn">&#8635; Load New File</button>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="reload-btn" id="add-csv-btn">＋ Add CSV</button>
+          <button class="reload-btn" id="clear-btn" style="color:#f87171;border-color:rgba(248,113,113,0.3)">Clear All Data</button>
+        </div>
+        <input type="file" id="add-csv-input" accept=".csv" style="display:none">
       </header>
 
   <div class="metrics-row">
@@ -1003,6 +1007,85 @@ function refresh() {
   renderAnalytics(filtered);
 }
 
+// ================================================================
+//  PERSISTENCE (localStorage)
+// ================================================================
+const STORAGE_KEY = 'trading_dashboard_v1';
+
+function fingerprintTrade(t) {
+  return `${t.symbol}|${t.openDate.getTime()}|${t.closeDate.getTime()}|${t.side}|${t.size}`;
+}
+
+function saveToStorage() {
+  const payload = {
+    trades: state.allTrades.map(t => ({
+      ...t,
+      openDate:  t.openDate.getTime(),
+      closeDate: t.closeDate.getTime(),
+    })),
+    openPositions: state.openPositions.map(leg => ({
+      ...leg,
+      date:     leg.date.getTime(),
+      datetime: leg.datetime.getTime(),
+      optionDetails: leg.optionDetails
+        ? { ...leg.optionDetails, expiry: leg.optionDetails.expiry.getTime() }
+        : null,
+    })),
+    startBalance: state.startBalance,
+    minDate: state.minDate ? state.minDate.getTime() : null,
+    maxDate: state.maxDate ? state.maxDate.getTime() : null,
+  };
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(payload)); } catch(e) {}
+}
+
+function loadFromStorage() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return false;
+    const payload = JSON.parse(raw);
+    state.allTrades = payload.trades.map(t => ({
+      ...t,
+      openDate:  new Date(t.openDate),
+      closeDate: new Date(t.closeDate),
+    }));
+    state.openPositions = (payload.openPositions || []).map(leg => ({
+      ...leg,
+      date:     new Date(leg.date),
+      datetime: new Date(leg.datetime),
+      optionDetails: leg.optionDetails
+        ? { ...leg.optionDetails, expiry: new Date(leg.optionDetails.expiry) }
+        : null,
+    }));
+    state.startBalance = payload.startBalance || 0;
+    state.minDate = payload.minDate ? new Date(payload.minDate) : null;
+    state.maxDate = payload.maxDate ? new Date(payload.maxDate) : null;
+    return state.allTrades.length > 0;
+  } catch(e) { return false; }
+}
+
+function clearStorage() {
+  localStorage.removeItem(STORAGE_KEY);
+}
+
+// ── Show the dashboard (called on CSV load and on page load from storage) ──
+function showDashboard() {
+  document.getElementById('upload-screen').style.display = 'none';
+  document.getElementById('app').style.display           = 'flex';
+  document.getElementById('upload-error').style.display  = 'none';
+  if (!datePicker) initDatePicker();
+  updatePeriodLabel();
+  renderOpenBanner(state.openPositions);
+  refresh();
+}
+
+function updatePeriodLabel() {
+  const txt = state.minDate && state.maxDate
+    ? `${fmtDate(state.minDate)} – ${fmtDate(state.maxDate)}`
+    : '';
+  document.getElementById('period-label').textContent   = txt;
+  document.getElementById('period-label-2').textContent = txt;
+}
+
 function loadCSV(text) {
   try {
     const { startBalance, legs, minDate, maxDate } = parseCashBalanceSection(text);
@@ -1010,24 +1093,30 @@ function loadCSV(text) {
 
     const { closedTrades, openPositions } = matchTrades(legs);
 
-    state.allTrades     = closedTrades;
-    state.openPositions = openPositions;
-    state.startBalance  = startBalance;
-    state.minDate       = minDate;
-    state.maxDate       = maxDate;
+    // Merge: keep existing trades, add only new ones (dedup by fingerprint)
+    const seen = new Set(state.allTrades.map(fingerprintTrade));
+    const added = closedTrades.filter(t => !seen.has(fingerprintTrade(t)));
+    state.allTrades = [...state.allTrades, ...added]
+      .sort((a, b) => a.openDate - b.openDate);
 
-    // Period label
-    document.getElementById('period-label').textContent =
-      minDate && maxDate ? `${fmtDate(minDate)} – ${fmtDate(maxDate)}` : '';
+    // Merge open positions (dedup by symbol/key)
+    const seenOpen = new Set(state.openPositions.map(l => l.symbol + (l.optionDetails
+      ? `_${l.optionDetails.strike}_${l.optionDetails.type}` : '')));
+    state.openPositions = [
+      ...state.openPositions,
+      ...openPositions.filter(l => !seenOpen.has(l.symbol + (l.optionDetails
+        ? `_${l.optionDetails.strike}_${l.optionDetails.type}` : ''))),
+    ];
 
-    renderOpenBanner(openPositions);
+    // Keep earliest start balance
+    if (!state.startBalance || (minDate && state.minDate && minDate < state.minDate)) {
+      state.startBalance = startBalance;
+    }
+    if (!state.minDate || minDate < state.minDate) state.minDate = minDate;
+    if (!state.maxDate || maxDate > state.maxDate) state.maxDate = maxDate;
 
-    document.getElementById('upload-screen').style.display = 'none';
-    document.getElementById('app').style.display     = 'flex';
-    document.getElementById('upload-error').style.display  = 'none';
-
-    if (!datePicker) initDatePicker();
-    refresh();
+    saveToStorage();
+    showDashboard();
   } catch (err) {
     const el = document.getElementById('upload-error');
     el.textContent = 'Error: ' + err.message;
@@ -1035,15 +1124,19 @@ function loadCSV(text) {
   }
 }
 
-// ── File input ──
-document.getElementById('csv-input').addEventListener('change', function () {
-  const file = this.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => loadCSV(e.target.result);
-  reader.readAsText(file);
-  this.value = ''; // reset so same file can be re-loaded
-});
+// ── File inputs ──
+function attachFileInput(inputId) {
+  document.getElementById(inputId).addEventListener('change', function () {
+    const file = this.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => loadCSV(e.target.result);
+    reader.readAsText(file);
+    this.value = '';
+  });
+}
+attachFileInput('csv-input');
+attachFileInput('add-csv-input');
 
 function resetStatusButtons() {
   document.querySelectorAll('#f-status .toggle-btn').forEach(b => b.classList.add('active'));
@@ -1077,16 +1170,24 @@ function fmtIso(d) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
-// ── Reload button ──
-document.getElementById('reload-btn').addEventListener('click', () => {
-  document.getElementById('app').style.display     = 'none';
-  document.getElementById('upload-screen').style.display = 'flex';
+// ── Add CSV button ──
+document.getElementById('add-csv-btn').addEventListener('click', () => {
+  document.getElementById('add-csv-input').click();
+});
+
+// ── Clear All Data button ──
+document.getElementById('clear-btn').addEventListener('click', () => {
+  if (!confirm('Clear all saved trade data? This cannot be undone.')) return;
+  clearStorage();
   state.allTrades = []; state.openPositions = []; state.startBalance = 0;
+  state.minDate = null; state.maxDate = null;
   state.filters = { dateFrom: '', dateTo: '', type: 'All', side: 'All', statuses: new Set(['Win','Loss','Breakeven']) };
   state.sortKey = 'openDate'; state.sortDir = 'asc';
   if (datePicker) datePicker.clear();
   ['f-type','f-side'].forEach(id => document.getElementById(id).value = 'All');
   resetStatusButtons();
+  document.getElementById('app').style.display           = 'none';
+  document.getElementById('upload-screen').style.display = 'flex';
 });
 
 // ── Filters (select dropdowns only) ──
@@ -1291,6 +1392,11 @@ document.querySelectorAll('#t-head th[data-key]').forEach(th => {
     renderTable(sorted, state.sortKey, state.sortDir);
   });
 });
+
+// ── On page load: restore saved data if available ──
+if (loadFromStorage()) {
+  showDashboard();
+}
 </script>
 </body>
 </html>
