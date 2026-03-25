@@ -335,6 +335,58 @@
       padding: 2px 6px;
       border-radius: 4px;
     }
+    #chart-rule {
+      width: 120px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      padding: 14px 10px;
+      background: var(--bg3);
+      border-radius: 6px;
+      text-align: center;
+    }
+    .rule-heading {
+      font-size: 0.6rem;
+      letter-spacing: 1.2px;
+      color: var(--muted);
+      font-weight: 700;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+    }
+    .rule-spy-dir {
+      font-size: 1.05rem;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+    .rule-spy-pct {
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .rule-divider {
+      width: 36px; height: 1px;
+      background: var(--border);
+      margin: 4px 0 8px;
+    }
+    .rule-verdict {
+      font-size: 1.25rem;
+      font-weight: 800;
+      line-height: 1;
+    }
+    .rule-verdict-label {
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      margin-top: 2px;
+    }
+    .rule-trade-note {
+      font-size: 0.65rem;
+      color: var(--muted);
+      margin-top: 6px;
+    }
     .chart-modal-footer {
       display: flex; align-items: center; justify-content: space-between;
       padding: 12px 20px; border-top: 1px solid var(--border);
@@ -654,6 +706,7 @@
         <div id="chart-spy" style="position:relative">
           <div class="chart-panel-label">SPY</div>
         </div>
+        <div id="chart-rule"></div>
       </div>
       <div class="chart-modal-footer">
         <span class="chart-status" id="chart-status" style="display:none"></span>
@@ -1818,6 +1871,7 @@ function fetchAndRenderChart(trade, apiKey) {
   if (chartInstance)    { chartInstance.remove();    chartInstance    = null; }
   if (spyChartInstance) { spyChartInstance.remove(); spyChartInstance = null; }
   document.getElementById('chart-main').innerHTML = '';
+  document.getElementById('chart-rule').innerHTML = '';
 
   showChartStatus('Loading chart data…', false);
   showKeyRow(false);
@@ -1878,6 +1932,37 @@ function fetchAndRenderChart(trade, apiKey) {
       addDayLines(chartInstance,    mainContainer, mainCandles);
       addDayLines(spyChartInstance, spyContainer,  spyCandles);
     }
+
+    // Rule check: SPY up/down from its day open at the moment the trade was entered
+    const ruleEl = document.getElementById('chart-rule');
+    const openDateEST = new Date(openSec * 1000).toLocaleDateString('en-US', { timeZone: 'America/New_York' });
+    const dayCandles  = spyCandles.filter(c =>
+      new Date(c.time * 1000).toLocaleDateString('en-US', { timeZone: 'America/New_York' }) === openDateEST
+    );
+    if (dayCandles.length) {
+      const spyDayOpen  = dayCandles[0].open;
+      const nearestSpy  = spyCandles.reduce((best, c) =>
+        Math.abs(c.time - openSec) < Math.abs(best.time - openSec) ? c : best
+      );
+      const spyAtEntry  = nearestSpy.close;
+      const spyPct      = ((spyAtEntry - spyDayOpen) / spyDayOpen) * 100;
+      const spyUp       = spyAtEntry >= spyDayOpen;
+      const followed    = (trade.side === 'Long' && spyUp) || (trade.side === 'Short' && !spyUp);
+      const spyColor    = spyUp ? 'var(--green)' : 'var(--red)';
+      const ruleColor   = followed ? 'var(--green)' : 'var(--red)';
+      ruleEl.innerHTML  = `
+        <div class="rule-heading">Rule Check</div>
+        <div class="rule-spy-dir" style="color:${spyColor}">${spyUp ? '▲ UP' : '▼ DOWN'}</div>
+        <div class="rule-spy-pct" style="color:${spyColor}">${spyPct >= 0 ? '+' : ''}${spyPct.toFixed(2)}%</div>
+        <div class="rule-divider"></div>
+        <div class="rule-verdict" style="color:${ruleColor}">${followed ? '✓' : '✗'}</div>
+        <div class="rule-verdict-label" style="color:${ruleColor}">${followed ? 'FOLLOWED' : 'VIOLATED'}</div>
+        <div class="rule-trade-note">${trade.side} · SPY ${spyUp ? 'up' : 'down'}</div>
+      `;
+    } else {
+      ruleEl.innerHTML = '<div class="rule-heading">Rule Check</div><div class="rule-trade-note">No SPY data</div>';
+    }
+
     showChartStatus('', false);
   }).catch(err => {
     showChartStatus(`Chart unavailable: ${err.message}`, true);
