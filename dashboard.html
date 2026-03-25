@@ -270,6 +270,43 @@
       font-size: 0.9rem; outline: none;
     }
     .modal-field input:focus, .modal-field select:focus { border-color: var(--teal); }
+    .modal-field-full { grid-column: 1 / -1; }
+    /* Setup tag editor */
+    .setup-predef { display: flex; flex-wrap: wrap; gap: 6px; }
+    .setup-tag-btn {
+      padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border);
+      background: var(--bg3); color: var(--muted); font-size: 0.78rem;
+      cursor: pointer; transition: all 0.15s;
+    }
+    .setup-tag-btn:hover  { border-color: var(--teal); color: var(--teal); }
+    .setup-tag-btn.active { background: var(--teal); border-color: var(--teal); color: var(--bg); font-weight: 600; }
+    .setup-custom-row { display: flex; gap: 6px; margin-top: 8px; }
+    .setup-custom-row input {
+      flex: 1; background: var(--bg3); border: 1px solid var(--border);
+      color: var(--text); border-radius: 6px; padding: 6px 10px; font-size: 0.82rem; outline: none;
+    }
+    .setup-custom-row input:focus { border-color: var(--teal); }
+    .setup-custom-row button {
+      padding: 6px 12px; background: var(--bg3); border: 1px solid var(--border);
+      color: var(--teal); border-radius: 6px; cursor: pointer; font-size: 0.9rem;
+    }
+    .setup-custom-row button:hover { background: var(--teal); color: var(--bg); }
+    .setup-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; min-height: 16px; }
+    .setup-chip {
+      display: flex; align-items: center; gap: 4px;
+      padding: 3px 8px; border-radius: 20px;
+      background: rgba(168,218,220,0.15); border: 1px solid rgba(168,218,220,0.3);
+      color: var(--teal); font-size: 0.75rem;
+    }
+    .setup-chip-remove { cursor: pointer; opacity: 0.7; font-size: 0.7rem; }
+    .setup-chip-remove:hover { opacity: 1; }
+    /* Setup badges in table */
+    .setup-badge {
+      display: inline-block; padding: 2px 7px; border-radius: 20px; font-size: 0.68rem;
+      background: rgba(168,218,220,0.12); border: 1px solid rgba(168,218,220,0.25);
+      color: var(--teal); white-space: nowrap; margin: 1px 1px;
+    }
+    .setup-cell { min-width: 90px; max-width: 160px; }
     .modal-footer {
       display: flex; gap: 10px; justify-content: flex-end;
       padding: 16px 20px; border-top: 1px solid var(--border);
@@ -613,6 +650,10 @@
         <button class="toggle-btn" data-val="Open">Open</button>
       </div>
     </div>
+    <div class="filter-group" id="f-setup-group" style="display:none">
+      <label>Setup</label>
+      <div class="toggle-group" id="f-setup"></div>
+    </div>
     <button class="reset-btn" id="reset-btn">Reset Filters</button>
   </div>
 
@@ -663,6 +704,7 @@
           <th data-key="closeDate">Close Date <span class="sort-icon">↕</span></th>
           <th data-key="symbol">Symbol <span class="sort-icon">↕</span></th>
           <th data-key="type">Type <span class="sort-icon">↕</span></th>
+          <th class="setup-cell">Setup</th>
           <th data-key="side">Side <span class="sort-icon">↕</span></th>
           <th data-key="avgEntryPrice">Entry <span class="sort-icon">↕</span></th>
           <th data-key="avgExitPrice">Exit <span class="sort-icon">↕</span></th>
@@ -782,6 +824,15 @@
           <div class="modal-field">
             <label>Size (shares / contracts)</label>
             <input type="number" id="m-size" step="1" min="1">
+          </div>
+          <div class="modal-field modal-field-full">
+            <label>Setups</label>
+            <div class="setup-predef" id="m-setup-predef"></div>
+            <div class="setup-custom-row">
+              <input type="text" id="m-setup-custom" placeholder="Add custom tag…">
+              <button id="m-setup-add-btn">+</button>
+            </div>
+            <div class="setup-chips" id="m-setup-chips"></div>
           </div>
         </div>
       </div>
@@ -1246,6 +1297,10 @@ function applyFilters(trades, f) {
     if (f.type   !== 'All' && t.type   !== f.type)   return false;
     if (f.side   !== 'All' && t.side   !== f.side)   return false;
     if (!f.statuses.has(t.status)) return false;
+    if (f.setups.size > 0) {
+      const tradeSets = t.setups || [];
+      if (!tradeSets.some(s => f.setups.has(s))) return false;
+    }
     return true;
   });
 }
@@ -1295,7 +1350,7 @@ function renderTable(trades, sortKey, sortDir) {
 
   const tbody = document.getElementById('t-body');
   if (!trades.length) {
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="15">No trades match the current filters.</td></tr>';
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="16">No trades match the current filters.</td></tr>';
     return;
   }
 
@@ -1320,6 +1375,7 @@ function renderTable(trades, sortKey, sortDir) {
     const pnlPctDisp = t.netPnLPct != null ? `<span class="${t.netPnLPct >= 0 ? 'pos-val' : 'neg-val'}">${fmtPct(t.netPnLPct)}</span>` : '—';
     const holdDisp   = t.holdMs    != null ? fmtHoldTime(t.holdMs) : '—';
     const fp         = (t._fp || '').replace(/"/g, '&quot;');
+    const setupBadges = (t.setups || []).map(s => `<span class="setup-badge">${s}</span>`).join('');
     const rc         = rulesCache[t._fp];
     const ruleCell   = v => v == null
       ? '<td class="rule-cell rule-na">—</td>'
@@ -1333,6 +1389,7 @@ function renderTable(trades, sortKey, sortDir) {
       <td>${fmtDate(t.closeDate)}</td>
       <td><strong>${t.symbol}</strong></td>
       <td>${typeBadge}</td>
+      <td class="setup-cell">${setupBadges}</td>
       <td>${sideEl}</td>
       <td>$${fmtPrice(t.avgEntryPrice)}</td>
       <td>${exitDisp}</td>
@@ -1367,10 +1424,33 @@ const state = {
   maxDate: null,
   sortKey: 'openDate',
   sortDir: 'desc',
-  filters: { dateFrom: '', dateTo: '', type: 'All', side: 'All', statuses: new Set(['Win','Loss','Breakeven']) },
+  filters: { dateFrom: '', dateTo: '', type: 'All', side: 'All', statuses: new Set(['Win','Loss','Breakeven']), setups: new Set() },
 };
 
+function renderSetupFilter() {
+  const all = [...state.allTrades, ...state.openTrades];
+  const used = [...new Set(all.flatMap(t => t.setups || []))].sort();
+  const group = document.getElementById('f-setup');
+  const groupWrap = document.getElementById('f-setup-group');
+  groupWrap.style.display = used.length ? '' : 'none';
+  // Rebuild buttons preserving active state
+  group.innerHTML = used.map(s => {
+    const active = state.filters.setups.has(s) ? ' active' : '';
+    return `<button class="toggle-btn${active}" data-val="${s}">${s}</button>`;
+  }).join('');
+  group.querySelectorAll('.toggle-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const v = btn.dataset.val;
+      if (state.filters.setups.has(v)) state.filters.setups.delete(v);
+      else state.filters.setups.add(v);
+      btn.classList.toggle('active');
+      refresh();
+    });
+  });
+}
+
 function refresh() {
+  renderSetupFilter();
   // Combine closed + open trades depending on filter
   const combined = state.filters.statuses.has('Open')
     ? [...state.allTrades, ...state.openTrades]
@@ -1386,7 +1466,9 @@ function refresh() {
 // ================================================================
 //  PERSISTENCE (localStorage)
 // ================================================================
-const STORAGE_KEY = 'trading_dashboard_v1';
+const STORAGE_KEY   = 'trading_dashboard_v1';
+const PREDEF_SETUPS = ['Day Trade', 'Swing Trade', 'Copied Pro', 'Added', 'Scaled Out', 'Paper'];
+let   modalSetups   = [];   // working copy while edit modal is open
 
 function fingerprintTrade(t) {
   return t._fp || `${t.symbol}|${t.openDate.getTime()}|${(t.closeDate ? t.closeDate.getTime() : 0)}|${t.side}|${t.size}`;
@@ -1584,7 +1666,7 @@ document.querySelectorAll('#f-status .toggle-btn').forEach(btn => {
 });
 
 document.getElementById('reset-btn').addEventListener('click', () => {
-  state.filters = { dateFrom: '', dateTo: '', type: 'All', side: 'All', statuses: new Set(['Win','Loss','Breakeven']) };
+  state.filters = { dateFrom: '', dateTo: '', type: 'All', side: 'All', statuses: new Set(['Win','Loss','Breakeven']), setups: new Set() };
   if (datePicker) datePicker.clear();
   ['f-type','f-side'].forEach(id => document.getElementById(id).value = 'All');
   resetStatusButtons(); // also deactivates Open toggle
@@ -2121,6 +2203,46 @@ function toDateInputVal(d) {
   return `${y}-${m}-${day}`;
 }
 
+function renderModalSetups() {
+  // Predefined toggle buttons
+  const predefEl = document.getElementById('m-setup-predef');
+  predefEl.innerHTML = PREDEF_SETUPS.map(s => {
+    const active = modalSetups.includes(s) ? ' active' : '';
+    return `<button type="button" class="setup-tag-btn${active}" data-tag="${s}">${s}</button>`;
+  }).join('');
+  predefEl.querySelectorAll('.setup-tag-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tag = btn.dataset.tag;
+      if (modalSetups.includes(tag)) modalSetups = modalSetups.filter(s => s !== tag);
+      else modalSetups.push(tag);
+      renderModalSetups();
+    });
+  });
+
+  // Custom chips (tags not in predefined list)
+  const chipsEl = document.getElementById('m-setup-chips');
+  const customTags = modalSetups.filter(s => !PREDEF_SETUPS.includes(s));
+  chipsEl.innerHTML = customTags.map(s =>
+    `<span class="setup-chip">${s}<span class="setup-chip-remove" data-tag="${s}">✕</span></span>`
+  ).join('');
+  chipsEl.querySelectorAll('.setup-chip-remove').forEach(x => {
+    x.addEventListener('click', () => {
+      modalSetups = modalSetups.filter(s => s !== x.dataset.tag);
+      renderModalSetups();
+    });
+  });
+}
+
+document.getElementById('m-setup-add-btn').addEventListener('click', () => {
+  const input = document.getElementById('m-setup-custom');
+  const tag = input.value.trim();
+  if (tag && !modalSetups.includes(tag)) { modalSetups.push(tag); renderModalSetups(); }
+  input.value = '';
+});
+document.getElementById('m-setup-custom').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); document.getElementById('m-setup-add-btn').click(); }
+});
+
 function openEditModal(fp) {
   const trade = [...state.allTrades, ...state.openTrades].find(t => t._fp === fp);
   if (!trade) return;
@@ -2135,6 +2257,10 @@ function openEditModal(fp) {
   document.getElementById('m-exit').value   = trade.avgExitPrice  != null ? trade.avgExitPrice  : '';
   document.getElementById('m-exit').disabled = false;
   document.getElementById('m-size').value   = trade.size;
+
+  // Setups
+  modalSetups = [...(trade.setups || [])];
+  renderModalSetups();
 
   document.getElementById('edit-modal').style.display = '';
 }
@@ -2165,7 +2291,8 @@ function saveEditModal() {
     t.closeDate = new Date(y, m - 1, d, h);
   }
 
-  t.side = document.getElementById('m-side').value;
+  t.side   = document.getElementById('m-side').value;
+  t.setups = [...modalSetups];
   if (!isNaN(entryVal) && entryVal > 0) t.avgEntryPrice = entryVal;
   if (!isNaN(exitVal) && exitVal >= 0) t.avgExitPrice = exitVal;
   if (!isNaN(sizeVal) && sizeVal > 0) t.size = sizeVal;
