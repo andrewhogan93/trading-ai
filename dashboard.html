@@ -336,17 +336,25 @@
       border-radius: 4px;
     }
     #chart-rule {
-      width: 120px;
+      width: 130px;
       flex-shrink: 0;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
+      justify-content: flex-start;
       gap: 3px;
-      padding: 14px 10px;
+      padding: 16px 10px;
       background: var(--bg3);
       border-radius: 6px;
       text-align: center;
+    }
+    .rule-section-lbl {
+      font-size: 0.58rem;
+      letter-spacing: 1px;
+      color: var(--muted);
+      font-weight: 700;
+      text-transform: uppercase;
+      margin-top: 4px;
     }
     .rule-heading {
       font-size: 0.6rem;
@@ -1804,12 +1812,27 @@ function polygonFetch(symbol, mult, span, from, to, apiKey) {
     .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
     .then(data => {
       if (!data.results || !data.results.length) throw new Error(`No data for ${symbol}`);
-      const candles = data.results.map(b => ({ time: Math.floor(b.t / 1000), open: b.o, high: b.h, low: b.l, close: b.c }));
+      const candles = data.results.map(b => ({
+        time: Math.floor(b.t / 1000), open: b.o, high: b.h, low: b.l, close: b.c,
+        volume: b.v, vwBar: b.vw != null ? b.vw : (b.o + b.h + b.l + b.c) / 4,
+      }));
       return span === 'day' ? candles : candles.filter(c => isRegularHours(c.time));
     });
 }
 
-function makeChart(container, candles, markers, visibleFrom, visibleTo) {
+function computeDayVwap(candles, dateEST) {
+  const day = candles.filter(c =>
+    new Date(c.time * 1000).toLocaleDateString('en-US', { timeZone: 'America/New_York' }) === dateEST
+  );
+  let cumTP = 0, cumVol = 0;
+  return day.map(c => {
+    cumTP  += c.vwBar * c.volume;
+    cumVol += c.volume;
+    return { time: c.time, value: cumVol > 0 ? cumTP / cumVol : c.close };
+  });
+}
+
+function makeChart(container, candles, markers, visibleFrom, visibleTo, vwapData = null) {
   const chart = LightweightCharts.createChart(container, {
     width:  container.clientWidth,
     height: container.clientHeight,
@@ -1834,6 +1857,16 @@ function makeChart(container, candles, markers, visibleFrom, visibleTo) {
   });
   series.setData(candles);
   if (markers.length) series.setMarkers(markers);
+  if (vwapData && vwapData.length) {
+    const vwapSeries = chart.addLineSeries({
+      color: 'rgba(251,191,36,0.85)',
+      lineWidth: 1,
+      priceLineVisible: false,
+      lastValueVisible: false,
+      crosshairMarkerVisible: false,
+    });
+    vwapSeries.setData(vwapData);
+  }
   chart.timeScale().setVisibleRange({ from: visibleFrom, to: visibleTo });
   return chart;
 }
@@ -1887,11 +1920,18 @@ function fetchAndRenderChart(trade, apiKey) {
   const mainContainer = document.getElementById('chart-main');
   const spyContainer  = document.getElementById('chart-spy');
 
+  // For non-intraday charts the main candles are 1h/1d, so fetch M5 separately for VWAP
+  const m5Promise = span === 'minute'
+    ? Promise.resolve(null)
+    : polygonFetch(trade.symbol, 5, 'minute', openSec - DAY_S, openSec + DAY_S, apiKey).catch(() => null);
+
   Promise.all([
     polygonFetch(trade.symbol, mult, span, period1, period2, apiKey),
     polygonFetch('SPY',        mult, span, period1, period2, apiKey),
-  ]).then(([mainCandles, spyCandles]) => {
-    // Build entry/exit markers for the main chart
+    m5Promise,
+  ]).then(([mainCandles, spyCandles, rawM5]) => {
+    const m5Candles = span === 'minute' ? mainCandles : rawM5;
+
     const nearestTime = (candles, targetSec) => candles.reduce((best, c) =>
       Math.abs(c.time - targetSec) < Math.abs(best.time - targetSec) ? c : best
     ).time;
@@ -1926,42 +1966,81 @@ function fetchAndRenderChart(trade, apiKey) {
                           shape: 'arrowUp',   text: 'Exit' });
     }
 
-    chartInstance    = makeChart(mainContainer, mainCandles, markers,     period1, period2);
+    // VWAP for main chart (M5 cumulative, resets each day)
+    const openDateEST = new Date(openSec * 1000).toLocaleDateString('en-US', { timeZone: 'America/New_York' });
+    const vwapData    = m5Candles ? computeDayVwap(m5Candles, openDateEST) : [];
+
+    chartInstance    = makeChart(mainContainer, mainCandles, markers,     period1, period2, vwapData);
     spyChartInstance = makeChart(spyContainer,  spyCandles,  spyMarkers,  period1, period2);
     if (span !== 'day') {
       addDayLines(chartInstance,    mainContainer, mainCandles);
       addDayLines(spyChartInstance, spyContainer,  spyCandles);
     }
 
-    // Rule check: SPY up/down from its day open at the moment the trade was entered
+    // ── Rule panel ──────────────────────────────────────────────
     const ruleEl = document.getElementById('chart-rule');
-    const openDateEST = new Date(openSec * 1000).toLocaleDateString('en-US', { timeZone: 'America/New_York' });
-    const dayCandles  = spyCandles.filter(c =>
+
+    // Rule 1: SPY direction at entry
+    const spyDayCandles = spyCandles.filter(c =>
       new Date(c.time * 1000).toLocaleDateString('en-US', { timeZone: 'America/New_York' }) === openDateEST
     );
-    if (dayCandles.length) {
-      const spyDayOpen  = dayCandles[0].open;
-      const nearestSpy  = spyCandles.reduce((best, c) =>
+    let spyHtml = '<div class="rule-trade-note">No SPY data</div>';
+    let spyFollowed = null;
+    if (spyDayCandles.length) {
+      const spyDayOpen = spyDayCandles[0].open;
+      const nearestSpy = spyCandles.reduce((best, c) =>
         Math.abs(c.time - openSec) < Math.abs(best.time - openSec) ? c : best
       );
-      const spyAtEntry  = nearestSpy.close;
-      const spyPct      = ((spyAtEntry - spyDayOpen) / spyDayOpen) * 100;
-      const spyUp       = spyAtEntry >= spyDayOpen;
-      const followed    = (trade.side === 'Long' && spyUp) || (trade.side === 'Short' && !spyUp);
-      const spyColor    = spyUp ? 'var(--green)' : 'var(--red)';
-      const ruleColor   = followed ? 'var(--green)' : 'var(--red)';
-      ruleEl.innerHTML  = `
-        <div class="rule-heading">Rule Check</div>
+      const spyAtEntry = nearestSpy.close;
+      const spyPct     = ((spyAtEntry - spyDayOpen) / spyDayOpen) * 100;
+      const spyUp      = spyAtEntry >= spyDayOpen;
+      spyFollowed      = (trade.side === 'Long' && spyUp) || (trade.side === 'Short' && !spyUp);
+      const spyColor   = spyUp ? 'var(--green)' : 'var(--red)';
+      const c1         = spyFollowed ? 'var(--green)' : 'var(--red)';
+      spyHtml = `
         <div class="rule-spy-dir" style="color:${spyColor}">${spyUp ? '▲ UP' : '▼ DOWN'}</div>
         <div class="rule-spy-pct" style="color:${spyColor}">${spyPct >= 0 ? '+' : ''}${spyPct.toFixed(2)}%</div>
-        <div class="rule-divider"></div>
-        <div class="rule-verdict" style="color:${ruleColor}">${followed ? '✓' : '✗'}</div>
-        <div class="rule-verdict-label" style="color:${ruleColor}">${followed ? 'FOLLOWED' : 'VIOLATED'}</div>
-        <div class="rule-trade-note">${trade.side} · SPY ${spyUp ? 'up' : 'down'}</div>
+        <div class="rule-verdict" style="color:${c1}">${spyFollowed ? '✓' : '✗'}</div>
+        <div class="rule-verdict-label" style="color:${c1}">${spyFollowed ? 'FOLLOWED' : 'VIOLATED'}</div>
       `;
-    } else {
-      ruleEl.innerHTML = '<div class="rule-heading">Rule Check</div><div class="rule-trade-note">No SPY data</div>';
     }
+
+    // Rule 2: VWAP at entry (compare stock price to cumulative M5 VWAP)
+    let vwapHtml = '<div class="rule-trade-note">No M5 data</div>';
+    if (vwapData.length && m5Candles) {
+      const entryDayM5 = m5Candles.filter(c =>
+        new Date(c.time * 1000).toLocaleDateString('en-US', { timeZone: 'America/New_York' }) === openDateEST
+      );
+      if (entryDayM5.length) {
+        const nearestM5     = entryDayM5.reduce((best, c) =>
+          Math.abs(c.time - openSec) < Math.abs(best.time - openSec) ? c : best
+        );
+        const stockAtEntry  = nearestM5.close;
+        const vwapAtEntry   = vwapData.reduce((best, c) =>
+          Math.abs(c.time - openSec) < Math.abs(best.time - openSec) ? c : best
+        ).value;
+        const aboveVwap     = stockAtEntry > vwapAtEntry;
+        // Rule: Long only above VWAP; Short only below VWAP
+        const vwapFollowed  = (trade.side === 'Long' && aboveVwap) || (trade.side === 'Short' && !aboveVwap);
+        const posColor      = aboveVwap ? 'var(--green)' : 'var(--red)';
+        const c2            = vwapFollowed ? 'var(--green)' : 'var(--red)';
+        vwapHtml = `
+          <div class="rule-spy-pct" style="color:${posColor}">${aboveVwap ? '▲ Above' : '▼ Below'} VWAP</div>
+          <div class="rule-trade-note">VWAP $${fmtPrice(vwapAtEntry)}</div>
+          <div class="rule-verdict" style="color:${c2}">${vwapFollowed ? '✓' : '✗'}</div>
+          <div class="rule-verdict-label" style="color:${c2}">${vwapFollowed ? 'FOLLOWED' : 'VIOLATED'}</div>
+        `;
+      }
+    }
+
+    ruleEl.innerHTML = `
+      <div class="rule-heading">Rules</div>
+      <div class="rule-section-lbl">SPY</div>
+      ${spyHtml}
+      <div class="rule-divider"></div>
+      <div class="rule-section-lbl">VWAP M5</div>
+      ${vwapHtml}
+    `;
 
     showChartStatus('', false);
   }).catch(err => {
