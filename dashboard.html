@@ -742,7 +742,7 @@ function parseCashBalanceSection(rawText) {
     if (!minDate || dateObj < minDate) minDate = dateObj;
     if (!maxDate || dateObj > maxDate) maxDate = dateObj;
 
-    if (type === 'TRD') {
+    if (type === 'TRD' || type === 'EXP') {
       legs.push({
         ref, dateStr, timeStr,
         date: dateObj,
@@ -763,12 +763,28 @@ function parseCashBalanceSection(rawText) {
 // ================================================================
 const STOCK_RE  = /^(BOT|SOLD)\s([+-]\d+)\s([A-Z0-9]+)\s@([\d.]+)$/;
 const OPTION_RE = /^(BOT|SOLD)\s([+-]\d+)\s([A-Z0-9]+)\s100\s(?:\(Weeklys\)\s)?(\d+)\s([A-Z]{3})\s(\d{2})\s(\d+)\s(PUT|CALL)\s@([\d.]+)/;
+// Matches stock assignments from option exercise/expiry: "BOT 200.0 SOUN UPON ..."
+const ASSIGN_RE = /^(BOT|SOLD)\s+([\d.]+)\s+([A-Z0-9]+)\s+UPON\b/i;
 const MONTH_MAP = { JAN:0,FEB:1,MAR:2,APR:3,MAY:4,JUN:5,JUL:6,AUG:7,SEP:8,OCT:9,NOV:10,DEC:11 };
 
 function parseLegDescription(leg) {
   const desc = leg.description;
 
-  let m = OPTION_RE.exec(desc);
+  // Assignment/exercise rows (EXP type): e.g. "BOT 200.0 SOUN UPON SOUNDHOUND AI..."
+  // Price is derived from the CSV amount field (strike × qty).
+  let m = ASSIGN_RE.exec(desc);
+  if (m) {
+    const [, action, qtyStr, symbol] = m;
+    leg.action = action.toUpperCase();
+    leg.qty    = Math.round(parseFloat(qtyStr));
+    leg.symbol = symbol;
+    leg.price  = leg.qty > 0 ? Math.abs(leg.amount) / leg.qty : 0;
+    leg.isOption = false;
+    leg.optionDetails = null;
+    return true;
+  }
+
+  m = OPTION_RE.exec(desc);
   if (m) {
     const [, action, qtyStr, symbol, day, month, year, strike, putCall, price] = m;
     leg.action = action;
