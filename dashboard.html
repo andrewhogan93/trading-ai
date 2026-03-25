@@ -6,6 +6,7 @@
   <title>Trading Dashboard</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -286,6 +287,37 @@
     }
     .modal-cancel-btn:hover { border-color: var(--muted); color: var(--text); }
 
+    /* ── ACTION CELL (edit icon per row) ── */
+    .action-cell { width: 36px; text-align: center; padding: 0 4px !important; }
+    .edit-icon-btn {
+      background: none; border: none; color: var(--muted);
+      cursor: pointer; font-size: 0.95rem; padding: 4px 6px;
+      border-radius: 4px; opacity: 0;
+      transition: opacity 0.15s, color 0.15s;
+    }
+    tbody tr:hover .edit-icon-btn { opacity: 1; }
+    .edit-icon-btn:hover { color: var(--teal); }
+
+    /* ── CHART MODAL ── */
+    .chart-modal-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      width: 90vw; max-width: 900px;
+      display: flex; flex-direction: column;
+    }
+    #chart-container {
+      height: 400px;
+      background: var(--bg2);
+    }
+    .chart-modal-footer {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 20px; border-top: 1px solid var(--border);
+      min-height: 48px;
+    }
+    .chart-status { font-size: 0.82rem; color: var(--muted); }
+    .chart-status.error { color: var(--red); }
+
     /* Empty state */
     .empty-row td {
       text-align: center;
@@ -525,6 +557,7 @@
           <th data-key="size">Size <span class="sort-icon">↕</span></th>
           <th data-key="cost">Cost <span class="sort-icon">↕</span></th>
           <th data-key="holdMs">Hold Time <span class="sort-icon">↕</span></th>
+          <th style="width:36px"></th>
         </tr>
       </thead>
       <tbody id="t-body"></tbody>
@@ -568,6 +601,23 @@
   </div><!-- /pages -->
   </div><!-- /main -->
 </div><!-- /app -->
+
+<!-- Chart Modal -->
+<div id="chart-modal" style="display:none">
+  <div class="modal-backdrop">
+    <div class="chart-modal-card">
+      <div class="modal-header">
+        <span id="chart-modal-title">Chart</span>
+        <button class="modal-close" id="chart-modal-close-btn">✕</button>
+      </div>
+      <div id="chart-container"></div>
+      <div class="chart-modal-footer">
+        <span class="chart-status" id="chart-status"></span>
+        <button class="modal-save-btn" id="chart-edit-btn">Edit Trade</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- Edit Trade Modal -->
 <div id="edit-modal" style="display:none">
@@ -1156,6 +1206,7 @@ function renderTable(trades, sortKey, sortDir) {
       <td>${t.size}</td>
       <td>${fmtCurrency(t.cost, false)}</td>
       <td>${holdDisp}</td>
+      <td class="action-cell"><button class="edit-icon-btn" data-fp="${fp}" title="Edit trade">✎</button></td>
     </tr>`;
   }).join('');
 }
@@ -1577,6 +1628,131 @@ document.querySelectorAll('#t-head th[data-key]').forEach(th => {
 });
 
 // ================================================================
+//  CHART MODAL
+// ================================================================
+let chartInstance = null;
+let chartModalFp  = null;
+
+function closeChartModal() {
+  document.getElementById('chart-modal').style.display = 'none';
+  if (chartInstance) { chartInstance.remove(); chartInstance = null; }
+  chartModalFp = null;
+}
+
+function openChartModal(fp) {
+  const trade = [...state.allTrades, ...state.openTrades].find(t => t._fp === fp);
+  if (!trade) return;
+  chartModalFp = fp;
+
+  // Header
+  const closeLabel = trade.closeDate ? ` → ${fmtDate(trade.closeDate)}` : '';
+  const pnlLabel   = trade.netPnL != null ? ` · ${fmtCurrency(trade.netPnL)}` : '';
+  document.getElementById('chart-modal-title').textContent =
+    `${trade.symbol} · ${trade.side} · ${fmtDate(trade.openDate)}${closeLabel}${pnlLabel}`;
+
+  // Show modal with loading state
+  document.getElementById('chart-modal').style.display = '';
+  const statusEl = document.getElementById('chart-status');
+  statusEl.textContent = 'Loading chart data…';
+  statusEl.className   = 'chart-status';
+
+  // Destroy previous chart
+  const container = document.getElementById('chart-container');
+  if (chartInstance) { chartInstance.remove(); chartInstance = null; }
+  container.innerHTML = '';
+
+  // Time window: ±1.5 days around the trade
+  const DAY_S    = 86400;
+  const openSec  = Math.floor(trade.openDate.getTime()  / 1000);
+  const closeSec = Math.floor((trade.closeDate || new Date()).getTime() / 1000);
+  const period1  = openSec  - 1.5 * DAY_S;
+  const period2  = closeSec + 1.5 * DAY_S;
+  const holdMs   = trade.holdMs || (closeSec - openSec) * 1000;
+  const interval = holdMs < 86400000 ? '5m' : holdMs < 7 * 86400000 ? '1h' : '1d';
+
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(trade.symbol)}` +
+              `?interval=${interval}&period1=${Math.floor(period1)}&period2=${Math.floor(period2)}`;
+
+  fetch(url)
+    .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+    .then(data => {
+      const result = data?.chart?.result?.[0];
+      if (!result || !result.timestamp) throw new Error('No data returned');
+
+      const ts = result.timestamp;
+      const q  = result.indicators.quote[0];
+      const candles = ts.map((t, i) => ({
+        time: t,
+        open:  q.open[i],
+        high:  q.high[i],
+        low:   q.low[i],
+        close: q.close[i],
+      })).filter(c => c.open != null && c.high != null && c.low != null && c.close != null);
+
+      if (!candles.length) throw new Error('No candles in range');
+
+      // Create chart
+      chartInstance = LightweightCharts.createChart(container, {
+        width:  container.clientWidth,
+        height: 400,
+        layout:   { background: { color: '#16213e' }, textColor: '#7a8ba0' },
+        grid:     { vertLines: { color: 'rgba(168,218,220,0.07)' },
+                    horzLines: { color: 'rgba(168,218,220,0.07)' } },
+        crosshair: { mode: 1 },
+        rightPriceScale: { borderColor: 'rgba(168,218,220,0.12)' },
+        timeScale: { borderColor: 'rgba(168,218,220,0.12)', timeVisible: true },
+      });
+
+      const series = chartInstance.addCandlestickSeries({
+        upColor:       '#4ade80', downColor:       '#f87171',
+        borderUpColor: '#4ade80', borderDownColor: '#f87171',
+        wickUpColor:   '#4ade80', wickDownColor:   '#f87171',
+      });
+      series.setData(candles);
+
+      // Build entry/exit markers
+      const nearestTime = targetSec => candles.reduce((best, c) =>
+        Math.abs(c.time - targetSec) < Math.abs(best.time - targetSec) ? c : best
+      ).time;
+
+      const markers = [];
+      if (trade.side === 'Long') {
+        markers.push({ time: nearestTime(openSec),  position: 'belowBar', color: '#4ade80',
+                       shape: 'arrowUp',   text: `Entry $${fmtPrice(trade.avgEntryPrice)}` });
+        if (trade.closeDate && trade.avgExitPrice != null)
+          markers.push({ time: nearestTime(closeSec), position: 'aboveBar', color: '#f87171',
+                         shape: 'arrowDown', text: `Exit $${fmtPrice(trade.avgExitPrice)}` });
+      } else {
+        markers.push({ time: nearestTime(openSec),  position: 'aboveBar', color: '#f87171',
+                       shape: 'arrowDown', text: `Entry $${fmtPrice(trade.avgEntryPrice)}` });
+        if (trade.closeDate && trade.avgExitPrice != null)
+          markers.push({ time: nearestTime(closeSec), position: 'belowBar', color: '#4ade80',
+                         shape: 'arrowUp',   text: `Exit $${fmtPrice(trade.avgExitPrice)}` });
+      }
+      series.setMarkers(markers);
+
+      // Fit visible range to the trade window with a little padding
+      chartInstance.timeScale().setVisibleRange({ from: period1, to: period2 });
+
+      statusEl.textContent = '';
+    })
+    .catch(err => {
+      statusEl.textContent = `Chart unavailable: ${err.message}`;
+      statusEl.className   = 'chart-status error';
+    });
+}
+
+document.getElementById('chart-modal-close-btn').addEventListener('click', closeChartModal);
+document.getElementById('chart-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('chart-modal')) closeChartModal();
+});
+document.getElementById('chart-edit-btn').addEventListener('click', () => {
+  const fp = chartModalFp;
+  closeChartModal();
+  openEditModal(fp);
+});
+
+// ================================================================
 //  EDIT MODAL
 // ================================================================
 let modalState = { trade: null };
@@ -1665,11 +1841,12 @@ function saveEditModal() {
   refresh();
 }
 
-// Row click → open modal
+// Row click → chart modal; pencil icon → edit modal
 document.getElementById('t-body').addEventListener('click', e => {
+  const editBtn = e.target.closest('.edit-icon-btn');
+  if (editBtn) { openEditModal(editBtn.dataset.fp); return; }
   const row = e.target.closest('tr[data-fp]');
-  if (!row) return;
-  openEditModal(row.dataset.fp);
+  if (row) openChartModal(row.dataset.fp);
 });
 
 document.getElementById('modal-close-btn').addEventListener('click',  closeEditModal);
