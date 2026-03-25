@@ -628,7 +628,7 @@
       <div class="chart-modal-footer">
         <span class="chart-status" id="chart-status" style="display:none"></span>
         <div class="chart-key-row" id="chart-key-row" style="display:none">
-          <a href="https://finnhub.io/register" target="_blank">Get free key ↗</a>
+          <a href="https://polygon.io/dashboard/signup" target="_blank">Get free key ↗</a>
           <input type="text" id="chart-key-input" placeholder="Paste Finnhub API key…">
           <button class="chart-key-save" id="chart-key-save-btn">Save</button>
         </div>
@@ -1658,10 +1658,10 @@ function closeChartModal() {
   chartModalFp = null;
 }
 
-const FINNHUB_KEY_STORAGE = 'finnhub_api_key';
+const CHART_KEY_STORAGE = 'polygon_api_key';
 
-function getFinnhubKey() {
-  return localStorage.getItem(FINNHUB_KEY_STORAGE) || '';
+function getChartKey() {
+  return localStorage.getItem(CHART_KEY_STORAGE) || '';
 }
 
 function showChartStatus(msg, isError) {
@@ -1690,10 +1690,10 @@ function openChartModal(fp) {
   showChartStatus('', false);
   showKeyRow(false);
 
-  const apiKey = getFinnhubKey();
+  const apiKey = getChartKey();
   if (!apiKey) {
     showKeyRow(true);
-    showChartStatus('A free Finnhub API key is required to load charts.', false);
+    showChartStatus('A free Polygon.io API key is required to load charts.', false);
     return;
   }
 
@@ -1716,26 +1716,22 @@ function fetchAndRenderChart(trade, apiKey) {
   const period1  = openSec  - Math.round(1.5 * DAY_S);
   const period2  = closeSec + Math.round(1.5 * DAY_S);
   const holdMs   = trade.holdMs || (closeSec - openSec) * 1000;
-  // Finnhub resolutions: 1 5 15 30 60 D W M
-  const resolution = holdMs < 86400000 ? '5' : holdMs < 7 * 86400000 ? '60' : 'D';
-
-  const url = `https://finnhub.io/api/v1/stock/candle` +
-    `?symbol=${encodeURIComponent(trade.symbol)}&resolution=${resolution}` +
-    `&from=${period1}&to=${period2}&token=${apiKey}`;
+  // Polygon timespan/multiplier
+  const [mult, span] = holdMs < 86400000 ? [5,'minute'] : holdMs < 7*86400000 ? [1,'hour'] : [1,'day'];
+  const fmt = d => { const dt = new Date(d*1000); return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`; };
+  const url = `https://api.polygon.io/v2/aggs/ticker/${encodeURIComponent(trade.symbol)}/range/${mult}/${span}/${fmt(period1)}/${fmt(period2)}` +
+              `?adjusted=true&sort=asc&limit=5000&apiKey=${apiKey}`;
 
   fetch(url)
     .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
     .then(data => {
-      if (data.s === 'no_data') throw new Error('No chart data in this date range');
-      if (data.s !== 'ok' || !data.t) throw new Error('Unexpected response from Finnhub');
+      if (!data.results || !data.results.length) throw new Error('No chart data in this date range');
 
-      const candles = data.t.map((t, i) => ({
-        time:  t,
-        open:  data.o[i],
-        high:  data.h[i],
-        low:   data.l[i],
-        close: data.c[i],
-      })).filter(c => c.open != null);
+      // Polygon timestamps are milliseconds; Lightweight Charts needs seconds
+      const candles = data.results.map(b => ({
+        time:  Math.floor(b.t / 1000),
+        open:  b.o, high: b.h, low: b.l, close: b.c,
+      }));
 
       if (!candles.length) throw new Error('No candles returned');
 
@@ -1798,7 +1794,7 @@ document.getElementById('chart-edit-btn').addEventListener('click', () => {
 document.getElementById('chart-key-save-btn').addEventListener('click', () => {
   const key = document.getElementById('chart-key-input').value.trim();
   if (!key) return;
-  localStorage.setItem(FINNHUB_KEY_STORAGE, key);
+  localStorage.setItem(CHART_KEY_STORAGE, key);
   showKeyRow(false);
   const trade = [...state.allTrades, ...state.openTrades].find(t => t._fp === chartModalFp);
   if (trade) fetchAndRenderChart(trade, key);
