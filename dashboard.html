@@ -89,6 +89,25 @@
     }
     .reload-btn:hover { border-color: var(--teal); color: var(--teal); }
 
+    /* ── SYNC STATUS ── */
+    .sync-status { font-size: 0.75rem; white-space: nowrap; color: var(--muted); }
+    .sync-status.ok  { color: var(--green); }
+    .sync-status.err { color: var(--red); }
+
+    /* ── SYNC MODAL ── */
+    #sync-modal .modal-card { max-width: 440px; }
+    .sync-note { color: var(--muted); font-size: 0.82rem; line-height: 1.5; margin-bottom: 14px; }
+    .sync-note code { background: rgba(168,218,220,0.1); border-radius: 3px; padding: 1px 4px; font-size: 0.8rem; }
+    .sync-token-row { display: flex; gap: 8px; margin-bottom: 10px; }
+    .sync-token-row input {
+      flex: 1; background: var(--bg3); border: 1px solid var(--border);
+      color: var(--text); border-radius: 6px; padding: 6px 10px;
+      font-size: 0.82rem; outline: none; min-width: 0;
+    }
+    .sync-token-row input:focus { border-color: var(--teal); }
+    #sync-modal-status { font-size: 0.82rem; min-height: 18px; }
+    .sync-modal-footer { display: flex; gap: 8px; justify-content: flex-end; padding: 12px 20px; border-top: 1px solid var(--border); }
+
     /* ── FILTER BAR ── */
     .filter-bar {
       background: var(--bg2);
@@ -710,6 +729,8 @@
         <h1>TRADING DASHBOARD</h1>
         <span class="period" id="period-label"></span>
         <div style="display:flex;gap:8px;align-items:center">
+          <span class="sync-status" id="sync-status"></span>
+          <button class="reload-btn" id="sync-btn">☁ Sync</button>
           <button class="reload-btn" id="add-csv-btn">＋ Add CSV</button>
           <button class="reload-btn" id="clear-btn" style="color:#f87171;border-color:rgba(248,113,113,0.3)">Clear All Data</button>
         </div>
@@ -809,6 +830,36 @@
 </div><!-- /app -->
 
 <!-- Chart Modal -->
+<!-- GitHub Sync Modal -->
+<div id="sync-modal" style="display:none">
+  <div class="modal-backdrop">
+    <div class="modal-card" id="sync-modal-card">
+      <div class="modal-header">
+        <span>GitHub Sync</span>
+        <button class="modal-close" id="sync-modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="sync-note">
+          Annotations (setups &amp; rule results) are stored in your private GitHub repo
+          <code>andrewhogan93/trading-ai</code> as <code>annotations.json</code>.<br><br>
+          Create a <strong>fine-grained PAT</strong> with <strong>Contents: Read &amp; Write</strong>
+          access scoped to that repo.
+        </p>
+        <div class="sync-token-row">
+          <input type="password" id="sync-token-input" placeholder="Paste GitHub PAT…">
+          <button class="chart-key-save" id="sync-token-save-btn">Save &amp; Load</button>
+        </div>
+        <div id="sync-modal-status" style="color:var(--muted)"></div>
+      </div>
+      <div class="sync-modal-footer">
+        <button class="modal-cancel-btn" id="sync-pull-btn">Pull from GitHub</button>
+        <button class="modal-cancel-btn" id="sync-push-btn">Push to GitHub</button>
+        <button class="modal-cancel-btn" id="sync-clear-btn" style="color:var(--red)">Clear Token</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="chart-modal" style="display:none">
   <div class="modal-backdrop">
     <div class="chart-modal-card">
@@ -1616,6 +1667,21 @@ function showDashboard() {
   updatePeriodLabel();
   renderOpenBanner(state.openTrades);
   refresh();
+  // Auto-load annotations from GitHub if a token is stored
+  const token = getGithubToken();
+  if (token) {
+    setSyncStatus('loading');
+    loadAnnotationsFromGitHub(token)
+      .then(result => {
+        if (result) {
+          _ghSha = result.sha;
+          applyAnnotations(result.content);
+          refresh();
+        }
+        setSyncStatus('ok');
+      })
+      .catch(() => setSyncStatus('err'));
+  }
 }
 
 function updatePeriodLabel() {
@@ -1966,6 +2032,96 @@ function closeChartModal() {
 
 const CHART_KEY_STORAGE  = 'polygon_api_key';
 const RULES_CACHE_KEY    = 'trading_rules_cache';
+const GITHUB_TOKEN_KEY   = 'gh_pat';
+const GH_OWNER           = 'andrewhogan93';
+const GH_REPO            = 'trading-ai';
+const GH_PATH            = 'annotations.json';
+
+// ── GitHub Sync ──────────────────────────────────────────────────
+let _ghSha = null; // current SHA of annotations.json on GitHub
+
+function getGithubToken() { return localStorage.getItem(GITHUB_TOKEN_KEY) || ''; }
+
+function buildAnnotations() {
+  const setups = {};
+  for (const t of [...state.allTrades, ...state.openTrades]) {
+    if (t._fp && t.setups && t.setups.length) setups[t._fp] = t.setups;
+  }
+  return { setups, rulesCache: loadRulesCache() };
+}
+
+function applyAnnotations(data) {
+  if (!data) return;
+  const setups = data.setups || {};
+  for (const t of [...state.allTrades, ...state.openTrades]) {
+    if (t._fp && setups[t._fp]) t.setups = setups[t._fp];
+  }
+  if (data.rulesCache && Object.keys(data.rulesCache).length) {
+    localStorage.setItem(RULES_CACHE_KEY, JSON.stringify(data.rulesCache));
+  }
+}
+
+async function loadAnnotationsFromGitHub(token) {
+  const url = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${GH_PATH}`;
+  const r = await fetch(url, {
+    headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' },
+  });
+  if (r.status === 404) return null; // file doesn't exist yet
+  if (!r.ok) throw new Error(`GitHub ${r.status}: ${(await r.json()).message || ''}`);
+  const json = await r.json();
+  const content = JSON.parse(atob(json.content.replace(/\n/g, '')));
+  return { content, sha: json.sha };
+}
+
+async function saveAnnotationsToGitHub(token) {
+  const url = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${GH_PATH}`;
+  // If we don't have a SHA yet, try fetching it first
+  if (!_ghSha) {
+    try {
+      const existing = await loadAnnotationsFromGitHub(token);
+      if (existing) _ghSha = existing.sha;
+    } catch (_) { /* file may not exist yet */ }
+  }
+  const raw     = JSON.stringify(buildAnnotations(), null, 2);
+  const encoded = btoa(unescape(encodeURIComponent(raw)));
+  const body    = { message: 'chore: update annotations', content: encoded };
+  if (_ghSha) body.sha = _ghSha;
+  const r = await fetch(url, {
+    method: 'PUT',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      Accept: 'application/vnd.github+json',
+    },
+    body: JSON.stringify(body),
+  });
+  if (!r.ok) throw new Error(`GitHub ${r.status}: ${(await r.json()).message || ''}`);
+  const json = await r.json();
+  _ghSha = json.content.sha;
+}
+
+function setSyncStatus(s) {
+  const el = document.getElementById('sync-status');
+  if (!el) return;
+  if (s === 'ok')      { el.textContent = '✓ Synced';    el.className = 'sync-status ok'; }
+  else if (s === 'err'){ el.textContent = '⚠ Sync err';  el.className = 'sync-status err'; }
+  else if (s === 'saving')  { el.textContent = '↑ Saving…'; el.className = 'sync-status'; }
+  else if (s === 'loading') { el.textContent = '↓ Loading…'; el.className = 'sync-status'; }
+  else                 { el.textContent = '';             el.className = 'sync-status'; }
+}
+
+let _syncTimer = null;
+function scheduleGithubSave() {
+  const token = getGithubToken();
+  if (!token) return;
+  clearTimeout(_syncTimer);
+  setSyncStatus('saving');
+  _syncTimer = setTimeout(() => {
+    saveAnnotationsToGitHub(token)
+      .then(() => setSyncStatus('ok'))
+      .catch(() => setSyncStatus('err'));
+  }, 3000);
+}
 
 function loadRulesCache() {
   try { return JSON.parse(localStorage.getItem(RULES_CACHE_KEY)) || {}; }
@@ -1975,6 +2131,7 @@ function saveRuleResult(fp, spy, vwap, walkaway) {
   const cache = loadRulesCache();
   cache[fp] = { spy, vwap, ...walkaway };
   localStorage.setItem(RULES_CACHE_KEY, JSON.stringify(cache));
+  scheduleGithubSave();
 }
 
 function getChartKey() {
@@ -2461,6 +2618,7 @@ function saveEditModal() {
   }
 
   saveToStorage();
+  scheduleGithubSave();
   closeEditModal();
   refresh();
 }
@@ -2480,6 +2638,110 @@ document.getElementById('modal-save-btn').addEventListener('click',   saveEditMo
 // Close modal on backdrop click
 document.getElementById('edit-modal').addEventListener('click', e => {
   if (e.target === document.getElementById('edit-modal')) closeEditModal();
+});
+
+// ================================================================
+//  GITHUB SYNC MODAL
+// ================================================================
+document.getElementById('sync-btn').addEventListener('click', () => {
+  const token = getGithubToken();
+  document.getElementById('sync-token-input').value = token ? '(token saved)' : '';
+  document.getElementById('sync-modal-status').textContent = '';
+  document.getElementById('sync-modal-status').style.color = 'var(--muted)';
+  document.getElementById('sync-modal').style.display = '';
+});
+
+document.getElementById('sync-modal-close').addEventListener('click', () => {
+  document.getElementById('sync-modal').style.display = 'none';
+});
+
+document.getElementById('sync-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('sync-modal'))
+    document.getElementById('sync-modal').style.display = 'none';
+});
+
+document.getElementById('sync-token-save-btn').addEventListener('click', async () => {
+  const val = document.getElementById('sync-token-input').value.trim();
+  if (!val || val === '(token saved)') return;
+  localStorage.setItem(GITHUB_TOKEN_KEY, val);
+  const statusEl = document.getElementById('sync-modal-status');
+  statusEl.textContent = 'Loading annotations from GitHub…';
+  statusEl.style.color = 'var(--muted)';
+  try {
+    const result = await loadAnnotationsFromGitHub(val);
+    if (result) {
+      _ghSha = result.sha;
+      applyAnnotations(result.content);
+      refresh();
+      statusEl.textContent = 'Loaded from GitHub successfully.';
+      statusEl.style.color = 'var(--green)';
+      setSyncStatus('ok');
+    } else {
+      statusEl.textContent = 'No annotations file yet — will create on next save.';
+      statusEl.style.color = 'var(--muted)';
+      setSyncStatus('ok');
+      scheduleGithubSave();
+    }
+  } catch (err) {
+    statusEl.textContent = 'Error: ' + err.message;
+    statusEl.style.color = 'var(--red)';
+    setSyncStatus('err');
+  }
+});
+
+document.getElementById('sync-pull-btn').addEventListener('click', async () => {
+  const token = getGithubToken();
+  const statusEl = document.getElementById('sync-modal-status');
+  if (!token) { statusEl.textContent = 'No token saved.'; statusEl.style.color = 'var(--red)'; return; }
+  statusEl.textContent = 'Pulling from GitHub…';
+  statusEl.style.color = 'var(--muted)';
+  try {
+    const result = await loadAnnotationsFromGitHub(token);
+    if (result) {
+      _ghSha = result.sha;
+      applyAnnotations(result.content);
+      refresh();
+      statusEl.textContent = 'Pulled successfully.';
+      statusEl.style.color = 'var(--green)';
+      setSyncStatus('ok');
+    } else {
+      statusEl.textContent = 'No annotations file found on GitHub.';
+      statusEl.style.color = 'var(--muted)';
+    }
+  } catch (err) {
+    statusEl.textContent = 'Error: ' + err.message;
+    statusEl.style.color = 'var(--red)';
+    setSyncStatus('err');
+  }
+});
+
+document.getElementById('sync-push-btn').addEventListener('click', async () => {
+  const token = getGithubToken();
+  const statusEl = document.getElementById('sync-modal-status');
+  if (!token) { statusEl.textContent = 'No token saved.'; statusEl.style.color = 'var(--red)'; return; }
+  statusEl.textContent = 'Pushing to GitHub…';
+  statusEl.style.color = 'var(--muted)';
+  try {
+    await saveAnnotationsToGitHub(token);
+    statusEl.textContent = 'Pushed successfully.';
+    statusEl.style.color = 'var(--green)';
+    setSyncStatus('ok');
+  } catch (err) {
+    statusEl.textContent = 'Error: ' + err.message;
+    statusEl.style.color = 'var(--red)';
+    setSyncStatus('err');
+  }
+});
+
+document.getElementById('sync-clear-btn').addEventListener('click', () => {
+  if (!confirm('Remove the GitHub token from this browser?')) return;
+  localStorage.removeItem(GITHUB_TOKEN_KEY);
+  _ghSha = null;
+  document.getElementById('sync-token-input').value = '';
+  const statusEl = document.getElementById('sync-modal-status');
+  statusEl.textContent = 'Token cleared.';
+  statusEl.style.color = 'var(--muted)';
+  setSyncStatus('');
 });
 
 // ── On page load: restore saved data if available ──
