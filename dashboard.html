@@ -287,6 +287,21 @@
     }
     .modal-cancel-btn:hover { border-color: var(--muted); color: var(--text); }
 
+    /* ── RULE COLUMNS ── */
+    .rule-col-hdr {
+      width: 44px; text-align: center;
+      font-size: 0.72rem; letter-spacing: 0.5px;
+      color: var(--muted);
+    }
+    .rule-cell {
+      width: 44px; text-align: center;
+      font-size: 1rem; font-weight: 700;
+      padding: 0 4px !important;
+    }
+    .rule-ok   { color: var(--green); }
+    .rule-fail { color: var(--red); }
+    .rule-na   { color: var(--muted); font-size: 0.85rem; font-weight: 400; }
+
     /* ── ACTION CELL (edit icon per row) ── */
     .action-cell { width: 36px; text-align: center; padding: 0 4px !important; }
     .edit-icon-btn {
@@ -656,6 +671,8 @@
           <th data-key="size">Size <span class="sort-icon">↕</span></th>
           <th data-key="cost">Cost <span class="sort-icon">↕</span></th>
           <th data-key="holdMs">Hold Time <span class="sort-icon">↕</span></th>
+          <th class="rule-col-hdr" title="SPY Rule: Long only when SPY up; Short only when SPY down">SPY</th>
+          <th class="rule-col-hdr" title="VWAP Rule: Long only above VWAP M5; Short only below VWAP M5">VWAP</th>
           <th style="width:36px"></th>
         </tr>
       </thead>
@@ -1278,9 +1295,11 @@ function renderTable(trades, sortKey, sortDir) {
 
   const tbody = document.getElementById('t-body');
   if (!trades.length) {
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="13">No trades match the current filters.</td></tr>';
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="15">No trades match the current filters.</td></tr>';
     return;
   }
+
+  const rulesCache = loadRulesCache();
 
   tbody.innerHTML = trades.map(t => {
     const statusBadge = t.status === 'Win'
@@ -1301,6 +1320,12 @@ function renderTable(trades, sortKey, sortDir) {
     const pnlPctDisp = t.netPnLPct != null ? `<span class="${t.netPnLPct >= 0 ? 'pos-val' : 'neg-val'}">${fmtPct(t.netPnLPct)}</span>` : '—';
     const holdDisp   = t.holdMs    != null ? fmtHoldTime(t.holdMs) : '—';
     const fp         = (t._fp || '').replace(/"/g, '&quot;');
+    const rc         = rulesCache[t._fp];
+    const ruleCell   = v => v == null
+      ? '<td class="rule-cell rule-na">—</td>'
+      : v
+        ? '<td class="rule-cell rule-ok">✓</td>'
+        : '<td class="rule-cell rule-fail">✗</td>';
 
     return `<tr data-fp="${fp}">
       <td>${statusBadge}</td>
@@ -1316,6 +1341,8 @@ function renderTable(trades, sortKey, sortDir) {
       <td>${t.size}</td>
       <td>${fmtCurrency(t.cost, false)}</td>
       <td>${holdDisp}</td>
+      ${ruleCell(rc ? rc.spy  : null)}
+      ${ruleCell(rc ? rc.vwap : null)}
       <td class="action-cell"><button class="edit-icon-btn" data-fp="${fp}" title="Edit trade">✎</button></td>
     </tr>`;
   }).join('');
@@ -1751,7 +1778,18 @@ function closeChartModal() {
   chartModalFp = null;
 }
 
-const CHART_KEY_STORAGE = 'polygon_api_key';
+const CHART_KEY_STORAGE  = 'polygon_api_key';
+const RULES_CACHE_KEY    = 'trading_rules_cache';
+
+function loadRulesCache() {
+  try { return JSON.parse(localStorage.getItem(RULES_CACHE_KEY)) || {}; }
+  catch { return {}; }
+}
+function saveRuleResult(fp, spy, vwap) {
+  const cache = loadRulesCache();
+  cache[fp] = { spy, vwap };
+  localStorage.setItem(RULES_CACHE_KEY, JSON.stringify(cache));
+}
 
 function getChartKey() {
   return localStorage.getItem(CHART_KEY_STORAGE) || '';
@@ -2007,6 +2045,7 @@ function fetchAndRenderChart(trade, apiKey) {
 
     // Rule 2: VWAP at entry (compare stock price to cumulative M5 VWAP)
     let vwapHtml = '<div class="rule-trade-note">No M5 data</div>';
+    let vwapFollowed = null;
     if (vwapData.length && m5Candles) {
       const entryDayM5 = m5Candles.filter(c =>
         new Date(c.time * 1000).toLocaleDateString('en-US', { timeZone: 'America/New_York' }) === openDateEST
@@ -2020,8 +2059,7 @@ function fetchAndRenderChart(trade, apiKey) {
           Math.abs(c.time - openSec) < Math.abs(best.time - openSec) ? c : best
         ).value;
         const aboveVwap     = stockAtEntry > vwapAtEntry;
-        // Rule: Long only above VWAP; Short only below VWAP
-        const vwapFollowed  = (trade.side === 'Long' && aboveVwap) || (trade.side === 'Short' && !aboveVwap);
+        vwapFollowed        = (trade.side === 'Long' && aboveVwap) || (trade.side === 'Short' && !aboveVwap);
         const posColor      = aboveVwap ? 'var(--green)' : 'var(--red)';
         const c2            = vwapFollowed ? 'var(--green)' : 'var(--red)';
         vwapHtml = `
@@ -2032,6 +2070,10 @@ function fetchAndRenderChart(trade, apiKey) {
         `;
       }
     }
+
+    // Persist results so the table columns can show them without re-fetching
+    saveRuleResult(trade._fp, spyFollowed, vwapFollowed);
+    refresh();
 
     ruleEl.innerHTML = `
       <div class="rule-heading">Rules</div>
