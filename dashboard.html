@@ -1597,11 +1597,11 @@ function openEditModal(fp) {
   document.getElementById('modal-title').textContent = `Edit Trade — ${trade.symbol}`;
   document.getElementById('m-open-date').value  = toDateInputVal(trade.openDate);
   document.getElementById('m-close-date').value = toDateInputVal(trade.closeDate);
-  document.getElementById('m-close-date').disabled = trade._isOpen;
+  document.getElementById('m-close-date').disabled = false;
   document.getElementById('m-side').value   = trade.side;
   document.getElementById('m-entry').value  = trade.avgEntryPrice != null ? trade.avgEntryPrice : '';
   document.getElementById('m-exit').value   = trade.avgExitPrice  != null ? trade.avgExitPrice  : '';
-  document.getElementById('m-exit').disabled = trade._isOpen;
+  document.getElementById('m-exit').disabled = false;
   document.getElementById('m-size').value   = trade.size;
 
   document.getElementById('edit-modal').style.display = '';
@@ -1627,7 +1627,7 @@ function saveEditModal() {
     const h = t.openDate ? t.openDate.getHours() : 9;
     t.openDate = new Date(y, m - 1, d, h);
   }
-  if (!t._isOpen && closeVal) {
+  if (closeVal) {
     const [y, m, d] = closeVal.split('-').map(Number);
     const h = t.closeDate ? t.closeDate.getHours() : 16;
     t.closeDate = new Date(y, m - 1, d, h);
@@ -1635,12 +1635,29 @@ function saveEditModal() {
 
   t.side = document.getElementById('m-side').value;
   if (!isNaN(entryVal) && entryVal > 0) t.avgEntryPrice = entryVal;
-  if (!t._isOpen && !isNaN(exitVal) && exitVal >= 0) t.avgExitPrice = exitVal;
+  if (!isNaN(exitVal) && exitVal >= 0) t.avgExitPrice = exitVal;
   if (!isNaN(sizeVal) && sizeVal > 0) t.size = sizeVal;
+
+  // When an open trade gets a close date + exit price, compute P&L and move it to allTrades
+  if (t._isOpen && t.closeDate && t.avgExitPrice != null) {
+    t._isOpen = false;
+    t.status  = 'Open'; // will be recalculated below
+    t.holdMs  = t.closeDate - t.openDate;
+    const multiplier = t.type === 'Option' ? 100 : 1;
+    t.cost    = t.avgEntryPrice * t.size * multiplier;
+    t.netPnL  = (t.side === 'Long' ? 1 : -1) * (t.avgExitPrice - t.avgEntryPrice) * t.size * multiplier;
+    t.netPnLPct = t.cost > 0 ? (t.netPnL / t.cost) * 100 : 0;
+    // Move from openTrades → allTrades
+    state.openTrades  = state.openTrades.filter(x => x._fp !== t._fp);
+    state.allTrades   = [...state.allTrades, t].sort((a, b) => a.openDate - b.openDate);
+  }
 
   // Recalculate derived fields for closed trades
   if (!t._isOpen && t.openDate && t.closeDate) {
     t.holdMs = t.closeDate - t.openDate;
+    if (t.netPnLPct > 0.1)       t.status = 'Win';
+    else if (t.netPnLPct < -0.1) t.status = 'Loss';
+    else                         t.status = 'Breakeven';
   }
 
   saveToStorage();
