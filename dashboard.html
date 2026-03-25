@@ -788,7 +788,51 @@ function matchTrades(legs) {
     }
   }
 
-  // Collect open positions
+  // Auto-close expired options
+  // When a short (or long) option expires worthless, Schwab generates no closing
+  // transaction. Synthesise a close at $0 on the expiry date so the trade appears
+  // in the table rather than as a phantom open position.
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  for (const [, q] of queues) {
+    for (const item of q.items) {
+      if (item.remaining <= 0) continue;
+      const leg = item.leg;
+      if (!leg.isOption || !leg.optionDetails) continue;
+
+      const expiry = new Date(leg.optionDetails.expiry);
+      expiry.setHours(0, 0, 0, 0);
+      if (expiry >= today) continue; // still active
+
+      // Option has expired — close at $0 on expiry date (16:00 market close)
+      const closeDt = new Date(leg.optionDetails.expiry);
+      closeDt.setHours(16, 0, 0, 0);
+      const prop = item.remaining / leg.qty;
+
+      subTrades.push({
+        groupId:       q.tradeGroupId,
+        symbol:        leg.symbol,
+        isOption:      true,
+        side:          leg.action === 'BOT' ? 'Long' : 'Short',
+        openDatetime:  leg.datetime,
+        closeDatetime: closeDt,
+        qty:           item.remaining,
+        entryPrice:    leg.price,
+        exitPrice:     0,
+        openerAmount:       leg.amount      * prop,
+        closerAmount:       0,
+        openerCommissions:  leg.commissions * prop,
+        openerMiscFees:     leg.miscFees    * prop,
+        closerCommissions:  0,
+        closerMiscFees:     0,
+      });
+
+      item.remaining = 0; // remove from open positions
+    }
+  }
+
+  // Collect genuinely open positions (non-expired, unmatched legs)
   const openPositions = [];
   for (const [, q] of queues) {
     for (const item of q.items) {
