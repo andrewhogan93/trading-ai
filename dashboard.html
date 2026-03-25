@@ -931,8 +931,15 @@ function parseDate(str) {
 function parseDateTime(dateStr, timeStr) {
   const date = parseDate(dateStr);
   if (!date) return null;
-  const parts = (timeStr || '').split(':').map(Number);
-  date.setHours(parts[0] || 0, parts[1] || 0, parts[2] || 0, 0);
+  const t     = (timeStr || '').trim();
+  const isPM  = /pm$/i.test(t);
+  const isAM  = /am$/i.test(t);
+  const clean = t.replace(/\s*(am|pm)$/i, '').trim();
+  const parts = clean.split(':').map(Number);
+  let h = parts[0] || 0;
+  if (isPM && h < 12) h += 12;
+  if (isAM && h === 12) h = 0;
+  date.setHours(h, parts[1] || 0, parts[2] || 0, 0);
   return date;
 }
 
@@ -1626,8 +1633,16 @@ function loadCSV(text) {
 
     const { closedTrades, openTrades } = matchTrades(legs);
 
-    // Merge: keep existing trades, add only new ones (dedup by fingerprint)
-    const seen = new Set(state.allTrades.map(fingerprintTrade));
+    // Merge: keep existing trades, add only new ones (dedup by fingerprint).
+    // Also patch openDate/closeDate/holdMs on existing trades from the fresh parse
+    // so re-uploading the CSV automatically repairs any previously mis-parsed times.
+    const freshByFp = new Map(closedTrades.map(t => [fingerprintTrade(t), t]));
+    state.allTrades = state.allTrades.map(existing => {
+      const fresh = freshByFp.get(fingerprintTrade(existing));
+      if (!fresh) return existing;
+      return { ...existing, openDate: fresh.openDate, closeDate: fresh.closeDate, holdMs: fresh.holdMs };
+    });
+    const seen  = new Set(state.allTrades.map(fingerprintTrade));
     const added = closedTrades.filter(t => !seen.has(fingerprintTrade(t)));
     state.allTrades = [...state.allTrades, ...added]
       .sort((a, b) => a.openDate - b.openDate);
