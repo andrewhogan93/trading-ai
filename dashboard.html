@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trading Dashboard</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #1a1a2e;
+      --bg2:      #16213e;
+      --bg3:      #0f3460;
+      --accent:   #e94560;
+      --teal:     #a8dadc;
+      --text:     #eee;
+      --muted:    #7a8ba0;
+      --border:   rgba(168,218,220,0.12);
+      --green:    #4ade80;
+      --red:      #f87171;
+      --yellow:   #fbbf24;
+      --radius:   10px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 14px;
+      min-height: 100vh;
+    }
+
+    /* ── UPLOAD SCREEN ── */
+    #upload-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      gap: 24px;
+      padding: 24px;
+    }
+    #upload-screen h1 {
+      font-size: 2rem;
+      letter-spacing: 4px;
+      color: var(--accent);
+    }
+    #upload-screen p { color: var(--muted); text-align: center; max-width: 420px; line-height: 1.6; }
+    .upload-box {
+      border: 2px dashed var(--teal);
+      border-radius: var(--radius);
+      padding: 48px 64px;
+      text-align: center;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .upload-box:hover { background: rgba(168,218,220,0.06); }
+    .upload-box svg { margin-bottom: 16px; }
+    .upload-box span { display: block; color: var(--teal); font-size: 1rem; margin-bottom: 8px; }
+    .upload-box small { color: var(--muted); }
+    #csv-input { display: none; }
+    #upload-error { color: var(--red); font-size: 0.85rem; display: none; }
+
+    /* ── DASHBOARD ── */
+    #dashboard { display: none; flex-direction: column; min-height: 100vh; }
+
+    header {
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    header h1 { font-size: 1.1rem; letter-spacing: 3px; color: var(--accent); }
+    header .period { color: var(--muted); font-size: 0.8rem; }
+    .reload-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 6px;
+      padding: 6px 14px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .reload-btn:hover { border-color: var(--teal); color: var(--teal); }
+
+    /* ── FILTER BAR ── */
+    .filter-bar {
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 24px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+    }
+    .filter-bar label { color: var(--muted); font-size: 0.75rem; }
+    .filter-group { display: flex; flex-direction: column; gap: 4px; }
+    .filter-bar input[type="date"],
+    .filter-bar select {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 0.85rem;
+      outline: none;
+      cursor: pointer;
+    }
+    .filter-bar input[type="date"]:focus,
+    .filter-bar select:focus { border-color: var(--teal); }
+    .filter-bar input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7); }
+    .toggle-group { display: flex; gap: 4px; }
+    .toggle-btn {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+    .toggle-btn.active { background: var(--bg3); border-color: var(--teal); color: var(--teal); }
+    .toggle-btn:not(.active) { opacity: 0.45; }
+
+    .reset-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 6px;
+      padding: 6px 14px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      align-self: flex-end;
+      transition: border-color 0.15s, color 0.15s;
+      white-space: nowrap;
+    }
+    .reset-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── METRICS ── */
+    .metrics-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+      padding: 16px 24px;
+    }
+    .metric-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+    }
+    .metric-card .label { color: var(--muted); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+    .metric-card .value { font-size: 1.5rem; font-weight: 700; }
+    .metric-card .value.pos { color: var(--green); }
+    .metric-card .value.neg { color: var(--red); }
+    .metric-card .value.neutral { color: var(--teal); }
+
+    /* ── TABLE ── */
+    .table-wrapper {
+      padding: 0 24px 24px;
+      overflow-x: auto;
+      flex: 1;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      white-space: nowrap;
+    }
+    thead th {
+      background: var(--bg2);
+      color: var(--muted);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      user-select: none;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      transition: color 0.15s;
+    }
+    thead th:hover { color: var(--teal); }
+    thead th.sort-active { color: var(--teal); }
+    thead th .sort-icon { margin-left: 4px; opacity: 0.5; }
+    thead th.sort-active .sort-icon { opacity: 1; }
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background 0.1s;
+    }
+    tbody tr:hover { background: rgba(168,218,220,0.04); }
+    tbody td { padding: 9px 12px; color: var(--text); }
+
+    /* Status badges */
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .badge-win  { background: rgba(74,222,128,0.15); color: var(--green); }
+    .badge-loss { background: rgba(248,113,113,0.15); color: var(--red); }
+    .badge-be   { background: rgba(251,191,36,0.15);  color: var(--yellow); }
+
+    /* Type badges */
+    .type-badge {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 500;
+    }
+    .type-stock  { background: rgba(168,218,220,0.12); color: var(--teal); }
+    .type-option { background: rgba(233,69,96,0.12);   color: var(--accent); }
+
+    /* Side badges */
+    .side-long  { color: var(--green); }
+    .side-short { color: var(--red); }
+
+    .pos-val { color: var(--green); }
+    .neg-val { color: var(--red); }
+
+    /* Empty state */
+    .empty-row td {
+      text-align: center;
+      color: var(--muted);
+      padding: 48px 12px;
+    }
+
+    /* ── OPEN POSITIONS BANNER ── */
+    #open-banner {
+      margin: 0 24px 24px;
+      background: rgba(251,191,36,0.08);
+      border: 1px solid rgba(251,191,36,0.25);
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      font-size: 0.82rem;
+      color: var(--yellow);
+      display: none;
+    }
+    #open-banner strong { color: #fde68a; }
+  </style>
+</head>
+<body>
+
+<!-- ╔══════════════════════════════════════╗ -->
+<!-- ║          UPLOAD SCREEN               ║ -->
+<!-- ╚══════════════════════════════════════╝ -->
+<div id="upload-screen">
+  <h1>TRADING DASHBOARD</h1>
+  <p>Upload your Schwab account statement CSV to analyse your trades.</p>
+  <label class="upload-box" for="csv-input">
+    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#a8dadc" stroke-width="1.5">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+      <polyline points="17 8 12 3 7 8"/>
+      <line x1="12" y1="3" x2="12" y2="15"/>
+    </svg>
+    <span>Click to upload CSV</span>
+    <small>Schwab Account Statement (.csv)</small>
+  </label>
+  <input type="file" id="csv-input" accept=".csv">
+  <div id="upload-error"></div>
+</div>
+
+<!-- ╔══════════════════════════════════════╗ -->
+<!-- ║            DASHBOARD                 ║ -->
+<!-- ╚══════════════════════════════════════╝ -->
+<div id="dashboard">
+
+  <header>
+    <h1>TRADING DASHBOARD</h1>
+    <span class="period" id="period-label"></span>
+    <button class="reload-btn" id="reload-btn">&#8635; Load New File</button>
+  </header>
+
+  <div class="filter-bar">
+    <div class="filter-group">
+      <label>From</label>
+      <input type="date" id="f-from">
+    </div>
+    <div class="filter-group">
+      <label>To</label>
+      <input type="date" id="f-to">
+    </div>
+    <div class="filter-group">
+      <label>Type</label>
+      <select id="f-type">
+        <option>All</option>
+        <option>Stock</option>
+        <option>Option</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>Side</label>
+      <select id="f-side">
+        <option>All</option>
+        <option>Long</option>
+        <option>Short</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>Status</label>
+      <div class="toggle-group" id="f-status">
+        <button class="toggle-btn active" data-val="Win">Win</button>
+        <button class="toggle-btn active" data-val="Loss">Loss</button>
+        <button class="toggle-btn active" data-val="Breakeven">B/E</button>
+      </div>
+    </div>
+    <button class="reset-btn" id="reset-btn">Reset Filters</button>
+  </div>
+
+  <div class="metrics-row">
+    <div class="metric-card">
+      <div class="label">Account P&amp;L</div>
+      <div class="value" id="m-return">—</div>
+    </div>
+    <div class="metric-card">
+      <div class="label">Profit Factor</div>
+      <div class="value neutral" id="m-pf">—</div>
+    </div>
+    <div class="metric-card">
+      <div class="label">Win Rate</div>
+      <div class="value neutral" id="m-wr">—</div>
+    </div>
+    <div class="metric-card">
+      <div class="label">Net P&amp;L</div>
+      <div class="value" id="m-pnl">—</div>
+    </div>
+    <div class="metric-card">
+      <div class="label">Total Trades</div>
+      <div class="value neutral" id="m-trades">—</div>
+    </div>
+  </div>
+
+  <div class="table-wrapper">
+    <table>
+      <thead id="t-head">
+        <tr>
+          <th data-key="status">Status <span class="sort-icon">↕</span></th>
+          <th data-key="openDate">Open Date <span class="sort-icon">↕</span></th>
+          <th data-key="closeDate">Close Date <span class="sort-icon">↕</span></th>
+          <th data-key="symbol">Symbol <span class="sort-icon">↕</span></th>
+          <th data-key="type">Type <span class="sort-icon">↕</span></th>
+          <th data-key="side">Side <span class="sort-icon">↕</span></th>
+          <th data-key="avgEntryPrice">Entry <span class="sort-icon">↕</span></th>
+          <th data-key="avgExitPrice">Exit <span class="sort-icon">↕</span></th>
+          <th data-key="netPnL">Net $ <span class="sort-icon">↕</span></th>
+          <th data-key="netPnLPct">Net % <span class="sort-icon">↕</span></th>
+          <th data-key="size">Size <span class="sort-icon">↕</span></th>
+          <th data-key="cost">Cost <span class="sort-icon">↕</span></th>
+          <th data-key="holdMs">Hold Time <span class="sort-icon">↕</span></th>
+        </tr>
+      </thead>
+      <tbody id="t-body"></tbody>
+    </table>
+  </div>
+
+  <div id="open-banner"></div>
+
+</div>
+
+<script>
+// ================================================================
+//  1. CSV TOKENIZER
+// ================================================================
+function parseCSVLine(line) {
+  const fields = [];
+  let cur = '';
+  let inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      if (inQ && line[i + 1] === '"') { cur += '"'; i++; }
+      else inQ = !inQ;
+    } else if (ch === ',' && !inQ) {
+      fields.push(cur); cur = '';
+    } else {
+      cur += ch;
+    }
+  }
+  fields.push(cur);
+  return fields;
+}
+
+// ================================================================
+//  2. DATE / NUMBER HELPERS
+// ================================================================
+function parseDate(str) {
+  const s = (str || '').trim();
+  const parts = s.split('/');
+  if (parts.length !== 3) return null;
+  const [m, d, y] = parts.map(Number);
+  if (isNaN(m) || isNaN(d) || isNaN(y)) return null;
+  return new Date(2000 + y, m - 1, d);
+}
+
+function parseDateTime(dateStr, timeStr) {
+  const date = parseDate(dateStr);
+  if (!date) return null;
+  const parts = (timeStr || '').split(':').map(Number);
+  date.setHours(parts[0] || 0, parts[1] || 0, parts[2] || 0, 0);
+  return date;
+}
+
+function parseAmount(str) {
+  if (!str || !str.trim()) return 0;
+  let s = str.trim().replace(/\$/g, '').replace(/,/g, '');
+  if (s.startsWith('(') && s.endsWith(')')) s = '-' + s.slice(1, -1);
+  return parseFloat(s) || 0;
+}
+
+function fmtDate(d) {
+  if (!d) return '—';
+  return `${d.getMonth() + 1}/${d.getDate()}/${String(d.getFullYear()).slice(2)}`;
+}
+
+function fmtCurrency(n, sign = true) {
+  const abs = Math.abs(n).toFixed(2);
+  const prefix = sign ? (n < 0 ? '-$' : '+$') : '$';
+  return prefix + Number(abs).toLocaleString('en-US', { minimumFractionDigits: 2 });
+}
+
+function fmtPct(n) {
+  return `${n >= 0 ? '+' : ''}${n.toFixed(2)}%`;
+}
+
+function fmtPrice(n) {
+  return n < 10 ? n.toFixed(4) : n.toFixed(2);
+}
+
+function fmtHoldTime(ms) {
+  const totalMin = Math.floor(ms / 60000);
+  const days  = Math.floor(totalMin / 1440);
+  const hours = Math.floor((totalMin % 1440) / 60);
+  const mins  = totalMin % 60;
+  const parts = [];
+  if (days > 0) parts.push(`${days}d`);
+  parts.push(`${hours}hr`);
+  parts.push(`${mins}m`);
+  return parts.join(' ');
+}
+
+// ================================================================
+//  3. CASH BALANCE SECTION PARSER
+// ================================================================
+function parseCashBalanceSection(rawText) {
+  const lines = rawText.split(/\r?\n/);
+  let inSection = false;
+  let startBalance = 0;
+  let minDate = null, maxDate = null;
+  const legs = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+
+    if (!inSection) {
+      if (line === 'Cash Balance') { inSection = true; i++; } // skip column header
+      continue;
+    }
+
+    // End of section
+    if (line === '' || /^(Futures|Forex|Crypto|Total Cash)/.test(line)) break;
+
+    const f = parseCSVLine(line);
+    if (f.length < 9) continue;
+
+    const [dateStr, timeStr, rowType, refRaw, description,
+           miscFeesStr, commissionsStr, amountStr, balanceStr] = f;
+
+    if ((description || '').trim() === 'TOTAL') continue;
+
+    const dateObj = parseDate(dateStr);
+    if (!dateObj) continue;
+
+    const amount      = parseAmount(amountStr);
+    const miscFees    = parseAmount(miscFeesStr);
+    const commissions = parseAmount(commissionsStr);
+    const balance     = parseAmount(balanceStr);
+    const ref         = refRaw.replace(/^=?"?(.*?)"?$/, '$1').trim();
+    const type        = rowType.trim();
+
+    if (type === 'BAL' && !startBalance) startBalance = balance;
+
+    if (!minDate || dateObj < minDate) minDate = dateObj;
+    if (!maxDate || dateObj > maxDate) maxDate = dateObj;
+
+    if (type === 'TRD') {
+      legs.push({
+        ref, dateStr, timeStr,
+        date: dateObj,
+        datetime: parseDateTime(dateStr, timeStr),
+        description: description.trim(),
+        amount, miscFees, commissions,
+        action: null, symbol: null, qty: 0, price: 0,
+        isOption: false, optionDetails: null,
+      });
+    }
+  }
+
+  return { startBalance, legs, minDate, maxDate };
+}
+
+// ================================================================
+//  4. DESCRIPTION PARSING
+// ================================================================
+const STOCK_RE  = /^(BOT|SOLD)\s([+-]\d+)\s([A-Z0-9]+)\s@([\d.]+)$/;
+const OPTION_RE = /^(BOT|SOLD)\s([+-]\d+)\s([A-Z0-9]+)\s100\s(?:\(Weeklys\)\s)?(\d+)\s([A-Z]{3})\s(\d{2})\s(\d+)\s(PUT|CALL)\s@([\d.]+)/;
+const MONTH_MAP = { JAN:0,FEB:1,MAR:2,APR:3,MAY:4,JUN:5,JUL:6,AUG:7,SEP:8,OCT:9,NOV:10,DEC:11 };
+
+function parseLegDescription(leg) {
+  const desc = leg.description;
+
+  let m = OPTION_RE.exec(desc);
+  if (m) {
+    const [, action, qtyStr, symbol, day, month, year, strike, putCall, price] = m;
+    leg.action = action;
+    leg.qty    = Math.abs(parseInt(qtyStr));
+    leg.symbol = symbol;
+    leg.price  = parseFloat(price);
+    leg.isOption = true;
+    leg.optionDetails = {
+      expiry: new Date(2000 + parseInt(year), MONTH_MAP[month], parseInt(day)),
+      strike: parseInt(strike),
+      type: putCall,
+    };
+    return true;
+  }
+
+  m = STOCK_RE.exec(desc);
+  if (m) {
+    const [, action, qtyStr, symbol, price] = m;
+    leg.action = action;
+    leg.qty    = Math.abs(parseInt(qtyStr));
+    leg.symbol = symbol;
+    leg.price  = parseFloat(price);
+    leg.isOption = false;
+    leg.optionDetails = null;
+    return true;
+  }
+
+  return false;
+}
+
+// ================================================================
+//  5. TRADE MATCHING (FIFO)
+// ================================================================
+function buildPositionKey(leg) {
+  if (leg.isOption && leg.optionDetails) {
+    const { expiry, strike, type } = leg.optionDetails;
+    return `${leg.symbol}_${strike}_${type}_${expiry.toISOString().slice(0, 10)}`;
+  }
+  return leg.symbol;
+}
+
+function matchTrades(legs) {
+  // Parse descriptions and keep only valid, recognised legs
+  const valid = legs.filter(l => parseLegDescription(l));
+  valid.sort((a, b) => a.datetime - b.datetime);
+
+  // Each queue entry tracks the position lifecycle for a symbol.
+  // tradeGroupId is assigned when the position opens (queue goes empty→non-empty)
+  // and shared by ALL sub-trades until the position fully closes (queue→empty again).
+  // This ensures that BOT 10, ADD 5, SELL 5, SELL 10 → ONE row, not two.
+  const queues   = new Map(); // posKey -> { tradeGroupId, items:[{leg,remaining}] }
+  const counters = new Map(); // posKey -> incrementing counter for unique group IDs
+  const subTrades = [];
+
+  for (const leg of valid) {
+    const key = buildPositionKey(leg);
+    if (!queues.has(key)) queues.set(key, { tradeGroupId: null, items: [] });
+    const q = queues.get(key);
+
+    if (q.items.length === 0) {
+      // New position opening — assign a fresh trade group ID
+      const n = (counters.get(key) || 0) + 1;
+      counters.set(key, n);
+      q.tradeGroupId = `${key}__${n}`;
+      q.items.push({ leg, remaining: leg.qty });
+      continue;
+    }
+
+    if (q.items[0].leg.action === leg.action) {
+      // Same direction — scaling into an existing position, same trade group
+      q.items.push({ leg, remaining: leg.qty });
+      continue;
+    }
+
+    // Opposite direction — this is a (partial) close
+    let remaining = leg.qty;
+    const groupId = q.tradeGroupId; // all fills here belong to same trade
+
+    while (remaining > 0 && q.items.length > 0) {
+      const opener = q.items[0];
+      const fill   = Math.min(opener.remaining, remaining);
+      const oProp  = fill / opener.leg.qty;
+      const cProp  = fill / leg.qty;
+
+      subTrades.push({
+        groupId,
+        symbol:        leg.symbol,
+        isOption:      leg.isOption || opener.leg.isOption,
+        side:          opener.leg.action === 'BOT' ? 'Long' : 'Short',
+        openDatetime:  opener.leg.datetime,
+        closeDatetime: leg.datetime,
+        qty:           fill,
+        entryPrice:    opener.leg.price,
+        exitPrice:     leg.price,
+        openerAmount:       opener.leg.amount      * oProp,
+        closerAmount:       leg.amount             * cProp,
+        openerCommissions:  opener.leg.commissions * oProp,
+        openerMiscFees:     opener.leg.miscFees    * oProp,
+        closerCommissions:  leg.commissions        * cProp,
+        closerMiscFees:     leg.miscFees           * cProp,
+      });
+
+      opener.remaining -= fill;
+      remaining        -= fill;
+      if (opener.remaining === 0) q.items.shift();
+    }
+
+    if (q.items.length === 0) {
+      // Position fully closed — reset so next entry gets a new group ID
+      q.tradeGroupId = null;
+    }
+
+    if (remaining > 0) {
+      // Reversal — leftover becomes the opener of a brand-new trade
+      const n = (counters.get(key) || 0) + 1;
+      counters.set(key, n);
+      q.tradeGroupId = `${key}__${n}`;
+      const synth = { ...leg, qty: remaining, amount: leg.amount * (remaining / leg.qty) };
+      q.items.push({ leg: synth, remaining });
+    }
+  }
+
+  // Collect open positions
+  const openPositions = [];
+  for (const [, q] of queues) {
+    for (const item of q.items) {
+      if (item.remaining > 0) openPositions.push(item.leg);
+    }
+  }
+
+  return { closedTrades: mergeSubs(subTrades), openPositions };
+}
+
+function mergeSubs(subs) {
+  // Group ALL sub-trades that share a tradeGroupId into ONE table row.
+  // This is the key: even if the position was closed across multiple sell legs,
+  // they all get the same groupId and collapse to a single row.
+  const groups = new Map();
+  for (const s of subs) {
+    if (!groups.has(s.groupId)) groups.set(s.groupId, []);
+    groups.get(s.groupId).push(s);
+  }
+
+  const trades = [];
+  for (const [, group] of groups) {
+    const totalQty = group.reduce((acc, x) => acc + x.qty, 0);
+    const avgEntry = group.reduce((acc, x) => acc + x.entryPrice * x.qty, 0) / totalQty;
+    const avgExit  = group.reduce((acc, x) => acc + x.exitPrice  * x.qty, 0) / totalQty;
+    const opAmt    = group.reduce((acc, x) => acc + x.openerAmount, 0);
+    const clAmt    = group.reduce((acc, x) => acc + x.closerAmount, 0);
+    const fees     = group.reduce((acc, x) => acc + x.openerCommissions + x.closerCommissions +
+                                                    x.openerMiscFees    + x.closerMiscFees, 0);
+    const netPnL    = opAmt + clAmt + fees;
+    const cost      = Math.abs(opAmt);
+    const netPnLPct = cost > 0 ? (netPnL / cost) * 100 : 0;
+    const openDt    = group.reduce((e, x) => x.openDatetime  < e ? x.openDatetime  : e, group[0].openDatetime);
+    const closeDt   = group.reduce((l, x) => x.closeDatetime > l ? x.closeDatetime : l, group[0].closeDatetime);
+    const holdMs    = closeDt - openDt;
+
+    let status;
+    if (netPnLPct > 0.1)       status = 'Win';
+    else if (netPnLPct < -0.1) status = 'Loss';
+    else                       status = 'Breakeven';
+
+    trades.push({
+      status, symbol: group[0].symbol,
+      type:   group[0].isOption ? 'Option' : 'Stock',
+      side:   group[0].side,
+      openDate: openDt, closeDate: closeDt,
+      avgEntryPrice: avgEntry, avgExitPrice: avgExit,
+      size: totalQty, cost, netPnL, netPnLPct,
+      holdMs,
+    });
+  }
+
+  trades.sort((a, b) => a.openDate - b.openDate);
+  return trades;
+}
+
+// ================================================================
+//  6. METRICS
+// ================================================================
+function computeMetrics(trades, startBalance) {
+  if (!trades.length) return { accountReturn: 0, profitFactor: 0, winRate: 0, netPnL: 0, totalTrades: 0 };
+  const netPnL     = trades.reduce((s, t) => s + t.netPnL, 0);
+  const wins       = trades.filter(t => t.status === 'Win');
+  const losses     = trades.filter(t => t.status === 'Loss');
+  const grossWins  = wins.reduce((s, t) => s + t.netPnL, 0);
+  const grossLoss  = Math.abs(losses.reduce((s, t) => s + t.netPnL, 0));
+  return {
+    accountReturn: netPnL,
+    profitFactor:  grossLoss > 0 ? grossWins / grossLoss : (grossWins > 0 ? Infinity : 0),
+    winRate:       (wins.length / trades.length) * 100,
+    netPnL,
+    totalTrades:   trades.length,
+  };
+}
+
+// ================================================================
+//  7. FILTERING & SORTING
+// ================================================================
+function parseDateInput(str) {
+  if (!str) return null;
+  const [y, m, d] = str.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function applyFilters(trades, f) {
+  return trades.filter(t => {
+    if (f.dateFrom) {
+      const from = parseDateInput(f.dateFrom);
+      if (from && t.openDate < from) return false;
+    }
+    if (f.dateTo) {
+      const to = parseDateInput(f.dateTo);
+      if (to) { to.setHours(23, 59, 59, 999); if (t.openDate > to) return false; }
+    }
+    if (f.type   !== 'All' && t.type   !== f.type)   return false;
+    if (f.side   !== 'All' && t.side   !== f.side)   return false;
+    if (!f.statuses.has(t.status)) return false;
+    return true;
+  });
+}
+
+function sortTrades(trades, key, dir) {
+  return [...trades].sort((a, b) => {
+    let av = a[key], bv = b[key];
+    if (av instanceof Date) { av = av.getTime(); bv = bv.getTime(); }
+    if (typeof av === 'string') { av = av.toLowerCase(); bv = bv.toLowerCase(); }
+    if (av === bv) return 0;
+    return (av > bv ? 1 : -1) * (dir === 'asc' ? 1 : -1);
+  });
+}
+
+// ================================================================
+//  8. RENDERING
+// ================================================================
+function renderMetrics(m) {
+  const ret = document.getElementById('m-return');
+  ret.textContent = fmtCurrency(m.accountReturn);
+  ret.className = 'value ' + (m.accountReturn >= 0 ? 'pos' : 'neg');
+
+  const pf = document.getElementById('m-pf');
+  pf.textContent = m.profitFactor === Infinity ? '∞' : m.profitFactor.toFixed(2);
+
+  document.getElementById('m-wr').textContent    = fmtPct(m.winRate);
+
+  const pnlEl = document.getElementById('m-pnl');
+  pnlEl.textContent = fmtCurrency(m.netPnL);
+  pnlEl.className   = 'value ' + (m.netPnL >= 0 ? 'pos' : 'neg');
+
+  document.getElementById('m-trades').textContent = m.totalTrades;
+}
+
+function renderTable(trades, sortKey, sortDir) {
+  // Update header sort indicators
+  document.querySelectorAll('#t-head th').forEach(th => {
+    const k = th.dataset.key;
+    th.classList.toggle('sort-active', k === sortKey);
+    const icon = th.querySelector('.sort-icon');
+    if (icon) icon.textContent = k === sortKey ? (sortDir === 'asc' ? '▲' : '▼') : '↕';
+  });
+
+  const tbody = document.getElementById('t-body');
+  if (!trades.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="13">No trades match the current filters.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = trades.map(t => {
+    const statusBadge = t.status === 'Win'
+      ? `<span class="badge badge-win">Win</span>`
+      : t.status === 'Loss'
+      ? `<span class="badge badge-loss">Loss</span>`
+      : `<span class="badge badge-be">B/E</span>`;
+
+    const typeBadge = t.type === 'Stock'
+      ? `<span class="type-badge type-stock">Stock</span>`
+      : `<span class="type-badge type-option">Option</span>`;
+
+    const sideEl = `<span class="${t.side === 'Long' ? 'side-long' : 'side-short'}">${t.side}</span>`;
+
+    const pnlClass   = t.netPnL   >= 0 ? 'pos-val' : 'neg-val';
+    const pnlPctClass= t.netPnLPct>= 0 ? 'pos-val' : 'neg-val';
+
+    return `<tr>
+      <td>${statusBadge}</td>
+      <td>${fmtDate(t.openDate)}</td>
+      <td>${fmtDate(t.closeDate)}</td>
+      <td><strong>${t.symbol}</strong></td>
+      <td>${typeBadge}</td>
+      <td>${sideEl}</td>
+      <td>$${fmtPrice(t.avgEntryPrice)}</td>
+      <td>$${fmtPrice(t.avgExitPrice)}</td>
+      <td class="${pnlClass}">${fmtCurrency(t.netPnL)}</td>
+      <td class="${pnlPctClass}">${fmtPct(t.netPnLPct)}</td>
+      <td>${t.size}</td>
+      <td>${fmtCurrency(t.cost, false)}</td>
+      <td>${fmtHoldTime(t.holdMs)}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderOpenBanner(openPositions) {
+  const banner = document.getElementById('open-banner');
+  if (!openPositions.length) { banner.style.display = 'none'; return; }
+
+  const labels = openPositions.map(leg => {
+    if (leg.isOption && leg.optionDetails) {
+      const { strike, type, expiry } = leg.optionDetails;
+      return `${leg.symbol} (${leg.action === 'SOLD' ? 'Short ' : ''}${strike} ${type} ${expiry.toLocaleString('en-US', { month: 'short', day: 'numeric' })})`;
+    }
+    return leg.symbol;
+  });
+
+  banner.style.display = 'block';
+  banner.innerHTML = `⚠ <strong>${openPositions.length} open / unmatched position${openPositions.length > 1 ? 's' : ''} excluded from analysis:</strong> ${labels.join(', ')}`;
+}
+
+// ================================================================
+//  9. APP STATE & WIRING
+// ================================================================
+const state = {
+  allTrades:    [],
+  openPositions:[],
+  startBalance: 0,
+  minDate: null,
+  maxDate: null,
+  sortKey: 'openDate',
+  sortDir: 'asc',
+  filters: { dateFrom: '', dateTo: '', type: 'All', side: 'All', statuses: new Set(['Win','Loss','Breakeven']) },
+};
+
+function refresh() {
+  const filtered = applyFilters(state.allTrades, state.filters);
+  const sorted   = sortTrades(filtered, state.sortKey, state.sortDir);
+  renderMetrics(computeMetrics(filtered, state.startBalance));
+  renderTable(sorted, state.sortKey, state.sortDir);
+}
+
+function loadCSV(text) {
+  try {
+    const { startBalance, legs, minDate, maxDate } = parseCashBalanceSection(text);
+    if (!legs.length) throw new Error('No trade rows found in the Cash Balance section.');
+
+    const { closedTrades, openPositions } = matchTrades(legs);
+
+    state.allTrades     = closedTrades;
+    state.openPositions = openPositions;
+    state.startBalance  = startBalance;
+    state.minDate       = minDate;
+    state.maxDate       = maxDate;
+
+    // Period label
+    document.getElementById('period-label').textContent =
+      minDate && maxDate ? `${fmtDate(minDate)} – ${fmtDate(maxDate)}` : '';
+
+    renderOpenBanner(openPositions);
+
+    document.getElementById('upload-screen').style.display = 'none';
+    document.getElementById('dashboard').style.display     = 'flex';
+    document.getElementById('upload-error').style.display  = 'none';
+
+    refresh();
+  } catch (err) {
+    const el = document.getElementById('upload-error');
+    el.textContent = 'Error: ' + err.message;
+    el.style.display = 'block';
+  }
+}
+
+// ── File input ──
+document.getElementById('csv-input').addEventListener('change', function () {
+  const file = this.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => loadCSV(e.target.result);
+  reader.readAsText(file);
+  this.value = ''; // reset so same file can be re-loaded
+});
+
+function resetStatusButtons() {
+  document.querySelectorAll('#f-status .toggle-btn').forEach(b => b.classList.add('active'));
+  state.filters.statuses = new Set(['Win', 'Loss', 'Breakeven']);
+}
+
+// ── Reload button ──
+document.getElementById('reload-btn').addEventListener('click', () => {
+  document.getElementById('dashboard').style.display     = 'none';
+  document.getElementById('upload-screen').style.display = 'flex';
+  state.allTrades = []; state.openPositions = []; state.startBalance = 0;
+  state.filters = { dateFrom: '', dateTo: '', type: 'All', side: 'All', statuses: new Set(['Win','Loss','Breakeven']) };
+  state.sortKey = 'openDate'; state.sortDir = 'asc';
+  ['f-from','f-to'].forEach(id => document.getElementById(id).value = '');
+  ['f-type','f-side'].forEach(id => document.getElementById(id).value = 'All');
+  resetStatusButtons();
+});
+
+// ── Filters (selects & date inputs) ──
+['f-from','f-to','f-type','f-side'].forEach(id => {
+  document.getElementById(id).addEventListener('change', function () {
+    const map = { 'f-from':'dateFrom','f-to':'dateTo','f-type':'type','f-side':'side' };
+    state.filters[map[id]] = this.value;
+    refresh();
+  });
+});
+
+// ── Status toggle buttons ──
+document.querySelectorAll('#f-status .toggle-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.classList.toggle('active');
+    const val = btn.dataset.val;
+    if (btn.classList.contains('active')) state.filters.statuses.add(val);
+    else state.filters.statuses.delete(val);
+    refresh();
+  });
+});
+
+document.getElementById('reset-btn').addEventListener('click', () => {
+  state.filters = { dateFrom: '', dateTo: '', type: 'All', side: 'All', statuses: new Set(['Win','Loss','Breakeven']) };
+  ['f-from','f-to'].forEach(id => document.getElementById(id).value = '');
+  ['f-type','f-side'].forEach(id => document.getElementById(id).value = 'All');
+  resetStatusButtons();
+  refresh();
+});
+
+// ── Sort ──
+document.querySelectorAll('#t-head th[data-key]').forEach(th => {
+  th.addEventListener('click', () => {
+    const k = th.dataset.key;
+    if (state.sortKey === k) state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc';
+    else { state.sortKey = k; state.sortDir = 'asc'; }
+    const filtered = applyFilters(state.allTrades, state.filters);
+    const sorted   = sortTrades(filtered, state.sortKey, state.sortDir);
+    renderTable(sorted, state.sortKey, state.sortDir);
+  });
+});
+</script>
+</body>
+</html>
