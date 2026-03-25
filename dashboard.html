@@ -1278,7 +1278,7 @@ const state = {
   minDate: null,
   maxDate: null,
   sortKey: 'openDate',
-  sortDir: 'asc',
+  sortDir: 'desc',
   filters: { dateFrom: '', dateTo: '', type: 'All', side: 'All', statuses: new Set(['Win','Loss','Breakeven']) },
 };
 
@@ -1467,7 +1467,7 @@ document.getElementById('clear-btn').addEventListener('click', () => {
   state.allTrades = []; state.openTrades = []; state.startBalance = 0;
   state.minDate = null; state.maxDate = null;
   state.filters = { dateFrom: '', dateTo: '', type: 'All', side: 'All', statuses: new Set(['Win','Loss','Breakeven']) };
-  state.sortKey = 'openDate'; state.sortDir = 'asc';
+  state.sortKey = 'openDate'; state.sortDir = 'desc';
   if (datePicker) datePicker.clear();
   ['f-type','f-side'].forEach(id => document.getElementById(id).value = 'All');
   resetStatusButtons();
@@ -1732,6 +1732,17 @@ function openChartModal(fp) {
   fetchAndRenderChart(trade, apiKey);
 }
 
+function isRegularHours(unixSec) {
+  const parts = {};
+  new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York',
+    weekday: 'long', hour: 'numeric', minute: '2-digit', hour12: false,
+  }).formatToParts(new Date(unixSec * 1000)).forEach(p => { parts[p.type] = p.value; });
+  if (parts.weekday === 'Saturday' || parts.weekday === 'Sunday') return false;
+  const mins = parseInt(parts.hour) * 60 + parseInt(parts.minute);
+  return mins >= 570 && mins < 960; // 9:30–16:00
+}
+
 function polygonFetch(symbol, mult, span, from, to, apiKey) {
   const fmt = s => { const d = new Date(s * 1000); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
   const url = `https://api.polygon.io/v2/aggs/ticker/${encodeURIComponent(symbol)}/range/${mult}/${span}/${fmt(from)}/${fmt(to)}` +
@@ -1740,7 +1751,8 @@ function polygonFetch(symbol, mult, span, from, to, apiKey) {
     .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
     .then(data => {
       if (!data.results || !data.results.length) throw new Error(`No data for ${symbol}`);
-      return data.results.map(b => ({ time: Math.floor(b.t / 1000), open: b.o, high: b.h, low: b.l, close: b.c }));
+      const candles = data.results.map(b => ({ time: Math.floor(b.t / 1000), open: b.o, high: b.h, low: b.l, close: b.c }));
+      return span === 'day' ? candles : candles.filter(c => isRegularHours(c.time));
     });
 }
 
