@@ -212,6 +212,7 @@
     .badge-win  { background: rgba(74,222,128,0.15); color: var(--green); }
     .badge-loss { background: rgba(248,113,113,0.15); color: var(--red); }
     .badge-be   { background: rgba(251,191,36,0.15);  color: var(--yellow); }
+    .badge-open { background: rgba(99,179,237,0.15);  color: #63b3ed; }
 
     /* Type badges */
     .type-badge {
@@ -230,6 +231,60 @@
 
     .pos-val { color: var(--green); }
     .neg-val { color: var(--red); }
+
+    tbody tr { cursor: pointer; }
+
+    /* ── EDIT MODAL ── */
+    .modal-backdrop {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.6);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 1000;
+    }
+    .modal-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      width: 480px; max-width: 95vw;
+    }
+    .modal-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.9rem; font-weight: 600; color: var(--teal);
+      letter-spacing: 1px; text-transform: uppercase;
+    }
+    .modal-close {
+      background: none; border: none; color: var(--muted);
+      cursor: pointer; font-size: 1rem; padding: 0;
+    }
+    .modal-close:hover { color: var(--text); }
+    .modal-body { padding: 20px; }
+    .modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .modal-field { display: flex; flex-direction: column; gap: 6px; }
+    .modal-field label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); }
+    .modal-field input, .modal-field select {
+      background: var(--bg3); border: 1px solid var(--border);
+      color: var(--text); border-radius: 6px; padding: 8px 10px;
+      font-size: 0.9rem; outline: none;
+    }
+    .modal-field input:focus, .modal-field select:focus { border-color: var(--teal); }
+    .modal-footer {
+      display: flex; gap: 10px; justify-content: flex-end;
+      padding: 16px 20px; border-top: 1px solid var(--border);
+    }
+    .modal-save-btn {
+      background: var(--teal); color: var(--bg); border: none;
+      border-radius: 6px; padding: 8px 20px; cursor: pointer;
+      font-weight: 600; font-size: 0.85rem;
+    }
+    .modal-save-btn:hover { opacity: 0.85; }
+    .modal-cancel-btn {
+      background: transparent; border: 1px solid var(--border);
+      color: var(--muted); border-radius: 6px; padding: 8px 16px;
+      cursor: pointer; font-size: 0.85rem;
+    }
+    .modal-cancel-btn:hover { border-color: var(--muted); color: var(--text); }
 
     /* Empty state */
     .empty-row td {
@@ -409,6 +464,7 @@
         <button class="toggle-btn active" data-val="Win">Win</button>
         <button class="toggle-btn active" data-val="Loss">Loss</button>
         <button class="toggle-btn active" data-val="Breakeven">B/E</button>
+        <button class="toggle-btn" data-val="Open">Open</button>
       </div>
     </div>
     <button class="reset-btn" id="reset-btn">Reset Filters</button>
@@ -512,6 +568,53 @@
   </div><!-- /pages -->
   </div><!-- /main -->
 </div><!-- /app -->
+
+<!-- Edit Trade Modal -->
+<div id="edit-modal" style="display:none">
+  <div class="modal-backdrop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <span id="modal-title">Edit Trade</span>
+        <button class="modal-close" id="modal-close-btn">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-grid">
+          <div class="modal-field">
+            <label>Open Date</label>
+            <input type="date" id="m-open-date">
+          </div>
+          <div class="modal-field">
+            <label>Close Date</label>
+            <input type="date" id="m-close-date">
+          </div>
+          <div class="modal-field">
+            <label>Side</label>
+            <select id="m-side">
+              <option>Long</option>
+              <option>Short</option>
+            </select>
+          </div>
+          <div class="modal-field">
+            <label>Entry Price</label>
+            <input type="number" id="m-entry" step="0.0001" min="0">
+          </div>
+          <div class="modal-field">
+            <label>Exit Price</label>
+            <input type="number" id="m-exit" step="0.0001" min="0">
+          </div>
+          <div class="modal-field">
+            <label>Size (shares / contracts)</label>
+            <input type="number" id="m-size" step="1" min="1">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="modal-save-btn" id="modal-save-btn">Save Changes</button>
+        <button class="modal-cancel-btn" id="modal-cancel-btn">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script>
@@ -832,15 +935,31 @@ function matchTrades(legs) {
     }
   }
 
-  // Collect genuinely open positions (non-expired, unmatched legs)
-  const openPositions = [];
+  // Collect genuinely open positions as structured trade objects
+  const openTrades = [];
   for (const [, q] of queues) {
     for (const item of q.items) {
-      if (item.remaining > 0) openPositions.push(item.leg);
+      if (item.remaining <= 0) continue;
+      const leg = item.leg;
+      const fp  = `open|${leg.symbol}|${leg.datetime.getTime()}|${leg.action}|${item.remaining}`;
+      openTrades.push({
+        _fp: fp, _isOpen: true,
+        status: 'Open',
+        symbol: leg.symbol,
+        type:   leg.isOption ? 'Option' : 'Stock',
+        side:   leg.action === 'BOT' ? 'Long' : 'Short',
+        openDate:      leg.datetime,
+        closeDate:     null,
+        avgEntryPrice: leg.price,
+        avgExitPrice:  null,
+        size: item.remaining,
+        cost: Math.abs(leg.amount * (item.remaining / leg.qty)),
+        netPnL: null, netPnLPct: null, holdMs: null,
+      });
     }
   }
 
-  return { closedTrades: mergeSubs(subTrades), openPositions };
+  return { closedTrades: mergeSubs(subTrades), openTrades };
 }
 
 function mergeSubs(subs) {
@@ -874,10 +993,14 @@ function mergeSubs(subs) {
     else if (netPnLPct < -0.1) status = 'Loss';
     else                       status = 'Breakeven';
 
+    const sym  = group[0].symbol;
+    const side = group[0].side;
+    const fp   = `${sym}|${openDt.getTime()}|${closeDt.getTime()}|${side}|${totalQty}`;
     trades.push({
-      status, symbol: group[0].symbol,
+      _fp: fp,
+      status, symbol: sym,
       type:   group[0].isOption ? 'Option' : 'Stock',
-      side:   group[0].side,
+      side,
       openDate: openDt, closeDate: closeDt,
       avgEntryPrice: avgEntry, avgExitPrice: avgExit,
       size: totalQty, cost, netPnL, netPnLPct,
@@ -937,8 +1060,12 @@ function applyFilters(trades, f) {
 function sortTrades(trades, key, dir) {
   return [...trades].sort((a, b) => {
     let av = a[key], bv = b[key];
-    if (av instanceof Date) { av = av.getTime(); bv = bv.getTime(); }
-    if (typeof av === 'string') { av = av.toLowerCase(); bv = bv.toLowerCase(); }
+    // Nulls always sort last regardless of direction
+    if (av == null && bv == null) return 0;
+    if (av == null) return 1;
+    if (bv == null) return -1;
+    if (av instanceof Date) { av = av.getTime(); bv = bv instanceof Date ? bv.getTime() : 0; }
+    if (typeof av === 'string') { av = av.toLowerCase(); bv = (bv || '').toLowerCase(); }
     if (av === bv) return 0;
     return (av > bv ? 1 : -1) * (dir === 'asc' ? 1 : -1);
   });
@@ -984,18 +1111,22 @@ function renderTable(trades, sortKey, sortDir) {
       ? `<span class="badge badge-win">Win</span>`
       : t.status === 'Loss'
       ? `<span class="badge badge-loss">Loss</span>`
+      : t.status === 'Open'
+      ? `<span class="badge badge-open">Open</span>`
       : `<span class="badge badge-be">B/E</span>`;
 
     const typeBadge = t.type === 'Stock'
       ? `<span class="type-badge type-stock">Stock</span>`
       : `<span class="type-badge type-option">Option</span>`;
 
-    const sideEl = `<span class="${t.side === 'Long' ? 'side-long' : 'side-short'}">${t.side}</span>`;
+    const sideEl     = `<span class="${t.side === 'Long' ? 'side-long' : 'side-short'}">${t.side}</span>`;
+    const exitDisp   = t.avgExitPrice != null ? `$${fmtPrice(t.avgExitPrice)}` : '—';
+    const pnlDisp    = t.netPnL    != null ? `<span class="${t.netPnL    >= 0 ? 'pos-val' : 'neg-val'}">${fmtCurrency(t.netPnL)}</span>`    : '—';
+    const pnlPctDisp = t.netPnLPct != null ? `<span class="${t.netPnLPct >= 0 ? 'pos-val' : 'neg-val'}">${fmtPct(t.netPnLPct)}</span>` : '—';
+    const holdDisp   = t.holdMs    != null ? fmtHoldTime(t.holdMs) : '—';
+    const fp         = (t._fp || '').replace(/"/g, '&quot;');
 
-    const pnlClass   = t.netPnL   >= 0 ? 'pos-val' : 'neg-val';
-    const pnlPctClass= t.netPnLPct>= 0 ? 'pos-val' : 'neg-val';
-
-    return `<tr>
+    return `<tr data-fp="${fp}">
       <td>${statusBadge}</td>
       <td>${fmtDate(t.openDate)}</td>
       <td>${fmtDate(t.closeDate)}</td>
@@ -1003,38 +1134,30 @@ function renderTable(trades, sortKey, sortDir) {
       <td>${typeBadge}</td>
       <td>${sideEl}</td>
       <td>$${fmtPrice(t.avgEntryPrice)}</td>
-      <td>$${fmtPrice(t.avgExitPrice)}</td>
-      <td class="${pnlClass}">${fmtCurrency(t.netPnL)}</td>
-      <td class="${pnlPctClass}">${fmtPct(t.netPnLPct)}</td>
+      <td>${exitDisp}</td>
+      <td>${pnlDisp}</td>
+      <td>${pnlPctDisp}</td>
       <td>${t.size}</td>
       <td>${fmtCurrency(t.cost, false)}</td>
-      <td>${fmtHoldTime(t.holdMs)}</td>
+      <td>${holdDisp}</td>
     </tr>`;
   }).join('');
 }
 
-function renderOpenBanner(openPositions) {
+function renderOpenBanner(openTrades) {
   const banner = document.getElementById('open-banner');
-  if (!openPositions.length) { banner.style.display = 'none'; return; }
-
-  const labels = openPositions.map(leg => {
-    if (leg.isOption && leg.optionDetails) {
-      const { strike, type, expiry } = leg.optionDetails;
-      return `${leg.symbol} (${leg.action === 'SOLD' ? 'Short ' : ''}${strike} ${type} ${expiry.toLocaleString('en-US', { month: 'short', day: 'numeric' })})`;
-    }
-    return leg.symbol;
-  });
-
+  if (!openTrades.length) { banner.style.display = 'none'; return; }
+  const labels = openTrades.map(t => t.symbol + (t.type === 'Option' ? ` (${t.side} Option)` : ''));
   banner.style.display = 'block';
-  banner.innerHTML = `⚠ <strong>${openPositions.length} open / unmatched position${openPositions.length > 1 ? 's' : ''} excluded from analysis:</strong> ${labels.join(', ')}`;
+  banner.innerHTML = `⚠ <strong>${openTrades.length} open position${openTrades.length > 1 ? 's' : ''} not yet closed:</strong> ${labels.join(', ')}`;
 }
 
 // ================================================================
 //  9. APP STATE & WIRING
 // ================================================================
 const state = {
-  allTrades:    [],
-  openPositions:[],
+  allTrades:  [],
+  openTrades: [],   // unmatched / still-active positions
   startBalance: 0,
   minDate: null,
   maxDate: null,
@@ -1044,11 +1167,16 @@ const state = {
 };
 
 function refresh() {
-  const filtered = applyFilters(state.allTrades, state.filters);
-  const sorted   = sortTrades(filtered, state.sortKey, state.sortDir);
-  renderMetrics(computeMetrics(filtered, state.startBalance));
+  // Combine closed + open trades depending on filter
+  const combined = state.filters.statuses.has('Open')
+    ? [...state.allTrades, ...state.openTrades]
+    : state.allTrades;
+  const filtered      = applyFilters(combined, state.filters);
+  const closedFiltered = filtered.filter(t => !t._isOpen);
+  const sorted        = sortTrades(filtered, state.sortKey, state.sortDir);
+  renderMetrics(computeMetrics(closedFiltered, state.startBalance));
   renderTable(sorted, state.sortKey, state.sortDir);
-  renderAnalytics(filtered);
+  renderAnalytics(closedFiltered);
 }
 
 // ================================================================
@@ -1057,23 +1185,21 @@ function refresh() {
 const STORAGE_KEY = 'trading_dashboard_v1';
 
 function fingerprintTrade(t) {
-  return `${t.symbol}|${t.openDate.getTime()}|${t.closeDate.getTime()}|${t.side}|${t.size}`;
+  return t._fp || `${t.symbol}|${t.openDate.getTime()}|${(t.closeDate ? t.closeDate.getTime() : 0)}|${t.side}|${t.size}`;
 }
 
 function saveToStorage() {
+  const serDate = d => d instanceof Date ? d.getTime() : null;
   const payload = {
     trades: state.allTrades.map(t => ({
       ...t,
-      openDate:  t.openDate.getTime(),
-      closeDate: t.closeDate.getTime(),
+      openDate:  serDate(t.openDate),
+      closeDate: serDate(t.closeDate),
     })),
-    openPositions: state.openPositions.map(leg => ({
-      ...leg,
-      date:     leg.date.getTime(),
-      datetime: leg.datetime.getTime(),
-      optionDetails: leg.optionDetails
-        ? { ...leg.optionDetails, expiry: leg.optionDetails.expiry.getTime() }
-        : null,
+    openTrades: state.openTrades.map(t => ({
+      ...t,
+      openDate:  serDate(t.openDate),
+      closeDate: serDate(t.closeDate),
     })),
     startBalance: state.startBalance,
     minDate: state.minDate ? state.minDate.getTime() : null,
@@ -1087,23 +1213,21 @@ function loadFromStorage() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return false;
     const payload = JSON.parse(raw);
-    state.allTrades = payload.trades.map(t => ({
+    const restoreDate = v => v != null ? new Date(v) : null;
+    state.allTrades = (payload.trades || []).map(t => ({
       ...t,
-      openDate:  new Date(t.openDate),
-      closeDate: new Date(t.closeDate),
+      openDate:  restoreDate(t.openDate),
+      closeDate: restoreDate(t.closeDate),
     }));
-    state.openPositions = (payload.openPositions || []).map(leg => ({
-      ...leg,
-      date:     new Date(leg.date),
-      datetime: new Date(leg.datetime),
-      optionDetails: leg.optionDetails
-        ? { ...leg.optionDetails, expiry: new Date(leg.optionDetails.expiry) }
-        : null,
+    state.openTrades = (payload.openTrades || []).map(t => ({
+      ...t,
+      openDate:  restoreDate(t.openDate),
+      closeDate: restoreDate(t.closeDate),
     }));
     state.startBalance = payload.startBalance || 0;
     state.minDate = payload.minDate ? new Date(payload.minDate) : null;
     state.maxDate = payload.maxDate ? new Date(payload.maxDate) : null;
-    return state.allTrades.length > 0;
+    return state.allTrades.length > 0 || state.openTrades.length > 0;
   } catch(e) { return false; }
 }
 
@@ -1118,7 +1242,7 @@ function showDashboard() {
   document.getElementById('upload-error').style.display  = 'none';
   if (!datePicker) initDatePicker();
   updatePeriodLabel();
-  renderOpenBanner(state.openPositions);
+  renderOpenBanner(state.openTrades);
   refresh();
 }
 
@@ -1135,7 +1259,7 @@ function loadCSV(text) {
     const { startBalance, legs, minDate, maxDate } = parseCashBalanceSection(text);
     if (!legs.length) throw new Error('No trade rows found in the Cash Balance section.');
 
-    const { closedTrades, openPositions } = matchTrades(legs);
+    const { closedTrades, openTrades } = matchTrades(legs);
 
     // Merge: keep existing trades, add only new ones (dedup by fingerprint)
     const seen = new Set(state.allTrades.map(fingerprintTrade));
@@ -1143,13 +1267,11 @@ function loadCSV(text) {
     state.allTrades = [...state.allTrades, ...added]
       .sort((a, b) => a.openDate - b.openDate);
 
-    // Merge open positions (dedup by symbol/key)
-    const seenOpen = new Set(state.openPositions.map(l => l.symbol + (l.optionDetails
-      ? `_${l.optionDetails.strike}_${l.optionDetails.type}` : '')));
-    state.openPositions = [
-      ...state.openPositions,
-      ...openPositions.filter(l => !seenOpen.has(l.symbol + (l.optionDetails
-        ? `_${l.optionDetails.strike}_${l.optionDetails.type}` : ''))),
+    // Merge open trades (dedup by _fp)
+    const seenOpen = new Set(state.openTrades.map(t => t._fp));
+    state.openTrades = [
+      ...state.openTrades,
+      ...openTrades.filter(t => !seenOpen.has(t._fp)),
     ];
 
     // Keep earliest start balance
@@ -1183,7 +1305,10 @@ attachFileInput('csv-input');
 attachFileInput('add-csv-input');
 
 function resetStatusButtons() {
-  document.querySelectorAll('#f-status .toggle-btn').forEach(b => b.classList.add('active'));
+  document.querySelectorAll('#f-status .toggle-btn').forEach(b => {
+    const isDefault = b.dataset.val !== 'Open';
+    b.classList.toggle('active', isDefault);
+  });
   state.filters.statuses = new Set(['Win', 'Loss', 'Breakeven']);
 }
 
@@ -1223,7 +1348,7 @@ document.getElementById('add-csv-btn').addEventListener('click', () => {
 document.getElementById('clear-btn').addEventListener('click', () => {
   if (!confirm('Clear all saved trade data? This cannot be undone.')) return;
   clearStorage();
-  state.allTrades = []; state.openPositions = []; state.startBalance = 0;
+  state.allTrades = []; state.openTrades = []; state.startBalance = 0;
   state.minDate = null; state.maxDate = null;
   state.filters = { dateFrom: '', dateTo: '', type: 'All', side: 'All', statuses: new Set(['Win','Loss','Breakeven']) };
   state.sortKey = 'openDate'; state.sortDir = 'asc';
@@ -1258,7 +1383,7 @@ document.getElementById('reset-btn').addEventListener('click', () => {
   state.filters = { dateFrom: '', dateTo: '', type: 'All', side: 'All', statuses: new Set(['Win','Loss','Breakeven']) };
   if (datePicker) datePicker.clear();
   ['f-type','f-side'].forEach(id => document.getElementById(id).value = 'All');
-  resetStatusButtons();
+  resetStatusButtons(); // also deactivates Open toggle
   refresh();
 });
 
@@ -1431,10 +1556,96 @@ document.querySelectorAll('#t-head th[data-key]').forEach(th => {
     const k = th.dataset.key;
     if (state.sortKey === k) state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc';
     else { state.sortKey = k; state.sortDir = 'asc'; }
-    const filtered = applyFilters(state.allTrades, state.filters);
-    const sorted   = sortTrades(filtered, state.sortKey, state.sortDir);
-    renderTable(sorted, state.sortKey, state.sortDir);
+    refresh();
   });
+});
+
+// ================================================================
+//  EDIT MODAL
+// ================================================================
+let modalState = { trade: null };
+
+function toDateInputVal(d) {
+  if (!d) return '';
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function openEditModal(fp) {
+  const trade = [...state.allTrades, ...state.openTrades].find(t => t._fp === fp);
+  if (!trade) return;
+  modalState.trade = trade;
+
+  document.getElementById('modal-title').textContent = `Edit Trade — ${trade.symbol}`;
+  document.getElementById('m-open-date').value  = toDateInputVal(trade.openDate);
+  document.getElementById('m-close-date').value = toDateInputVal(trade.closeDate);
+  document.getElementById('m-close-date').disabled = trade._isOpen;
+  document.getElementById('m-side').value   = trade.side;
+  document.getElementById('m-entry').value  = trade.avgEntryPrice != null ? trade.avgEntryPrice : '';
+  document.getElementById('m-exit').value   = trade.avgExitPrice  != null ? trade.avgExitPrice  : '';
+  document.getElementById('m-exit').disabled = trade._isOpen;
+  document.getElementById('m-size').value   = trade.size;
+
+  document.getElementById('edit-modal').style.display = '';
+}
+
+function closeEditModal() {
+  document.getElementById('edit-modal').style.display = 'none';
+  modalState.trade = null;
+}
+
+function saveEditModal() {
+  const t = modalState.trade;
+  if (!t) return;
+
+  const openVal  = document.getElementById('m-open-date').value;
+  const closeVal = document.getElementById('m-close-date').value;
+  const entryVal = parseFloat(document.getElementById('m-entry').value);
+  const exitVal  = parseFloat(document.getElementById('m-exit').value);
+  const sizeVal  = parseInt(document.getElementById('m-size').value);
+
+  if (openVal) {
+    const [y, m, d] = openVal.split('-').map(Number);
+    const h = t.openDate ? t.openDate.getHours() : 9;
+    t.openDate = new Date(y, m - 1, d, h);
+  }
+  if (!t._isOpen && closeVal) {
+    const [y, m, d] = closeVal.split('-').map(Number);
+    const h = t.closeDate ? t.closeDate.getHours() : 16;
+    t.closeDate = new Date(y, m - 1, d, h);
+  }
+
+  t.side = document.getElementById('m-side').value;
+  if (!isNaN(entryVal) && entryVal > 0) t.avgEntryPrice = entryVal;
+  if (!t._isOpen && !isNaN(exitVal) && exitVal >= 0) t.avgExitPrice = exitVal;
+  if (!isNaN(sizeVal) && sizeVal > 0) t.size = sizeVal;
+
+  // Recalculate derived fields for closed trades
+  if (!t._isOpen && t.openDate && t.closeDate) {
+    t.holdMs = t.closeDate - t.openDate;
+  }
+
+  saveToStorage();
+  closeEditModal();
+  refresh();
+}
+
+// Row click → open modal
+document.getElementById('t-body').addEventListener('click', e => {
+  const row = e.target.closest('tr[data-fp]');
+  if (!row) return;
+  openEditModal(row.dataset.fp);
+});
+
+document.getElementById('modal-close-btn').addEventListener('click',  closeEditModal);
+document.getElementById('modal-cancel-btn').addEventListener('click', closeEditModal);
+document.getElementById('modal-save-btn').addEventListener('click',   saveEditModal);
+
+// Close modal on backdrop click
+document.getElementById('edit-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('edit-modal')) closeEditModal();
 });
 
 // ── On page load: restore saved data if available ──
