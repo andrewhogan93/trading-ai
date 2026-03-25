@@ -307,8 +307,33 @@
       display: flex; flex-direction: column;
     }
     #chart-container {
-      height: 400px;
+      display: flex;
+      gap: 6px;
       background: var(--bg2);
+    }
+    #chart-main {
+      flex: 3;
+      height: 400px;
+      min-width: 0;
+    }
+    #chart-spy {
+      flex: 2;
+      height: 400px;
+      min-width: 0;
+      position: relative;
+    }
+    .chart-panel-label {
+      position: absolute;
+      top: 8px; left: 10px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.8px;
+      color: var(--muted);
+      z-index: 2;
+      pointer-events: none;
+      background: rgba(22,33,62,0.75);
+      padding: 2px 6px;
+      border-radius: 4px;
     }
     .chart-modal-footer {
       display: flex; align-items: center; justify-content: space-between;
@@ -624,7 +649,12 @@
         <span id="chart-modal-title">Chart</span>
         <button class="modal-close" id="chart-modal-close-btn">✕</button>
       </div>
-      <div id="chart-container"></div>
+      <div id="chart-container">
+        <div id="chart-main"></div>
+        <div id="chart-spy" style="position:relative">
+          <div class="chart-panel-label">SPY</div>
+        </div>
+      </div>
       <div class="chart-modal-footer">
         <span class="chart-status" id="chart-status" style="display:none"></span>
         <div class="chart-key-row" id="chart-key-row" style="display:none">
@@ -1649,12 +1679,14 @@ document.querySelectorAll('#t-head th[data-key]').forEach(th => {
 // ================================================================
 //  CHART MODAL
 // ================================================================
-let chartInstance = null;
-let chartModalFp  = null;
+let chartInstance    = null;
+let spyChartInstance = null;
+let chartModalFp     = null;
 
 function closeChartModal() {
   document.getElementById('chart-modal').style.display = 'none';
-  if (chartInstance) { chartInstance.remove(); chartInstance = null; }
+  if (chartInstance)    { chartInstance.remove();    chartInstance    = null; }
+  if (spyChartInstance) { spyChartInstance.remove(); spyChartInstance = null; }
   chartModalFp = null;
 }
 
@@ -1700,86 +1732,89 @@ function openChartModal(fp) {
   fetchAndRenderChart(trade, apiKey);
 }
 
+function polygonFetch(symbol, mult, span, from, to, apiKey) {
+  const fmt = s => { const d = new Date(s * 1000); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
+  const url = `https://api.polygon.io/v2/aggs/ticker/${encodeURIComponent(symbol)}/range/${mult}/${span}/${fmt(from)}/${fmt(to)}` +
+              `?adjusted=true&sort=asc&limit=5000&apiKey=${apiKey}`;
+  return fetch(url)
+    .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+    .then(data => {
+      if (!data.results || !data.results.length) throw new Error(`No data for ${symbol}`);
+      return data.results.map(b => ({ time: Math.floor(b.t / 1000), open: b.o, high: b.h, low: b.l, close: b.c }));
+    });
+}
+
+function makeChart(container, candles, markers, visibleFrom, visibleTo) {
+  const chart = LightweightCharts.createChart(container, {
+    width:  container.clientWidth,
+    height: container.clientHeight,
+    layout:    { background: { color: '#16213e' }, textColor: '#7a8ba0' },
+    grid:      { vertLines: { color: 'rgba(168,218,220,0.07)' },
+                 horzLines: { color: 'rgba(168,218,220,0.07)' } },
+    crosshair: { mode: 1 },
+    rightPriceScale: { borderColor: 'rgba(168,218,220,0.12)' },
+    timeScale:       { borderColor: 'rgba(168,218,220,0.12)', timeVisible: true },
+  });
+  const series = chart.addCandlestickSeries({
+    upColor: '#4ade80', downColor: '#f87171',
+    borderUpColor: '#4ade80', borderDownColor: '#f87171',
+    wickUpColor:   '#4ade80', wickDownColor:   '#f87171',
+  });
+  series.setData(candles);
+  if (markers.length) series.setMarkers(markers);
+  chart.timeScale().setVisibleRange({ from: visibleFrom, to: visibleTo });
+  return chart;
+}
+
 function fetchAndRenderChart(trade, apiKey) {
-  // Destroy previous chart
-  const container = document.getElementById('chart-container');
-  if (chartInstance) { chartInstance.remove(); chartInstance = null; }
-  container.innerHTML = '';
+  if (chartInstance)    { chartInstance.remove();    chartInstance    = null; }
+  if (spyChartInstance) { spyChartInstance.remove(); spyChartInstance = null; }
+  document.getElementById('chart-main').innerHTML = '';
 
   showChartStatus('Loading chart data…', false);
   showKeyRow(false);
 
-  // Time window: ±1.5 days around the trade
   const DAY_S    = 86400;
-  const openSec  = Math.floor(trade.openDate.getTime()  / 1000);
+  const openSec  = Math.floor(trade.openDate.getTime() / 1000);
   const closeSec = Math.floor((trade.closeDate || new Date()).getTime() / 1000);
   const period1  = openSec  - Math.round(1.5 * DAY_S);
   const period2  = closeSec + Math.round(1.5 * DAY_S);
   const holdMs   = trade.holdMs || (closeSec - openSec) * 1000;
-  // Polygon timespan/multiplier
   const [mult, span] = holdMs < 86400000 ? [5,'minute'] : holdMs < 7*86400000 ? [1,'hour'] : [1,'day'];
-  const fmt = d => { const dt = new Date(d*1000); return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`; };
-  const url = `https://api.polygon.io/v2/aggs/ticker/${encodeURIComponent(trade.symbol)}/range/${mult}/${span}/${fmt(period1)}/${fmt(period2)}` +
-              `?adjusted=true&sort=asc&limit=5000&apiKey=${apiKey}`;
 
-  fetch(url)
-    .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
-    .then(data => {
-      if (!data.results || !data.results.length) throw new Error('No chart data in this date range');
+  const mainContainer = document.getElementById('chart-main');
+  const spyContainer  = document.getElementById('chart-spy');
 
-      // Polygon timestamps are milliseconds; Lightweight Charts needs seconds
-      const candles = data.results.map(b => ({
-        time:  Math.floor(b.t / 1000),
-        open:  b.o, high: b.h, low: b.l, close: b.c,
-      }));
+  Promise.all([
+    polygonFetch(trade.symbol, mult, span, period1, period2, apiKey),
+    polygonFetch('SPY',        mult, span, period1, period2, apiKey),
+  ]).then(([mainCandles, spyCandles]) => {
+    // Build entry/exit markers for the main chart
+    const nearestTime = (candles, targetSec) => candles.reduce((best, c) =>
+      Math.abs(c.time - targetSec) < Math.abs(best.time - targetSec) ? c : best
+    ).time;
 
-      if (!candles.length) throw new Error('No candles returned');
+    const markers = [];
+    if (trade.side === 'Long') {
+      markers.push({ time: nearestTime(mainCandles, openSec),  position: 'belowBar', color: '#4ade80',
+                     shape: 'arrowUp',   text: `Entry $${fmtPrice(trade.avgEntryPrice)}` });
+      if (trade.closeDate && trade.avgExitPrice != null)
+        markers.push({ time: nearestTime(mainCandles, closeSec), position: 'aboveBar', color: '#f87171',
+                       shape: 'arrowDown', text: `Exit $${fmtPrice(trade.avgExitPrice)}` });
+    } else {
+      markers.push({ time: nearestTime(mainCandles, openSec),  position: 'aboveBar', color: '#f87171',
+                     shape: 'arrowDown', text: `Entry $${fmtPrice(trade.avgEntryPrice)}` });
+      if (trade.closeDate && trade.avgExitPrice != null)
+        markers.push({ time: nearestTime(mainCandles, closeSec), position: 'belowBar', color: '#4ade80',
+                       shape: 'arrowUp',   text: `Exit $${fmtPrice(trade.avgExitPrice)}` });
+    }
 
-      chartInstance = LightweightCharts.createChart(container, {
-        width:  container.clientWidth,
-        height: 400,
-        layout:    { background: { color: '#16213e' }, textColor: '#7a8ba0' },
-        grid:      { vertLines: { color: 'rgba(168,218,220,0.07)' },
-                     horzLines: { color: 'rgba(168,218,220,0.07)' } },
-        crosshair: { mode: 1 },
-        rightPriceScale: { borderColor: 'rgba(168,218,220,0.12)' },
-        timeScale:       { borderColor: 'rgba(168,218,220,0.12)', timeVisible: true },
-      });
-
-      const series = chartInstance.addCandlestickSeries({
-        upColor:       '#4ade80', downColor:       '#f87171',
-        borderUpColor: '#4ade80', borderDownColor: '#f87171',
-        wickUpColor:   '#4ade80', wickDownColor:   '#f87171',
-      });
-      series.setData(candles);
-
-      // Entry / exit markers
-      const nearestTime = targetSec => candles.reduce((best, c) =>
-        Math.abs(c.time - targetSec) < Math.abs(best.time - targetSec) ? c : best
-      ).time;
-
-      const markers = [];
-      if (trade.side === 'Long') {
-        markers.push({ time: nearestTime(openSec),  position: 'belowBar', color: '#4ade80',
-                       shape: 'arrowUp',   text: `Entry $${fmtPrice(trade.avgEntryPrice)}` });
-        if (trade.closeDate && trade.avgExitPrice != null)
-          markers.push({ time: nearestTime(closeSec), position: 'aboveBar', color: '#f87171',
-                         shape: 'arrowDown', text: `Exit $${fmtPrice(trade.avgExitPrice)}` });
-      } else {
-        markers.push({ time: nearestTime(openSec),  position: 'aboveBar', color: '#f87171',
-                       shape: 'arrowDown', text: `Entry $${fmtPrice(trade.avgEntryPrice)}` });
-        if (trade.closeDate && trade.avgExitPrice != null)
-          markers.push({ time: nearestTime(closeSec), position: 'belowBar', color: '#4ade80',
-                         shape: 'arrowUp',   text: `Exit $${fmtPrice(trade.avgExitPrice)}` });
-      }
-      series.setMarkers(markers);
-      chartInstance.timeScale().setVisibleRange({ from: period1, to: period2 });
-
-      showChartStatus('', false);
-    })
-    .catch(err => {
-      showChartStatus(`Chart unavailable: ${err.message}`, true);
-    });
+    chartInstance    = makeChart(mainContainer, mainCandles, markers,  period1, period2);
+    spyChartInstance = makeChart(spyContainer,  spyCandles,  [],        period1, period2);
+    showChartStatus('', false);
+  }).catch(err => {
+    showChartStatus(`Chart unavailable: ${err.message}`, true);
+  });
 }
 
 document.getElementById('chart-modal-close-btn').addEventListener('click', closeChartModal);
