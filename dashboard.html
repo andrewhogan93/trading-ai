@@ -2671,6 +2671,7 @@ function fetchAndRenderChart(trade, apiKey) {
   if (chartInstance)    { chartInstance.remove();    chartInstance    = null; }
   if (spyChartInstance) { spyChartInstance.remove(); spyChartInstance = null; }
   document.getElementById('chart-main').innerHTML = '';
+  document.getElementById('chart-spy').innerHTML  = '<div class="chart-panel-label">SPY</div>';
   document.getElementById('chart-rule').innerHTML = '';
 
   showChartStatus('Loading chart data…', false);
@@ -2708,9 +2709,12 @@ function fetchAndRenderChart(trade, apiKey) {
     const m5Candles      = span === 'minute' ? mainCandles : rawM5;
     const m5CloseCandles = span === 'minute' ? mainCandles : (rawM5Close || rawM5);
 
-    const nearestTime = (candles, targetSec) => candles.reduce((best, c) =>
-      Math.abs(c.time - targetSec) < Math.abs(best.time - targetSec) ? c : best
-    ).time;
+    const nearestTime = (candles, targetSec) => {
+      if (!candles.length) return targetSec;
+      return candles.reduce((best, c) =>
+        Math.abs(c.time - targetSec) < Math.abs(best.time - targetSec) ? c : best
+      ).time;
+    };
 
     const markers = [];
     if (trade.side === 'Long') {
