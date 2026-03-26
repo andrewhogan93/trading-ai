@@ -1987,6 +1987,15 @@ function loadCSV(text) {
     state.allTrades = [...state.allTrades, ...added]
       .sort((a, b) => a.openDate - b.openDate);
 
+    // Drop stale open trades whose position is now fully closed in this parse
+    // (e.g. the supplement revealed the closing leg that was missing mid-session)
+    const freshClosedKey = new Set(closedTrades.map(t =>
+      `${t.symbol}|${t.openDate.getTime()}|${t.side}`
+    ));
+    state.openTrades = state.openTrades.filter(t =>
+      !t.openDate || !freshClosedKey.has(`${t.symbol}|${t.openDate.getTime()}|${t.side}`)
+    );
+
     // Merge open trades (dedup by _fp)
     const seenOpen = new Set(state.openTrades.map(t => t._fp));
     state.openTrades = [
