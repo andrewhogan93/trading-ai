@@ -2706,6 +2706,25 @@ function fetchAndRenderChart(trade, apiKey) {
     m5Promise,
     m5ClosePromise,
   ]).then(([mainCandles, spyCandles, rawM5, rawM5Close]) => {
+    // For intraday charts: if no candles exist on the trade's date, the free
+    // Polygon plan doesn't yet have today's data. Show a message instead of
+    // placing markers on the wrong day's candles.
+    if (span === 'minute') {
+      const openDateEST = new Date(openSec * 1000).toLocaleDateString('en-US', { timeZone: 'America/New_York' });
+      const hasTradeDay = mainCandles.some(c =>
+        new Date(c.time * 1000).toLocaleDateString('en-US', { timeZone: 'America/New_York' }) === openDateEST
+      );
+      if (!hasTradeDay) {
+        mainContainer.innerHTML =
+          `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:0.85rem;text-align:center;padding:20px">` +
+          `Intraday data for ${openDateEST} is not yet available.<br>` +
+          `On the free Polygon plan, today's candles appear ~15 min after market close.` +
+          `</div>`;
+        showChartStatus('', false);
+        return;
+      }
+    }
+
     const m5Candles      = span === 'minute' ? mainCandles : rawM5;
     const m5CloseCandles = span === 'minute' ? mainCandles : (rawM5Close || rawM5);
 
