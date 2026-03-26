@@ -73,7 +73,8 @@
       "Day Trade"
     ],
     "GOOG|1774374728000|1774377286000|Short|2": [
-      "Day Trade"
+      "Day Trade",
+      "own trade"
     ]
   },
   "rulesCache": {
