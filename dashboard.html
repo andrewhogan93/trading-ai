@@ -1420,7 +1420,7 @@ function computeMetrics(trades, startBalance) {
   const losses     = trades.filter(t => t.status === 'Loss');
   const grossWins  = wins.reduce((s, t) => s + t.netPnL, 0);
   const grossLoss  = Math.abs(losses.reduce((s, t) => s + t.netPnL, 0));
-  const avgNetPct  = trades.reduce((s, t) => s + (t.netPnLPct || 0), 0) / trades.length;
+  const avgNetPct  = trades.reduce((s, t) => s + Math.abs(t.netPnLPct || 0), 0) / trades.length;
   const avgCost    = trades.reduce((s, t) => s + (t.cost || 0), 0) / trades.length;
   return {
     accountReturn: netPnL,
@@ -1485,8 +1485,7 @@ function renderMetrics(m) {
   ret.className = 'value ' + (m.accountReturn >= 0 ? 'pos' : 'neg');
 
   const avgPctEl = document.getElementById('m-avg-pct');
-  const avgPctSign = m.avgNetPct >= 0 ? '+' : '';
-  avgPctEl.textContent = `avg ${avgPctSign}${m.avgNetPct.toFixed(2)}% per trade`;
+  avgPctEl.textContent = `avg ${m.avgNetPct.toFixed(2)}% per trade`;
 
   const pf = document.getElementById('m-pf');
   pf.textContent = m.profitFactor === Infinity ? '∞' : m.profitFactor.toFixed(2);
