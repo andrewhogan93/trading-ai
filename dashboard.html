@@ -1248,6 +1248,105 @@ function parseCashBalanceSection(rawText) {
 }
 
 // ================================================================
+//  3b. ACCOUNT TRADE HISTORY SUPPLEMENT
+//  Schwab CSVs exported mid-session are missing Cash Balance entries
+//  for fills that happened after the snapshot. Parse the "Account Trade
+//  History" section and add any fills not already in the legs array.
+// ================================================================
+function parseTradeHistorySection(rawText) {
+  const lines = rawText.split(/\r?\n/);
+  let inSection = false;
+  const legs = [];
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+
+    if (!inSection) {
+      if (trimmed === 'Account Trade History') inSection = true;
+      continue;
+    }
+    if (/^,?\s*Exec Time/i.test(trimmed)) continue; // skip header row
+
+    // End of section on blank line or new section header
+    if (trimmed === '') break;
+    if (/^[A-Za-z"]/.test(trimmed)) break;
+
+    const f = parseCSVLine(line);
+    // ,Exec Time,Spread,Side,Qty,Pos Effect,Symbol,Exp,Strike,Type,Price,Net Price,Order Type
+    //  0    1      2     3   4      5         6    7    8     9   10     11         12
+    if (f.length < 11) continue;
+
+    const execTimeStr = (f[1]  || '').trim();
+    const side        = (f[3]  || '').trim();  // BUY | SELL
+    const qtyStr      = (f[4]  || '').trim();  // +8 | -4
+    const symbol      = (f[6]  || '').trim();
+    const exp         = (f[7]  || '').trim();  // "17 APR 26" or ""
+    const strike      = (f[8]  || '').trim();
+    const typeStr     = (f[9]  || '').trim();  // STOCK | PUT | CALL
+    const priceStr    = (f[10] || '').trim();
+
+    if (!execTimeStr || !symbol || !side || !priceStr || priceStr === '~') continue;
+
+    // Parse "M/D/YY H:MM:SS"
+    const dtm = execTimeStr.match(/^(\d+)\/(\d+)\/(\d+)\s+(\d{1,2}):(\d{2}):(\d{2})$/);
+    if (!dtm) continue;
+    const dateStr = `${dtm[1]}/${dtm[2]}/${dtm[3]}`;
+    const timeStr = `${dtm[4]}:${dtm[5]}:${dtm[6]}`;
+    const dateObj = parseDate(dateStr);
+    const datetime = parseDateTime(dateStr, timeStr);
+    if (!dateObj || !datetime) continue;
+
+    const qty   = Math.abs(parseInt(qtyStr));
+    const price = parseFloat(priceStr);
+    if (!qty || isNaN(price) || price <= 0) continue;
+
+    const action    = side === 'BUY' ? 'BOT' : 'SOLD';
+    const signedQty = side === 'BUY' ? `+${qty}` : `-${qty}`;
+    const amount    = side === 'BUY' ? -(qty * price) : (qty * price);
+
+    // Synthesise a description that matches STOCK_RE or OPTION_RE
+    let description;
+    if (!exp || typeStr === 'STOCK') {
+      description = `${action} ${signedQty} ${symbol} @${price}`;
+    } else {
+      // Option: exp like "17 APR 26"
+      const em = exp.match(/^(\d+)\s+([A-Z]{3})\s+(\d+)$/i);
+      if (!em) continue;
+      description = `${action} ${signedQty} ${symbol} 100 ${em[1]} ${em[2].toUpperCase()} ${em[3]} ${strike} ${typeStr.toUpperCase()} @${price}`;
+    }
+
+    legs.push({
+      ref: '', dateStr, timeStr,
+      date: dateObj, datetime,
+      description,
+      amount, miscFees: 0, commissions: 0,
+      action: null, symbol: null, qty: 0, price: 0,
+      isOption: false, optionDetails: null,
+    });
+  }
+
+  return legs;
+}
+
+function supplementFromTradeHistory(rawText, legs) {
+  const histLegs = parseTradeHistorySection(rawText);
+  if (!histLegs.length) return;
+
+  // Dedup by exact timestamp — Cash Balance and Trade History use the same fill time.
+  // Two different trades at the same millisecond are not possible in practice.
+  const cbTimes = new Set(legs.map(l => l.datetime ? l.datetime.getTime() : null));
+  cbTimes.delete(null);
+
+  for (const leg of histLegs) {
+    if (!leg.datetime) continue;
+    const t = leg.datetime.getTime();
+    if (cbTimes.has(t)) continue; // already represented in Cash Balance
+    legs.push(leg);
+    cbTimes.add(t); // guard against duplicate rows within Trade History itself
+  }
+}
+
+// ================================================================
 //  4. DESCRIPTION PARSING
 // ================================================================
 const STOCK_RE  = /^(BOT|SOLD)\s([+-]\d+)\s([A-Z0-9]+)\s@([\d.]+)$/;
@@ -1854,6 +1953,7 @@ function updatePeriodLabel() {
 function loadCSV(text) {
   try {
     const { startBalance, legs, minDate, maxDate } = parseCashBalanceSection(text);
+    supplementFromTradeHistory(text, legs);
     if (!legs.length) throw new Error('No trade rows found in the Cash Balance section.');
 
     const { closedTrades, openTrades } = matchTrades(legs);
