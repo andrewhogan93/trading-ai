@@ -3022,6 +3022,17 @@ async function extractPdfText(file) {
 }
 
 
+// ── SMA helper ──
+function computeSMA(candles, period) {
+  const result = [];
+  for (let i = period - 1; i < candles.length; i++) {
+    let sum = 0;
+    for (let j = i - period + 1; j <= i; j++) sum += candles[j].close;
+    result.push({ time: candles[i].time, value: parseFloat((sum / period).toFixed(2)) });
+  }
+  return result;
+}
+
 // ── SPY D1 chart ──
 async function loadIntelSpyChart() {
   const apiKey = getChartKey();
@@ -3039,12 +3050,27 @@ async function loadIntelSpyChart() {
   const oneYearAgo = now - 400 * 86400; // ~400 days for padding
   const candles    = await polygonFetch('SPY', 1, 'day', oneYearAgo, now, apiKey);
 
+  // Compute SMAs
+  const sma50  = computeSMA(candles, 50);
+  const sma100 = computeSMA(candles, 100);
+  const sma200 = computeSMA(candles, 200);
+
+  // Build a lookup map for SMA values by candle time
+  const smaMap = {};
+  for (const s of sma50)  smaMap[s.time] = { ...(smaMap[s.time] || {}), s50: s.value };
+  for (const s of sma100) smaMap[s.time] = { ...(smaMap[s.time] || {}), s100: s.value };
+  for (const s of sma200) smaMap[s.time] = { ...(smaMap[s.time] || {}), s200: s.value };
+
   // Build plain-text summary of last 60 candles for Claude context
   const recent = candles.slice(-60);
-  intelSpySummary = 'Recent SPY daily candles (Date | Open | High | Low | Close | Volume):\n' +
+  const lastSmas = smaMap[recent[recent.length - 1]?.time] || {};
+  intelSpySummary =
+    `Current SPY SMAs — SMA50: ${lastSmas.s50 ?? 'n/a'} | SMA100: ${lastSmas.s100 ?? 'n/a'} | SMA200: ${lastSmas.s200 ?? 'n/a'}\n\n` +
+    'Recent SPY daily candles (Date | Open | High | Low | Close | Volume | SMA50 | SMA100 | SMA200):\n' +
     recent.map(c => {
       const d = new Date(c.time * 1000).toLocaleDateString('en-US', { timeZone: 'America/New_York' });
-      return `${d} | ${c.open} | ${c.high} | ${c.low} | ${c.close} | ${Math.round((c.volume || 0) / 1000)}K`;
+      const s = smaMap[c.time] || {};
+      return `${d} | ${c.open} | ${c.high} | ${c.low} | ${c.close} | ${Math.round((c.volume || 0) / 1000)}K | ${s.s50 ?? '-'} | ${s.s100 ?? '-'} | ${s.s200 ?? '-'}`;
     }).join('\n');
 
   if (intelSpyChart) { intelSpyChart.remove(); intelSpyChart = null; }
@@ -3054,6 +3080,24 @@ async function loadIntelSpyChart() {
     candles[0].time,
     candles[candles.length - 1].time
   );
+
+  // Overlay SMA lines
+  const smaLines = [
+    { data: sma50,  color: 'rgba(100,180,255,0.85)', title: 'SMA50'  },
+    { data: sma100, color: 'rgba(251,146,60,0.85)',  title: 'SMA100' },
+    { data: sma200, color: 'rgba(240,100,200,0.85)', title: 'SMA200' },
+  ];
+  for (const { data, color, title } of smaLines) {
+    const s = intelSpyChart.addLineSeries({
+      color, lineWidth: 1,
+      priceLineVisible: false,
+      lastValueVisible: true,
+      crosshairMarkerVisible: false,
+      title,
+    });
+    s.setData(data);
+  }
+
   return true;
 }
 
