@@ -73,15 +73,18 @@ State is persisted to `localStorage` under key `trading_dashboard_v1`. Polygon A
 ```
 #upload-screen   (shown until CSV is loaded)
 #app             (flex row)
-  #sidebar       (icon nav: page-1 = trades, page-2 = analytics)
+  #sidebar       (icon nav: page-1 = trades, page-2 = analytics, page-3 = market intelligence)
   #main          (flex column)
     .filter-bar  (shared across all pages)
     #pages
       #page-1    (trades table + headline metrics)
-      #page-2    (Chart.js line charts: cumulative P&L, win rate, profit factor)
+      #page-2    (Chart.js line charts: cumulative P&L, win rate, profit factor;
+                  rule adherence cards for SPY rule and VWAP rule)
+      #page-3    (Market Intelligence: SPY D1 chart + Claude AI analyst chat)
 #edit-modal      (edit trade fields; open trades can have closeDate/exitPrice set here,
                   which promotes them from openTrades → allTrades)
 #chart-modal     (candlestick chart popup; two panels side-by-side: main symbol + SPY)
+#sync-modal      (GitHub sync: PAT input, pull/push/clear buttons)
 ```
 
 ### Key parsing notes
@@ -118,3 +121,43 @@ Clicking a trade row opens a candlestick chart popup powered by Polygon.io (requ
 **Chart lifecycle:** `chartInstance` and `spyChartInstance` are module-level refs; always call `.remove()` before re-creating to avoid memory leaks. Container `.innerHTML = ''` is cleared before each new chart render.
 
 **`_fp` fingerprint:** Each trade has a `_fp` field used to look it up across `allTrades` and `openTrades` when opening the edit or chart modal.
+
+### Metric cards (page 1 headline)
+
+- **Account P&L** — total dollar P&L + avg return % subtitle. Avg uses `Math.abs()` so wins and losses don't cancel (e.g. -1% and +1% average to 1%, not 0%).
+- **Avg Cost** — average position cost per trade (replaces the old "Net P&L" card).
+- Win Rate, Avg Hold, Trade Count cards remain unchanged.
+
+### Rule adherence (page 2)
+
+`computeRuleStats(trades, cache)` splits closed trades into followed/violated buckets for the SPY rule and VWAP rule based on `rulesCache` entries. Two cards rendered at the bottom of page 2, each showing trade count, win rate, avg return %, and total P&L per bucket.
+
+### GitHub sync
+
+Annotations (trade setups + rule results cache) are persisted to a private GitHub repo (`andrewhogan93/trading-ai`) as `annotations.json` via the GitHub Contents API.
+
+- **Token:** Fine-grained PAT with Contents: Read & Write, stored in `localStorage` under `gh_pat`.
+- **SHA tracking:** `_ghSha` module-level ref; always fetched before first PUT to avoid 409 conflicts.
+- **Auto-load:** `showDashboard()` pulls from GitHub if a token exists.
+- **Auto-save:** `scheduleGithubSave()` — 3s debounce, called from `saveRuleResult` and `saveEditModal`.
+- **`☁ Sync` button** in the header opens `#sync-modal` for manual pull/push/clear.
+
+### Market Intelligence (page 3)
+
+**SPY D1 chart** — `loadIntelSpyChart()` fetches ~400 days of daily candles via `polygonFetch('SPY', 1, 'day', ...)`, renders with `makeChart()`, then overlays SMA lines directly on `intelSpyChart` (not via `makeChart` — those are added after). SMA colors: SMA50 = blue, SMA100 = orange, SMA200 = pink.
+
+**`computeSMA(candles, period)`** — plain loop SMA from candle closes; returns `[{time, value}]`.
+
+**Claude context (`intelSpySummary`)** — rebuilt on every chart load; includes current SMA50/100/200 values and a 60-row candle table with per-row SMA columns. Passed as part of the user message on every API call.
+
+**AI chat** — `callClaude(text)` and `sendIntelMessage(text)` both call `https://api.anthropic.com/v1/messages` directly from the browser (`anthropic-dangerous-direct-browser-access: true` header required). Model: `claude-sonnet-4-6`, max tokens: 1500. Anthropic API key stored under `anthropic_api_key` in localStorage.
+
+**System prompt** — includes full text of 13 PDFs from `The system/Long term Market Analysis/`, pre-baked into `market_docs.js` as `window.MARKET_DOCS_TEXT`. Loaded via `<script src="market_docs.js">` — no upload required.
+
+**`market_docs.js`** — generated file (~85KB). To regenerate: run `pdftotext` (found at `C:\Program Files\Git\mingw64\bin\pdftotext.exe`) on each PDF, wrap output in a JS template literal as `window.MARKET_DOCS_TEXT = \`...\``. Never commit `docs_extracted.txt` (intermediate file).
+
+**Chat history** — `intelHistory = [{role, content}]`, module-level, not persisted. `renderPage3()` auto-fires initial analysis when `intelHistory.length === 0 && intelSpySummary` is set. Clear Chat button resets history and re-triggers analysis.
+
+### Hold time / fingerprint matching
+
+`_fp` is derived from trade fields including exact open/close timestamps. An old `parseDateTime` bug (minutes always = 0) baked wrong timestamps into fingerprints stored in localStorage. On CSV re-upload, `loadCSV` runs a fuzzy fallback: if exact `_fp` doesn't match, falls back to `symbol|openDate.toDateString()|side` key (with collision detection — if two trades share the same fuzzy key, neither is updated).
