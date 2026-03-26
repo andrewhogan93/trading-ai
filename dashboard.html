@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://unpkg.com/lightweight-charts@4/dist/lightweight-charts.standalone.production.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -668,6 +669,61 @@
     .rule-no-data { color: var(--muted); font-size: 0.82rem; font-style: italic; padding: 8px 0; }
     .rule-coverage { font-size: 0.75rem; color: var(--muted); margin-top: 12px; text-align: right; }
 
+    /* ── PAGE 3: MARKET INTELLIGENCE ── */
+    .intel-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .intel-spy-wrap { position: relative; height: 300px; }
+    .intel-chart-card { flex-shrink: 0; }
+    .intel-setup-note { color: var(--muted); font-size: 0.82rem; line-height: 1.5; margin-bottom: 14px; }
+    .intel-setup-note code { background: rgba(168,218,220,0.1); border-radius: 3px; padding: 1px 4px; }
+    .intel-setup-msg { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); color: var(--muted); font-size: 0.85rem; text-align: center; padding: 20px; }
+    .intel-chat-card { flex: 1; display: flex; flex-direction: column; min-height: 300px; }
+    .intel-chat-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    #intel-messages {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      padding: 4px 0 12px;
+      min-height: 120px;
+    }
+    .intel-msg { display: flex; flex-direction: column; gap: 4px; max-width: 88%; }
+    .intel-msg.user { align-self: flex-end; align-items: flex-end; }
+    .intel-msg.assistant { align-self: flex-start; align-items: flex-start; }
+    .intel-msg.thinking { align-self: flex-start; align-items: flex-start; }
+    .intel-msg-role { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
+    .intel-msg-bubble {
+      background: var(--bg);
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+    .intel-msg.user .intel-msg-bubble { background: var(--bg3); color: var(--teal); }
+    .intel-msg.thinking .intel-msg-bubble { color: var(--muted); font-style: italic; }
+    #intel-input-row { display: flex; gap: 8px; align-items: flex-end; padding-top: 10px; border-top: 1px solid var(--border); margin-top: 4px; }
+    #intel-input {
+      flex: 1;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 0.85rem;
+      font-family: inherit;
+      outline: none;
+      resize: none;
+    }
+    #intel-input:focus { border-color: var(--teal); }
+
     /* ── OPEN POSITIONS BANNER ── */
     #open-banner {
       margin: 0 24px 24px;
@@ -719,6 +775,16 @@
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
         <path d="M10 10 L10 2 A8 8 0 0 1 18 10 Z" fill="currentColor" opacity="0.8"/>
         <path d="M10 10 L18 10 A8 8 0 1 1 10 2 Z" stroke="currentColor" stroke-width="1.8" fill="none"/>
+      </svg>
+    </button>
+    <button class="nav-btn" data-page="page-3" title="Market Intelligence">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.8"/>
+        <path d="M10 7v3.5l2.5 1.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="10" cy="3" r="1" fill="currentColor"/>
+        <circle cx="17" cy="10" r="1" fill="currentColor"/>
+        <circle cx="10" cy="17" r="1" fill="currentColor"/>
+        <circle cx="3" cy="10" r="1" fill="currentColor"/>
       </svg>
     </button>
   </nav>
@@ -872,6 +938,66 @@
         <div class="rules-adherence-grid" id="rules-adherence-grid"></div>
       </div>
     </div><!-- /page-2 -->
+
+    <!-- Page 3: Market Intelligence -->
+    <div id="page-3" class="page">
+      <header>
+        <h1>MARKET INTELLIGENCE</h1>
+      </header>
+      <div class="intel-body">
+
+        <!-- D1 SPY Chart -->
+        <div class="chart-card intel-chart-card">
+          <div class="chart-title">SPY — Daily</div>
+          <div id="intel-spy-chart" class="intel-spy-wrap"></div>
+        </div>
+
+        <!-- Setup: missing Polygon key -->
+        <div id="intel-no-polygon" class="intel-setup-msg" style="display:none">
+          <p>A Polygon.io API key is required to load the SPY chart. Set it by opening any trade chart.</p>
+        </div>
+
+        <!-- Setup: document upload -->
+        <div id="intel-doc-upload" class="chart-card" style="display:none">
+          <div class="chart-title">Analysis Documents</div>
+          <p class="intel-setup-note">
+            Upload the PDFs from <code>The system / Long term Market Analysis</code> to give the AI its knowledge base.
+            This only needs to be done once — extracted text is saved locally.
+          </p>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <label class="modal-save-btn" style="cursor:pointer;display:inline-flex">
+              Select PDFs
+              <input type="file" id="intel-pdf-input" multiple accept=".pdf" style="display:none">
+            </label>
+            <span id="intel-doc-status" style="font-size:0.82rem;color:var(--muted)"></span>
+          </div>
+        </div>
+
+        <!-- Chat interface -->
+        <div id="intel-chat-card" class="chart-card intel-chat-card" style="display:none">
+          <div class="intel-chat-header">
+            <span class="chart-title">AI Analysis</span>
+            <div style="display:flex;gap:8px;align-items:center">
+              <span id="intel-doc-info" style="font-size:0.75rem;color:var(--muted)"></span>
+              <button class="reload-btn" id="intel-clear-btn" style="font-size:0.72rem;padding:4px 10px">Clear Chat</button>
+            </div>
+          </div>
+          <div id="intel-messages"></div>
+          <div id="intel-key-row" style="display:none">
+            <div class="chart-key-row" style="margin-bottom:10px">
+              <a href="https://console.anthropic.com/" target="_blank">Get API key ↗</a>
+              <input type="password" id="intel-key-input" placeholder="Paste Anthropic API key…">
+              <button class="chart-key-save" id="intel-key-save-btn">Save</button>
+            </div>
+          </div>
+          <div id="intel-input-row" style="display:none">
+            <textarea id="intel-input" placeholder="Ask a question about SPY…" rows="2"></textarea>
+            <button class="chart-key-save" id="intel-send-btn">Send</button>
+          </div>
+        </div>
+
+      </div>
+    </div><!-- /page-3 -->
 
   </div><!-- /pages -->
   </div><!-- /main -->
@@ -2887,6 +3013,302 @@ document.getElementById('sync-clear-btn').addEventListener('click', () => {
   statusEl.textContent = 'Token cleared.';
   statusEl.style.color = 'var(--muted)';
   setSyncStatus('');
+});
+
+// ================================================================
+//  MARKET INTELLIGENCE — PAGE 3
+// ================================================================
+const ANTHROPIC_KEY_STORAGE = 'anthropic_api_key';
+const MARKET_DOCS_KEY       = 'market_docs_text';
+
+// Set PDF.js worker
+if (typeof pdfjsLib !== 'undefined') {
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+}
+
+let intelSpyChart   = null;
+let intelHistory    = [];   // [{role:'user'|'assistant', content:string}]
+let intelSpySummary = '';   // recent candle data passed to Claude
+
+function getAnthropicKey() { return localStorage.getItem(ANTHROPIC_KEY_STORAGE) || ''; }
+function getMarketDocs()   { return localStorage.getItem(MARKET_DOCS_KEY) || ''; }
+
+// ── PDF text extraction ──
+async function extractPdfText(file) {
+  const buf  = await file.arrayBuffer();
+  const pdf  = await pdfjsLib.getDocument({ data: buf }).promise;
+  let text   = `\n\n=== ${file.name} ===\n`;
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page    = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    text += content.items.map(s => s.str).join(' ') + '\n';
+  }
+  return text;
+}
+
+document.getElementById('intel-pdf-input').addEventListener('change', async function () {
+  const files = Array.from(this.files);
+  if (!files.length) return;
+  const statusEl = document.getElementById('intel-doc-status');
+  statusEl.textContent = `Extracting text from ${files.length} file(s)…`;
+  try {
+    let combined = '';
+    for (const f of files) {
+      statusEl.textContent = `Reading ${f.name}…`;
+      combined += await extractPdfText(f);
+    }
+    localStorage.setItem(MARKET_DOCS_KEY, combined);
+    statusEl.textContent = `${files.length} document(s) loaded (${Math.round(combined.length / 1000)}KB).`;
+    this.value = '';
+    renderPage3();
+  } catch (err) {
+    statusEl.textContent = 'Error: ' + err.message;
+  }
+});
+
+// ── SPY D1 chart ──
+async function loadIntelSpyChart() {
+  const apiKey = getChartKey();
+  const noPolygonEl = document.getElementById('intel-no-polygon');
+  const chartEl     = document.getElementById('intel-spy-chart');
+
+  if (!apiKey) {
+    noPolygonEl.style.display = '';
+    chartEl.innerHTML = '';
+    return false;
+  }
+  noPolygonEl.style.display = 'none';
+
+  const now        = Math.floor(Date.now() / 1000);
+  const oneYearAgo = now - 400 * 86400; // ~400 days for padding
+  const candles    = await polygonFetch('SPY', 1, 'day', oneYearAgo, now, apiKey);
+
+  // Build plain-text summary of last 60 candles for Claude context
+  const recent = candles.slice(-60);
+  intelSpySummary = 'Recent SPY daily candles (Date | Open | High | Low | Close | Volume):\n' +
+    recent.map(c => {
+      const d = new Date(c.time * 1000).toLocaleDateString('en-US', { timeZone: 'America/New_York' });
+      return `${d} | ${c.open} | ${c.high} | ${c.low} | ${c.close} | ${Math.round((c.volume || 0) / 1000)}K`;
+    }).join('\n');
+
+  if (intelSpyChart) { intelSpyChart.remove(); intelSpyChart = null; }
+  chartEl.innerHTML = '';
+  intelSpyChart = makeChart(
+    chartEl, candles, [],
+    candles[0].time,
+    candles[candles.length - 1].time
+  );
+  return true;
+}
+
+// ── Claude API ──
+async function callClaude(userMessage) {
+  const apiKey = getAnthropicKey();
+  const docs   = getMarketDocs();
+
+  const systemPrompt =
+`You are a market analyst specializing in SPY (S&P 500 ETF) long-term trend analysis. You have been given the following trading framework documents as your analytical foundation:
+
+${docs}
+
+---
+When answering, apply this framework concretely to the current SPY data provided. Reference specific concepts from the documents (moving averages, price action, support/resistance, seasonality, volume, 1OP indicator, etc.). Be specific about current price levels, give a clear directional view, and explain what conditions would change that view. Keep responses focused and actionable for a short-term trader who needs to understand the long-term context.`;
+
+  intelHistory.push({ role: 'user', content: userMessage });
+
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'content-type': 'application/json',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 1500,
+      system: systemPrompt,
+      messages: intelHistory,
+    }),
+  });
+
+  if (!res.ok) {
+    const errJson = await res.json().catch(() => ({}));
+    throw new Error(`Claude API ${res.status}: ${errJson.error?.message || ''}`);
+  }
+  const json  = await res.json();
+  const reply = json.content[0].text;
+  intelHistory.push({ role: 'assistant', content: reply });
+  return reply;
+}
+
+// ── Render helpers ──
+function escapeHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function renderIntelMessages() {
+  const el = document.getElementById('intel-messages');
+  el.innerHTML = intelHistory.map(m => `
+    <div class="intel-msg ${m.role}">
+      <div class="intel-msg-role">${m.role === 'user' ? 'You' : 'AI'}</div>
+      <div class="intel-msg-bubble">${escapeHtml(m.content)}</div>
+    </div>
+  `).join('');
+  el.scrollTop = el.scrollHeight;
+}
+
+function appendThinkingBubble() {
+  const el = document.getElementById('intel-messages');
+  const div = document.createElement('div');
+  div.className = 'intel-msg thinking';
+  div.id = 'intel-thinking';
+  div.innerHTML = '<div class="intel-msg-role">AI</div><div class="intel-msg-bubble">Analyzing…</div>';
+  el.appendChild(div);
+  el.scrollTop = el.scrollHeight;
+}
+
+function removeThinkingBubble() {
+  const el = document.getElementById('intel-thinking');
+  if (el) el.remove();
+}
+
+async function sendIntelMessage(text) {
+  if (!text.trim()) return;
+  intelHistory.push({ role: 'user', content: text }); // add to history first
+  renderIntelMessages();                               // show user bubble immediately
+  appendThinkingBubble();
+  document.getElementById('intel-send-btn').disabled = true;
+  try {
+    // callClaude will push the user message again — pass history minus the last entry
+    const reply = await (async () => {
+      const apiKey = getAnthropicKey();
+      const docs   = getMarketDocs();
+      const systemPrompt =
+`You are a market analyst specializing in SPY (S&P 500 ETF) long-term trend analysis. You have been given the following trading framework documents as your analytical foundation:
+
+${docs}
+
+---
+When answering, apply this framework concretely to the current SPY data provided. Reference specific concepts from the documents (moving averages, price action, support/resistance, seasonality, volume, 1OP indicator, etc.). Be specific about current price levels, give a clear directional view, and explain what conditions would change that view. Keep responses focused and actionable for a short-term trader who needs to understand the long-term context.`;
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'content-type': 'application/json',
+          'anthropic-dangerous-direct-browser-access': 'true',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 1500,
+          system: systemPrompt,
+          messages: intelHistory,
+        }),
+      });
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(`Claude API ${res.status}: ${errJson.error?.message || ''}`);
+      }
+      const json = await res.json();
+      return json.content[0].text;
+    })();
+    intelHistory.push({ role: 'assistant', content: reply });
+  } catch (err) {
+    intelHistory.push({ role: 'assistant', content: `Error: ${err.message}` });
+  } finally {
+    removeThinkingBubble();
+    renderIntelMessages();
+    document.getElementById('intel-send-btn').disabled = false;
+  }
+}
+
+// ── Master state machine ──
+async function renderPage3() {
+  // Always attempt to load/refresh the SPY chart
+  let chartOk = false;
+  try { chartOk = await loadIntelSpyChart(); } catch (_) {}
+
+  const docs        = getMarketDocs();
+  const anthropicKey = getAnthropicKey();
+  const uploadEl    = document.getElementById('intel-doc-upload');
+  const chatCardEl  = document.getElementById('intel-chat-card');
+  const keyRowEl    = document.getElementById('intel-key-row');
+  const inputRowEl  = document.getElementById('intel-input-row');
+  const docInfoEl   = document.getElementById('intel-doc-info');
+
+  if (!docs) {
+    uploadEl.style.display  = '';
+    chatCardEl.style.display = 'none';
+    return;
+  }
+
+  // Docs present — show chat card
+  uploadEl.style.display   = 'none';
+  chatCardEl.style.display = '';
+  docInfoEl.textContent    = `${Math.round(docs.length / 1000)}KB of documents loaded`;
+
+  if (!anthropicKey) {
+    keyRowEl.style.display   = '';
+    inputRowEl.style.display = 'none';
+    renderIntelMessages();
+    return;
+  }
+
+  keyRowEl.style.display   = 'none';
+  inputRowEl.style.display = '';
+  renderIntelMessages();
+
+  // Auto-trigger initial analysis if no history and chart data is ready
+  if (intelHistory.length === 0 && intelSpySummary) {
+    const prompt = `Please analyze the current state of SPY's long-term trend using the framework in your documents, and tell me what to expect going forward.\n\n${intelSpySummary}`;
+    appendThinkingBubble();
+    document.getElementById('intel-send-btn').disabled = true;
+    try {
+      await callClaude(prompt);
+    } catch (err) {
+      intelHistory.push({ role: 'assistant', content: `Error: ${err.message}` });
+    } finally {
+      removeThinkingBubble();
+      renderIntelMessages();
+      document.getElementById('intel-send-btn').disabled = false;
+    }
+  }
+}
+
+// ── Event handlers ──
+document.getElementById('intel-key-save-btn').addEventListener('click', () => {
+  const val = document.getElementById('intel-key-input').value.trim();
+  if (!val) return;
+  localStorage.setItem(ANTHROPIC_KEY_STORAGE, val);
+  document.getElementById('intel-key-input').value = '';
+  renderPage3();
+});
+
+document.getElementById('intel-send-btn').addEventListener('click', () => {
+  const input = document.getElementById('intel-input');
+  const text  = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  sendIntelMessage(text);
+});
+
+document.getElementById('intel-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    document.getElementById('intel-send-btn').click();
+  }
+});
+
+document.getElementById('intel-clear-btn').addEventListener('click', () => {
+  intelHistory = [];
+  renderPage3();
+});
+
+// Hook page-3 nav button to trigger render
+document.querySelectorAll('.nav-btn[data-page]').forEach(btn => {
+  if (btn.dataset.page === 'page-3') {
+    btn.addEventListener('click', renderPage3);
+  }
 });
 
 // ── On page load: restore saved data if available ──
