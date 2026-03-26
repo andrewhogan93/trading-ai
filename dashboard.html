@@ -623,6 +623,51 @@
       gap: 20px;
     }
 
+    /* ── RULE ADHERENCE SECTION ── */
+    .rules-adherence-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    .rule-sub-title {
+      font-size: 0.72rem;
+      color: var(--muted);
+      margin-bottom: 14px;
+      line-height: 1.4;
+    }
+    .rule-comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .rule-col {
+      background: var(--bg);
+      border-radius: 8px;
+      padding: 14px;
+    }
+    .rule-col-header {
+      font-size: 0.7rem;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+    .rule-col-header.followed { color: var(--green); }
+    .rule-col-header.violated { color: var(--red); }
+    .rule-stat-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 4px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.82rem;
+    }
+    .rule-stat-row:last-child { border-bottom: none; }
+    .rule-stat-row .stat-lbl { color: var(--muted); }
+    .rule-stat-row .stat-val { font-weight: 600; }
+    .rule-no-data { color: var(--muted); font-size: 0.82rem; font-style: italic; padding: 8px 0; }
+    .rule-coverage { font-size: 0.75rem; color: var(--muted); margin-top: 12px; text-align: right; }
+
     /* ── OPEN POSITIONS BANNER ── */
     #open-banner {
       margin: 0 24px 24px;
@@ -824,6 +869,7 @@
             </div>
           </div>
         </div>
+        <div class="rules-adherence-grid" id="rules-adherence-grid"></div>
       </div>
     </div><!-- /page-2 -->
 
@@ -1997,6 +2043,82 @@ function upsertChart(chartRef, canvasId, labels, data, color, tooltipLabel, yTic
   });
 }
 
+function computeRuleStats(trades, cache) {
+  const empty = () => ({ n: 0, wins: 0, sumPct: 0, sumPnL: 0 });
+  const result = {
+    spy:  { followed: empty(), violated: empty(), total: 0 },
+    vwap: { followed: empty(), violated: empty(), total: 0 },
+  };
+
+  for (const t of trades) {
+    const entry = cache[t._fp];
+    if (!entry) continue;
+    for (const rule of ['spy', 'vwap']) {
+      const val = entry[rule];
+      if (val !== true && val !== false) continue;
+      result[rule].total++;
+      const bucket = val ? result[rule].followed : result[rule].violated;
+      bucket.n++;
+      if (t.status === 'Win') bucket.wins++;
+      bucket.sumPct += t.netPnLPct || 0;
+      bucket.sumPnL += t.netPnL    || 0;
+    }
+  }
+  return result;
+}
+
+function ruleColHtml(bucket, cssClass) {
+  if (!bucket.n) {
+    return `<div class="rule-col">
+      <div class="rule-col-header ${cssClass}">${cssClass === 'followed' ? 'Followed' : 'Violated'}</div>
+      <div class="rule-no-data">No data</div>
+    </div>`;
+  }
+  const wr     = (bucket.wins / bucket.n * 100).toFixed(0);
+  const avgPct = (bucket.sumPct / bucket.n);
+  const pctSign = avgPct >= 0 ? '+' : '';
+  const pnlColor = bucket.sumPnL >= 0 ? 'var(--green)' : 'var(--red)';
+  const pctColor = avgPct   >= 0 ? 'var(--green)' : 'var(--red)';
+  return `<div class="rule-col">
+    <div class="rule-col-header ${cssClass}">${cssClass === 'followed' ? 'Followed' : 'Violated'}</div>
+    <div class="rule-stat-row"><span class="stat-lbl">Trades</span><span class="stat-val">${bucket.n}</span></div>
+    <div class="rule-stat-row"><span class="stat-lbl">Win Rate</span><span class="stat-val">${wr}%</span></div>
+    <div class="rule-stat-row"><span class="stat-lbl">Avg Return</span><span class="stat-val" style="color:${pctColor}">${pctSign}${avgPct.toFixed(2)}%</span></div>
+    <div class="rule-stat-row"><span class="stat-lbl">Total P&amp;L</span><span class="stat-val" style="color:${pnlColor}">${fmtCurrency(bucket.sumPnL)}</span></div>
+  </div>`;
+}
+
+function renderRulesAdherence(trades) {
+  const cache  = loadRulesCache();
+  const stats  = computeRuleStats(trades, cache);
+  const total  = trades.length;
+  const grid   = document.getElementById('rules-adherence-grid');
+
+  const rules = [
+    { key: 'spy',  label: 'SPY Rule',  desc: 'No longs when SPY is down on the day; no shorts when SPY is up' },
+    { key: 'vwap', label: 'VWAP Rule', desc: 'No longs below VWAP M5; no shorts above VWAP M5' },
+  ];
+
+  grid.innerHTML = rules.map(r => {
+    const s = stats[r.key];
+    const unchecked = total - s.total;
+    const coverageNote = s.total === 0
+      ? '<span class="rule-coverage">No rule data yet — open charts to compute</span>'
+      : unchecked > 0
+        ? `<span class="rule-coverage">${unchecked} trade${unchecked > 1 ? 's' : ''} not yet analysed</span>`
+        : '';
+    return `<div class="chart-card">
+      <div class="chart-title">${r.label}</div>
+      <div class="rule-sub-title">${r.desc}</div>
+      <div class="rule-comparison">
+        ${ruleColHtml(s.followed, 'followed')}
+        ${ruleColHtml(s.violated, 'violated')}
+      </div>
+      ${coverageNote}
+    </div>`;
+  }).join('');
+}
+
 function renderAnalytics(trades) {
   document.getElementById('period-label-2').textContent =
     document.getElementById('period-label').textContent;
@@ -2016,6 +2138,8 @@ function renderAnalytics(trades) {
   pfChart = upsertChart(pfChart, 'pf-chart', pf.labels, pf.data, '#e94560',
     ctx => ' ' + (ctx.parsed.y === null ? '—' : ctx.parsed.y.toFixed(2)),
     val => val === null ? '—' : val.toFixed(2));
+
+  renderRulesAdherence(trades);
 }
 
 // ── Sidebar navigation ──
