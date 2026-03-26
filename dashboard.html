@@ -2717,8 +2717,8 @@ function fetchAndRenderChart(trade, apiKey) {
       if (!hasTradeDay) {
         mainContainer.innerHTML =
           `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:0.85rem;text-align:center;padding:20px">` +
-          `Intraday data for ${openDateEST} is not yet available.<br>` +
-          `On the free Polygon plan, today's candles appear ~15 min after market close.` +
+          `Intraday data for ${openDateEST} is not yet available from Polygon.<br>` +
+          `On the free plan this is typically available the following trading day.` +
           `</div>`;
         showChartStatus('', false);
         return;
