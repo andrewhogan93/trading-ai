@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://unpkg.com/lightweight-charts@4/dist/lightweight-charts.standalone.production.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="market_docs.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -957,30 +957,11 @@
           <p>A Polygon.io API key is required to load the SPY chart. Set it by opening any trade chart.</p>
         </div>
 
-        <!-- Setup: document upload -->
-        <div id="intel-doc-upload" class="chart-card" style="display:none">
-          <div class="chart-title">Analysis Documents</div>
-          <p class="intel-setup-note">
-            Upload the PDFs from <code>The system / Long term Market Analysis</code> to give the AI its knowledge base.
-            This only needs to be done once — extracted text is saved locally.
-          </p>
-          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-            <label class="modal-save-btn" style="cursor:pointer;display:inline-flex">
-              Select PDFs
-              <input type="file" id="intel-pdf-input" multiple accept=".pdf" style="display:none">
-            </label>
-            <span id="intel-doc-status" style="font-size:0.82rem;color:var(--muted)"></span>
-          </div>
-        </div>
-
         <!-- Chat interface -->
         <div id="intel-chat-card" class="chart-card intel-chat-card" style="display:none">
           <div class="intel-chat-header">
             <span class="chart-title">AI Analysis</span>
-            <div style="display:flex;gap:8px;align-items:center">
-              <span id="intel-doc-info" style="font-size:0.75rem;color:var(--muted)"></span>
-              <button class="reload-btn" id="intel-clear-btn" style="font-size:0.72rem;padding:4px 10px">Clear Chat</button>
-            </div>
+            <button class="reload-btn" id="intel-clear-btn" style="font-size:0.72rem;padding:4px 10px">Clear Chat</button>
           </div>
           <div id="intel-messages"></div>
           <div id="intel-key-row" style="display:none">
@@ -3019,20 +3000,13 @@ document.getElementById('sync-clear-btn').addEventListener('click', () => {
 //  MARKET INTELLIGENCE — PAGE 3
 // ================================================================
 const ANTHROPIC_KEY_STORAGE = 'anthropic_api_key';
-const MARKET_DOCS_KEY       = 'market_docs_text';
-
-// Set PDF.js worker
-if (typeof pdfjsLib !== 'undefined') {
-  pdfjsLib.GlobalWorkerOptions.workerSrc =
-    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-}
 
 let intelSpyChart   = null;
 let intelHistory    = [];   // [{role:'user'|'assistant', content:string}]
 let intelSpySummary = '';   // recent candle data passed to Claude
 
 function getAnthropicKey() { return localStorage.getItem(ANTHROPIC_KEY_STORAGE) || ''; }
-function getMarketDocs()   { return localStorage.getItem(MARKET_DOCS_KEY) || ''; }
+function getMarketDocs()   { return window.MARKET_DOCS_TEXT || ''; }
 
 // ── PDF text extraction ──
 async function extractPdfText(file) {
@@ -3047,25 +3021,6 @@ async function extractPdfText(file) {
   return text;
 }
 
-document.getElementById('intel-pdf-input').addEventListener('change', async function () {
-  const files = Array.from(this.files);
-  if (!files.length) return;
-  const statusEl = document.getElementById('intel-doc-status');
-  statusEl.textContent = `Extracting text from ${files.length} file(s)…`;
-  try {
-    let combined = '';
-    for (const f of files) {
-      statusEl.textContent = `Reading ${f.name}…`;
-      combined += await extractPdfText(f);
-    }
-    localStorage.setItem(MARKET_DOCS_KEY, combined);
-    statusEl.textContent = `${files.length} document(s) loaded (${Math.round(combined.length / 1000)}KB).`;
-    this.value = '';
-    renderPage3();
-  } catch (err) {
-    statusEl.textContent = 'Error: ' + err.message;
-  }
-});
 
 // ── SPY D1 chart ──
 async function loadIntelSpyChart() {
@@ -3228,24 +3183,12 @@ async function renderPage3() {
   let chartOk = false;
   try { chartOk = await loadIntelSpyChart(); } catch (_) {}
 
-  const docs        = getMarketDocs();
   const anthropicKey = getAnthropicKey();
-  const uploadEl    = document.getElementById('intel-doc-upload');
   const chatCardEl  = document.getElementById('intel-chat-card');
   const keyRowEl    = document.getElementById('intel-key-row');
   const inputRowEl  = document.getElementById('intel-input-row');
-  const docInfoEl   = document.getElementById('intel-doc-info');
 
-  if (!docs) {
-    uploadEl.style.display  = '';
-    chatCardEl.style.display = 'none';
-    return;
-  }
-
-  // Docs present — show chat card
-  uploadEl.style.display   = 'none';
   chatCardEl.style.display = '';
-  docInfoEl.textContent    = `${Math.round(docs.length / 1000)}KB of documents loaded`;
 
   if (!anthropicKey) {
     keyRowEl.style.display   = '';
