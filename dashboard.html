@@ -1710,10 +1710,25 @@ function loadCSV(text) {
     // Also patch openDate/closeDate/holdMs on existing trades from the fresh parse
     // so re-uploading the CSV automatically repairs any previously mis-parsed times.
     const freshByFp = new Map(closedTrades.map(t => [fingerprintTrade(t), t]));
+
+    // Fuzzy fallback: match by symbol + open-day + side when the exact _fp doesn't match.
+    // This handles the case where stale localStorage data has wrong timestamps baked into _fp.
+    // Collisions (two trades, same symbol+day+side) are detected and excluded from fuzzy matching.
+    const freshByDay = new Map();
+    for (const t of closedTrades) {
+      const dayKey = `${t.symbol}|${t.openDate.toDateString()}|${t.side}`;
+      freshByDay.set(dayKey, freshByDay.has(dayKey) ? null : t); // null = collision
+    }
+
     state.allTrades = state.allTrades.map(existing => {
-      const fresh = freshByFp.get(fingerprintTrade(existing));
+      let fresh = freshByFp.get(fingerprintTrade(existing));
+      if (!fresh) {
+        const dayKey = `${existing.symbol}|${existing.openDate.toDateString()}|${existing.side}`;
+        fresh = freshByDay.get(dayKey) || null;
+      }
       if (!fresh) return existing;
-      return { ...existing, openDate: fresh.openDate, closeDate: fresh.closeDate, holdMs: fresh.holdMs };
+      // Carry over correct timing + updated _fp; preserve user-added metadata (setups, etc.)
+      return { ...existing, _fp: fresh._fp, openDate: fresh.openDate, closeDate: fresh.closeDate, holdMs: fresh.holdMs };
     });
     const seen  = new Set(state.allTrades.map(fingerprintTrade));
     const added = closedTrades.filter(t => !seen.has(fingerprintTrade(t)));
