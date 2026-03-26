@@ -180,6 +180,7 @@
     .metric-card .value.pos { color: var(--green); }
     .metric-card .value.neg { color: var(--red); }
     .metric-card .value.neutral { color: var(--teal); }
+    .metric-card .sub-value { font-size: 0.8rem; color: var(--muted); margin-top: 4px; }
 
     /* ── TABLE ── */
     .table-wrapper {
@@ -741,6 +742,7 @@
     <div class="metric-card">
       <div class="label">Account P&amp;L</div>
       <div class="value" id="m-return">—</div>
+      <div class="sub-value" id="m-avg-pct">—</div>
     </div>
     <div class="metric-card">
       <div class="label">Profit Factor</div>
@@ -751,8 +753,8 @@
       <div class="value neutral" id="m-wr">—</div>
     </div>
     <div class="metric-card">
-      <div class="label">Net P&amp;L</div>
-      <div class="value" id="m-pnl">—</div>
+      <div class="label">Avg Cost</div>
+      <div class="value neutral" id="m-avg-cost">—</div>
     </div>
     <div class="metric-card">
       <div class="label">Total Trades</div>
@@ -1366,18 +1368,21 @@ function mergeSubs(subs) {
 //  6. METRICS
 // ================================================================
 function computeMetrics(trades, startBalance) {
-  if (!trades.length) return { accountReturn: 0, profitFactor: 0, winRate: 0, netPnL: 0, totalTrades: 0 };
+  if (!trades.length) return { accountReturn: 0, profitFactor: 0, winRate: 0, totalTrades: 0, avgNetPct: 0, avgCost: 0 };
   const netPnL     = trades.reduce((s, t) => s + t.netPnL, 0);
   const wins       = trades.filter(t => t.status === 'Win');
   const losses     = trades.filter(t => t.status === 'Loss');
   const grossWins  = wins.reduce((s, t) => s + t.netPnL, 0);
   const grossLoss  = Math.abs(losses.reduce((s, t) => s + t.netPnL, 0));
+  const avgNetPct  = trades.reduce((s, t) => s + (t.netPnLPct || 0), 0) / trades.length;
+  const avgCost    = trades.reduce((s, t) => s + (t.cost || 0), 0) / trades.length;
   return {
     accountReturn: netPnL,
     profitFactor:  grossLoss > 0 ? grossWins / grossLoss : (grossWins > 0 ? Infinity : 0),
     winRate:       (wins.length / trades.length) * 100,
-    netPnL,
     totalTrades:   trades.length,
+    avgNetPct,
+    avgCost,
   };
 }
 
@@ -1433,14 +1438,16 @@ function renderMetrics(m) {
   ret.textContent = fmtCurrency(m.accountReturn);
   ret.className = 'value ' + (m.accountReturn >= 0 ? 'pos' : 'neg');
 
+  const avgPctEl = document.getElementById('m-avg-pct');
+  const avgPctSign = m.avgNetPct >= 0 ? '+' : '';
+  avgPctEl.textContent = `avg ${avgPctSign}${m.avgNetPct.toFixed(2)}% per trade`;
+
   const pf = document.getElementById('m-pf');
   pf.textContent = m.profitFactor === Infinity ? '∞' : m.profitFactor.toFixed(2);
 
-  document.getElementById('m-wr').textContent    = fmtPct(m.winRate);
+  document.getElementById('m-wr').textContent = fmtPct(m.winRate);
 
-  const pnlEl = document.getElementById('m-pnl');
-  pnlEl.textContent = fmtCurrency(m.netPnL);
-  pnlEl.className   = 'value ' + (m.netPnL >= 0 ? 'pos' : 'neg');
+  document.getElementById('m-avg-cost').textContent = fmtCurrency(m.avgCost, false);
 
   document.getElementById('m-trades').textContent = m.totalTrades;
 }
