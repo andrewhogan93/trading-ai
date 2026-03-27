@@ -794,7 +794,7 @@
 
   <div class="filter-bar">
     <div class="filter-group">
-      <label>Open Date Range</label>
+      <label>Close Date Range</label>
       <input type="text" id="f-daterange" placeholder="All dates" readonly>
     </div>
     <div class="filter-group">
@@ -1651,11 +1651,11 @@ function applyFilters(trades, f) {
   return trades.filter(t => {
     if (f.dateFrom) {
       const from = parseDateInput(f.dateFrom);
-      if (from && t.openDate < from) return false;
+      if (from && t.closeDate < from) return false;
     }
     if (f.dateTo) {
       const to = parseDateInput(f.dateTo);
-      if (to) { to.setHours(23, 59, 59, 999); if (t.openDate > to) return false; }
+      if (to) { to.setHours(23, 59, 59, 999); if (t.closeDate > to) return false; }
     }
     if (f.type   !== 'All' && t.type   !== f.type)   return false;
     if (f.side   !== 'All' && t.side   !== f.side)   return false;
