@@ -48,6 +48,13 @@ window.MARKET_DOCS_TEXT = `
 
 ## 3. Moving Averages as Dynamic Support / Resistance
 
+### Key MAs Used
+- **Daily chart MAs:** 20-day, 50-day, 100-day, and 200-day Simple Moving Averages (SMA)
+- These are widely used by most traders and institutions — that reliance is what makes them relevant; the S&P 500 frequently migrates toward these levels
+- **Bullish cycle:** 50-day MA > 100-day MA > 200-day MA (strong long-term uptrend)
+- **Bearish cycle:** 50-day MA < 100-day MA < 200-day MA (strong long-term downtrend)
+- MAs only apply to **daily charts**; they are not as widely used on shorter timeframes and thus less relevant there
+
 ### In a Bullish Cycle — MAs are "Safety Nets"
 - **Key levels (in order of importance):** AVWAPQ → 50-day MA → 100-day MA → 200-day MA
 - During dips, observe which level provides support — look for the market to **fly off** the level with stacked green candles on heavy volume
@@ -63,12 +70,51 @@ window.MARKET_DOCS_TEXT = `
 - **Take gains before October** (seasonal bounce risk)
 - As the bearish cycle matures: marginal new lows + taller bounces = sign a base is forming → reduce size, favor taking gains at horizontal support rather than measured moves
 
-### Key MA Signals
+### How to Tell If a Breakdown Is Real
+- A strong market decline will **attack the MA with a long red candle** and breach it on the first effort
+- A **close below the MA** is bearish, especially if materially below it
+- **Follow-through selling the next day is critically important** — breaching the MA alone is not enough; that is what gets it on your radar; immediate follow-through confirms the move is legitimate ("escape velocity")
+- A series of consecutive closes below the MA serves as technical confirmation of weakness
+- If horizontal support and longer-term uptrend lines are also breached during the decline, that adds further confirmation
+
+### How to Tell If MA Support Is Likely to Hold
+- If the move down to the MA is tenuous with mixed, overlapping candles, the trend is weak and the MA is likely to hold
+- **Ideal bullish signal:** a brief intraday dip toward the MA that does not quite reach it before the market bounces — buyers are aggressive and don't want to miss the opportunity
+
+### How to Tell If MA Resistance Is Likely to Hold
+- If the climb back up to the MA (from below) is tenuous with mixed overlapping green and red candles, it is unlikely to get through — especially if the market has spent more than a week below it
+- **Bearish signal:** market is rejected from the MA before it even tests it — sellers are aggressive; they don't wait for the level to be touched
+
+### How to Tell If the Breakout Above MA Is Real
+- After a prolonged decline, market finds support and rebounds; attacks the MA with a series of long green candles (not a gradual drift — an explosive move)
+- Breach of a downward-sloping trendline or horizontal resistance level at the same time increases conviction
+- **SPY must close well above the MA** with follow-through buying the next few days
+
+### Bollinger Band Compression at a MA
+- If the market drifts to a MA and chops back and forth without conviction, it is likely to spend time there; day-to-day movement above and below becomes irrelevant
+- In this scenario, Bollinger Bands compress and the market falls into a trading range
+- **Action:** draw horizontal support and resistance lines at the recent high and low; do not trade the compression — wait for a breakout above or below those levels; once breached, the market will have the "escape velocity" needed for follow-through
+
+### Golden Cross and Death Cross
+- **Golden Cross:** 50-day MA crosses above 200-day MA → bullish; price has been above 200-day MA for some time, confirming support at that level; fairly reliable but infrequent
+- **Death Cross:** 50-day MA crosses below 200-day MA → bearish; price has been below 200-day MA and stayed below it, validating resistance; traders watch for both crosses, which makes them self-fulfilling
+
+### Exponential Moving Averages (EMA)
+- EMAs place greater weight on recent data — they adjust quickly and follow the market more closely than SMAs
+- **EMA(8):** used by short-term traders to confirm trend strength and for entry/exit
+  - Long SPY in uptrend: ride the position until SPY closes below EMA(8) — effectively a trailing stop
+  - Short SPY: stick with the short until EMA(8) is breached to the upside — trailing stop for shorts
+- **Distance from EMA(8):** if the spread between price and EMA(8) is expanding, the move is getting over-extended; join the move but wait patiently for a pullback to EMA(8) before entering
+- **Very short-term traders:** use an EMA(3)/EMA(8) cross for entry and exit signals
+
+### Key MA Signals (Quick Reference)
 - Market flies off 50-day MA on heavy volume → Strong buy signal; trend intact
 - Market lingers at 50-day MA with light volume → Likely to test 100-day MA
 - Bounce rejected at 200-day MA in bear cycle → Strong short signal; add on next leg down
-- 50-day crosses back above 200-day → Bullish cycle beginning
+- 50-day crosses back above 200-day → Bullish cycle beginning (Golden Cross)
 - Market rallies above 50-day MA in bear cycle then fails → Stay short; add when it drops back through
+- Market attacks MA with long candle + follow-through next day → Legitimate breach; trade the direction
+- Market drifts to MA with mixed candles → Likely to hold; watch for bounce, not breakdown
 
 ---
 
@@ -161,19 +207,83 @@ Volume indicates aggression. **Heavy volume = conviction; light volume = suspici
 
 ## 7. Trendlines
 
-### Upward Trendlines (L+ trendlines)
+### Overview
+Trendlines are constructed by connecting the highs or lows on a chart. Not all trendlines are equal — the starting point, end point, angle, and age all determine reliability. Key rules:
+- **Never draw through the body of a candle**
+- **Steep trendlines (>45 degrees) are less reliable** — easily breached; not tradeable
+- **Older, more gradual trendlines are more reliable** than short-term ones
+- The easier a trendline is to spot visually, the more relevant it is
+- Multiple trendlines converging at the same price point = increased significance
+
+### Four Trendline Types (Most to Least Reliable)
+
+**1. High- (Downward sloping, connecting highs)**
+- Slopes downward; connects a series of lower highs
+- Sign of selling pressure; bounces can't reach the prior high
+- **Breakout above = bullish signal** (most reliable trendline breakout)
+- Best confirmation: gap up + long green candle closing on its high + follow-through next day
+- **"High- Fake":** price breaks above then drops back below the trendline — rare; bearish confirmation
+
+**2. Low+ (Upward sloping, connecting lows)**
+- Slopes upward; connects a series of higher lows
+- Sign that buyers are engaged; every pullback is bought before reaching prior support
+- The longer and tighter the trendline, the better — a tight orderly Low+ = buyers are aggressive
+- **Breakdown below = bearish signal** (trend reversal); second most reliable trendline signal
+- Best entry for shorts: Low+ trendline breached cleanly on first attempt with close below it
+- **"Low+ Fake":** price breaks below then recovers back above — rare; bullish confirmation
+
+**3. High+ (Upward sloping, connecting highs)**
+- Slopes upward; less reliable — trendline is chasing the trend
+- **"High+ Top":** price breaks above a High+ trendline then drops back below = possible top / trend reversal signal
+
+**4. Low- (Downward sloping, connecting lows)**
+- Slopes downward; least reliable
+- Breakdown below is often a selling climax rather than a continuation signal
+- **"Low- Bottom":** price breaks below a Low- trendline then rallies back above = possible bottom signal
+
+### Trendline Breach Requirements
+- Must be attacked with **long candles** (red for breakdowns, green for breakouts) and **heavy volume**
+- **Follow-through on the next candle(s) is critically important** — breach alone is not enough; "escape velocity" needed
+- A series of consecutive closes beyond the trendline confirms the move is legitimate
+- **Time breaches** (trendline breached because of time passing during horizontal compression, not price movement) are low quality and not tradeable
+- Breach without follow-through on light volume = likely false break
+
+### Upward Trendlines (Low+) — Detailed Rules
 - In a bullish cycle, treat as "safety nets" — watch for bounces off trendline support
-- Breach of upward trendline on heavy volume with a long red candle = potential trend reversal; do not buy immediately
-- A breach back above the trendline on heavy volume = false breakdown; re-enter longs
+- Breach of Low+ on heavy volume with a long red candle = potential trend reversal; do not buy immediately
+- A breach back above the Low+ on heavy volume = false breakdown ("Low+ Fake"); re-enter longs
 
-### Downward Trendlines (H- trendlines)
+### Downward Trendlines (High-) — Detailed Rules
 - In a bearish cycle, bounces that reach the H- trendline = short opportunity
-- H- trendline + MA acting as ceiling = high-confidence short
+- **H- trendline + MA acting as ceiling = high-confidence short**
+- When breached to the upside: bullish; much more reliable than High+ breakouts
+- Best confirmation: explosive move up (not gradual drift) + heavy volume + follow-through
 
-### Trendline Breach Protocol
-- Wait for **confirmation** after a breach (1–3 bars)
-- Heavy volume on breach adds legitimacy
-- Breach without follow-through (low volume, candles quickly recover) = likely false break
+### Trading Channels
+- Two parallel trendlines — one connecting highs, one connecting lows
+- Many touches on both ends = stubborn channel, hard to reverse
+- **Trade in the direction of the channel:** short rallies to the upper end; take gains at the lower end (for a downward channel)
+- **Downward channel typically ends** with a breakdown/selling climax, then reverses back into the channel
+- **Upward channel typically ends** with a breakout/buying climax, then pulls back into the channel
+
+### Wedges (Converging Trendlines)
+- Two trendlines converging toward a single point
+- **The longer-term trendline carries more weight** — indicates the most likely breakout direction
+- **Tight wedges** with both trendlines at less than 30 degrees produce the best breakouts
+- Wait for **breakout AND follow-through** — fakes are common
+- Just before convergence = horizontal compression = "coiled spring" ready to release
+- **Nested wedges:** a shorter-term contra trendline forms within a longer-term trend — this is an opportunity to join the longer trend
+
+### Nested Trendlines
+- **Longer-term trendline > shorter-term trendline** in importance
+- A short-term contra trendline breach within a longer-term trend = excellent entry to join the main trend
+- Example: in a downtrend (High-), a short-term Low+ forms inside it; breach of that Low+ = excellent short entry
+
+### Reliability Ranking (Trendline Signals)
+1. High- breakout (upside breach of downward-sloping resistance trendline) — most reliable
+2. Low+ breakdown (downside breach of upward-sloping support trendline)
+3. High+ breakout
+4. Low- breakdown — least reliable
 
 ---
 
@@ -317,8 +427,20 @@ Define 4–5 scenarios each morning:
 - **Death cross:** 50-day MA crosses below 200-day MA; bearish cycle confirmation
 - **Golden cross:** 50-day MA crosses above 200-day MA; bullish cycle confirmation
 - **Buying climax:** Light-volume spike to new high at end of trend; expect reversal soon
-- **L+ trendline:** Upward sloping trendline acting as support in a bullish cycle
-- **H- trendline:** Downward sloping trendline acting as resistance in a bearish cycle
+- **L+ trendline / Low+:** Upward sloping trendline connecting higher lows; acts as support in a bullish cycle; breakdown below = bearish signal
+- **H- trendline / High-:** Downward sloping trendline connecting lower highs; acts as resistance in a bearish cycle; breakout above = bullish signal
+- **High+:** Upward sloping trendline connecting higher highs; less reliable; "High+ Top" = breakout then reversal = possible trend top
+- **Low-:** Downward sloping trendline connecting lower lows; least reliable; "Low- Bottom" = breakdown then reversal = possible trend bottom
+- **High- Fake:** Price breaks above a High- trendline then drops back below; rare bearish confirmation
+- **Low+ Fake:** Price breaks below a Low+ trendline then recovers above; rare bullish confirmation
+- **Time breach:** A trendline breached due to time passing (horizontal compression) rather than price movement; low quality, not tradeable
+- **Trading channel:** Two parallel trendlines (one connecting highs, one connecting lows); trade in the direction of the channel
+- **Wedge:** Two converging trendlines; the longer-term line indicates the most likely breakout direction; tight wedges produce the best breakouts
+- **Nested trendline:** A shorter-term contra trendline forming within a longer-term trend; breach of the shorter-term line = entry to join the longer trend
+- **EMA(8):** 8-period exponential moving average; used by short-term traders as a trailing stop and trend confirmation tool
+- **EMA(3)/EMA(8) cross:** Very short-term entry/exit signal used by intraday traders
+- **Escape velocity:** Sufficient momentum after breaching a key level (MA, trendline, S/R) to sustain the move — confirmed by follow-through closes beyond the level
+- **Selling climax:** A breakdown below a Low- trendline or channel floor that is quickly reversed; often marks a bottom
 
 ---
 
