@@ -1892,6 +1892,14 @@ function saveToStorage() {
     startBalance: state.startBalance,
     minDate: state.minDate ? state.minDate.getTime() : null,
     maxDate: state.maxDate ? state.maxDate.getTime() : null,
+    filters: {
+      dateFrom: state.filters.dateFrom,
+      dateTo:   state.filters.dateTo,
+      type:     state.filters.type,
+      side:     state.filters.side,
+      statuses: [...state.filters.statuses],
+      setups:   [...(state.filters.setups || [])],
+    },
   };
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(payload)); } catch(e) {}
 }
@@ -1915,6 +1923,14 @@ function loadFromStorage() {
     state.startBalance = payload.startBalance || 0;
     state.minDate = payload.minDate ? new Date(payload.minDate) : null;
     state.maxDate = payload.maxDate ? new Date(payload.maxDate) : null;
+    if (payload.filters) {
+      state.filters.dateFrom  = payload.filters.dateFrom  || '';
+      state.filters.dateTo    = payload.filters.dateTo    || '';
+      state.filters.type      = payload.filters.type      || 'All';
+      state.filters.side      = payload.filters.side      || 'All';
+      state.filters.statuses  = new Set(payload.filters.statuses || ['Win','Loss','Breakeven']);
+      state.filters.setups    = new Set(payload.filters.setups   || []);
+    }
     return state.allTrades.length > 0 || state.openTrades.length > 0;
   } catch(e) { return false; }
 }
@@ -1929,6 +1945,15 @@ function showDashboard() {
   document.getElementById('app').style.display           = 'flex';
   document.getElementById('upload-error').style.display  = 'none';
   if (!datePicker) initDatePicker();
+  // Restore filter UI to match loaded state
+  if (state.filters.dateFrom && state.filters.dateTo) {
+    datePicker.setDate([state.filters.dateFrom, state.filters.dateTo], false);
+  }
+  document.getElementById('f-type').value = state.filters.type || 'All';
+  document.getElementById('f-side').value = state.filters.side || 'All';
+  document.querySelectorAll('#f-status .toggle-btn').forEach(b => {
+    b.classList.toggle('active', state.filters.statuses.has(b.dataset.val));
+  });
   updatePeriodLabel();
   renderOpenBanner(state.openTrades);
   refresh();
@@ -2063,6 +2088,7 @@ function initDatePicker() {
         state.filters.dateFrom = '';
         state.filters.dateTo   = '';
       }
+      saveToStorage();
       refresh();
     },
     onReady(_, __, fp) {
@@ -2100,6 +2126,7 @@ document.getElementById('clear-btn').addEventListener('click', () => {
   document.getElementById(id).addEventListener('change', function () {
     const map = { 'f-type':'type','f-side':'side' };
     state.filters[map[id]] = this.value;
+    saveToStorage();
     refresh();
   });
 });
@@ -2111,6 +2138,7 @@ document.querySelectorAll('#f-status .toggle-btn').forEach(btn => {
     const val = btn.dataset.val;
     if (btn.classList.contains('active')) state.filters.statuses.add(val);
     else state.filters.statuses.delete(val);
+    saveToStorage();
     refresh();
   });
 });
