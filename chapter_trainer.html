@@ -357,17 +357,17 @@ function renderChapterList(data, errorMsg) {
 // ── PDF rendering ─────────────────────────────────────────────────────────────
 async function renderPage(pdfDoc, pageNum) {
   const page = await pdfDoc.getPage(pageNum);
-  let viewport = page.getViewport({ scale: 2.0 }); // higher scale = sharper for cropping
-  const maxDim = 2400;
+  let viewport = page.getViewport({ scale: 3.5 });
+  const maxDim = 4000;
   if (viewport.width > maxDim || viewport.height > maxDim) {
     const clamp = Math.min(maxDim / viewport.width, maxDim / viewport.height);
-    viewport = page.getViewport({ scale: 2.0 * clamp });
+    viewport = page.getViewport({ scale: 3.5 * clamp });
   }
   const canvas = document.createElement('canvas');
   canvas.width  = Math.round(viewport.width);
   canvas.height = Math.round(viewport.height);
   await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-  const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+  const dataUrl = canvas.toDataURL('image/jpeg', 0.90);
   return { dataUrl, imgWidth: canvas.width, imgHeight: canvas.height };
 }
 
@@ -385,23 +385,27 @@ async function cropRegion(dataUrl, imgWidth, imgHeight, dispX, dispY, dispW, dis
   crop.width  = sw;
   crop.height = sh;
   crop.getContext('2d').drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
-  return crop.toDataURL('image/jpeg', 0.92);
+  return crop.toDataURL('image/jpeg', 0.97);
 }
 
 // ── Claude Vision: analyze a clip ────────────────────────────────────────────
-async function analyzeClipWithClaude(base64, pageNum, chapterTitle, apiKey) {
+async function analyzeClipWithClaude(cropBase64, fullPageBase64, pageNum, chapterTitle, apiKey) {
   const prompt =
-`You are analyzing a chart or diagram selected by the user from page ${pageNum} of a trading education book chapter titled "${chapterTitle}".
+`You are analyzing a selected chart or diagram from page ${pageNum} of a trading education book chapter titled "${chapterTitle}".
 
-The user has cropped this specific region because it contains important trading knowledge they want you to learn. Analyze it thoroughly.
+You have been given TWO images:
+- IMAGE 1: The full page — use this for context (surrounding text, labels outside the selection, overall layout)
+- IMAGE 2: The user's selected region — this is the chart or diagram they want you to learn from in detail
+
+Use Image 1 to understand context. Use Image 2 for your detailed analysis. If any annotations are partially cut off in Image 2, refer to Image 1 to complete them.
 
 1. WHAT IS SHOWN
    Describe what you see: chart type, instrument/market (if labeled), time frame (if visible), overall price action or structure.
 
 2. ANNOTATIONS INVENTORY — be exhaustive
-   List every single annotation: arrows, text labels, callout boxes, drawn lines, trend lines, support/resistance levels, shaded zones, circles, brackets. For each one:
-   - Quote the exact text if any
-   - Describe precisely what it is marking or pointing to
+   Carefully examine both images. List every single annotation visible on the chart: arrows, text labels, callout boxes, drawn lines, trend lines, support/resistance levels, shaded zones, circles, brackets, any handwritten or overlaid marks. For each one:
+   - Quote the exact text (check Image 1 if the text is cut off in Image 2)
+   - Describe precisely what it is marking or pointing to on the chart
    - Note its color and visual style
 
 3. PATTERN OR CONCEPT BEING TAUGHT
@@ -410,7 +414,7 @@ The user has cropped this specific region because it contains important trading 
    - What should a trader look for, do, or avoid based on this?
 
 4. YOUR UNDERSTANDING
-   Go beyond just describing labels. Demonstrate that you understand the nuance — what is the core insight a trader should internalize from this chart? What would make this setup valid vs invalid?`;
+   Go beyond describing labels. Demonstrate that you understand the nuance — what is the core insight a trader should internalize? What makes this setup valid vs invalid?`;
 
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -422,11 +426,12 @@ The user has cropped this specific region because it contains important trading 
     },
     body: JSON.stringify({
       model: 'claude-opus-4-6',
-      max_tokens: 1400,
+      max_tokens: 1600,
       messages: [{
         role: 'user',
         content: [
-          { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: base64 } },
+          { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: fullPageBase64 } },
+          { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: cropBase64 } },
           { type: 'text', text: prompt },
         ],
       }],
@@ -503,7 +508,9 @@ async function createClip(pageNum, dispX, dispY, dispW, dispH, displayW, display
 
   // Analyze asynchronously
   try {
-    const analysis = await analyzeClipWithClaude(cropDataUrl.split(',')[1], pageNum, chapterTitle, apiKey);
+    const analysis = await analyzeClipWithClaude(
+      cropDataUrl.split(',')[1], pr.dataUrl.split(',')[1], pageNum, chapterTitle, apiKey
+    );
     clip.aiInterpretation = analysis;
     updateClipInterp(clip.id, analysis, false);
   } catch (e) {
