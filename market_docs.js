@@ -1,246 +1,326 @@
-﻿// Auto-generated from The system/Long term Market Analysis PDFs
-window.MARKET_DOCS_TEXT = `=== _Tis The Season_ _ OneOption - Stocks & Options Trading Suite - Reading Mode.pdf ===
-Customize appearance
-"Tis The Season" | OneOption - Stocks & Options Trading Suite
-This is when I make the most money.
-I contemplated not adding this article because the concept is so easy. Then I thought, "How could I leave out something so powerful? In the last quarter of the year, I typically make half of my money for the entire year. You read that correctly and it's been this way for over twenty years with very few exceptions.
-I will usually try to be in cash the rst week of August. That is when I like to take time off and the market is very dull. Sometimes we start to see some selling pressure. Traders take vacations, the Fed is in recess and the "rats" have ed the capitol. No one is "minding the shop" and investors get nervous.
-The ultimate set-up is a nice deep drop in September and October. The deeper the drop, the better. I am hawking intraday moves lower each day. I prefer a deep "air pocket" low early in the day and I am watching for signs of stacked green candles on heavy volume off of the low. If it comes early in the day, I know that I have the rest of the day to get additional price con rmation and I can add into the closing bell. That market decline is going to set up a fantastic snap back rally with lots of momentum. I count on these moves each year and I am aggressive! I will typically enter half of my total position on the rst day and then I will add the rest the next day. I am expecting immediate follow through!
-This happens every year because Asset Managers like to mark portfolios up into year end. They are paid on a percentage of assets under management. When that value is high, they make more money. There is disincentive to sell stocks in Q4. When there are no sellers, a small buy order can fuel the move higher. Investors love opening their year end statement when the market closes near the high so everybody wins.
-Do I trade the drop in September? Yes, I will cautiously trade that move lower, but I know not to overstay my welcome. I want my complete focus to be on the year end rally.
-Does the move always come in October? Sometimes the move comes in late September, but it usually happens around the last week in October.
-How large of a position should I take? Only professional traders should take large positions so trade normal size. Your entry might not be good, the position could move against you and you will be an emotional train wreck. If your size is too big you will also exit too quickly and you'll miss the majority of the move. Be patient. This knowledge will come with experience. There is always the outside chance that this will be one of the rare times we don't get the year end rally. Once you get a few of these under your belt, you'll know what to do.
-What if there is not a big drop in September/October? Then there will not be much of a year end rally. We need that short covering and we need bargain hunting by Asset Managers to fuel the move.
-How long should I hold the position? You always need to actively manage positions. Most of the time, you don't need to touch this position and the market will rally right into year end.
-Should I hold the position into January? If this is a light volume rally, make sure to take pro ts before year end. These gains can quickly be erased.
-What if the market has been in a bearish trend prior to October? Even when the market has been trending lower, you will usually see year end rally. Asset Managers don't want to miss it. Use greater caution since the market is in a down trend and make sure to enter on a deep drop with a snap back rally. You need those stacked green M5 candles on huge volume. Those deep drops will increase your odds of success.
-What if there is no year end rally? That is rare and it's a bad omen for Q1. The market is likely to move lower in the new year.
-Do you ever short into year end? I have a trading rule that I don't have to be long in November and December, but I can't be short. Cash is a position
-If you don't learn anything else in this book, remember this article. It is easy and anyone can do it.
+// Distilled from OneOption trading education materials (The system/Long term Market Analysis/)
+window.MARKET_DOCS_TEXT = `
+# SPY Market Analysis: Distilled Analytical Framework
 
-=== Horizontal Support & Resistance _ OneOption - Stocks & Options Trading Suite - Reading Mode.pdf ===
-Customize appearance
-Horizontal Support & Resistance | OneOption Stocks & Options Trading Suite
-These technical levels are easy to spot on a chart and they are widely used.
-Introduction
-Horizontal support and resistance levels are easy to spot on a daily chart. Longer term horizontal levels with many touches are more signi cant than shorter term horizontal levels with only a few touches. Traders lean on these levels and that makes them signi cant. If the market has been above a horizontal support level, traders will assume that it will not be breached, especially if it is above all of the major moving averages as well (sign of strong trend). As the market drifts down to horizontal support, look for mixed, overlapping candles in this scenario. That will be a sign that the trend strength is weak on the way down. Ideally, the horizontal support level will not even be touched. That would be a sign that buyers are eager to buy at that level and they don't want to risk missing the bounce so they error on being early. Tails under the body of the candle will be a sign that buying pressure is building.
-Buyers are eager to buy the dip and this support is not even touched
-In the chart above, the market had been in a very strong long-term uptrend. Once that horizontal support was con rmed, it rebounded quickly. The previous high serves as horizontal resistance. The stacked consecutive green candles with little to no overlap suggest strong trend strength and that previous high is going to be attacked. Notice how the market blew through the previous high on the rst attempt. One brief retest of the breakout through resistance and it was off to the races.
-Case Studies: Testing Support & Resistance
-When the market tests horizontal resistance with mixed overlapping candles it is a sign that the attack on that level is weak. It is not likely to have the re power it needs to get through. This is often the case if the market has had to travel far to reach that resistance level. If multiple attempts can't force a breakout, it is a sign that the selling pressure is building. In the chart below you can see how the market eventually backed off and it took a running start at the resistance level. The stacked green candles looked impressive, but they barely broke through resistance. The breakout is important, but so is the follow through. In this case there wasn't any. A brief compression above the breakout and the market rolled right over. That breakout was a head fake. Traders who bought the new high were about to get ushed out.
-Horizontal levels that are NOT attacked are likely to hold
-Let's continue to reference the chart above. This was actually a market transition and we can see the rst signs that a long-term trend is about to reverse. Off of that failed breakout, the selling pressure was heavy. We can see that from the stacked red candles and the breach of horizontal support on the rst attempt. There was immediate follow through. After a very long uptrend, buying dips had been a successful strategy and buyers were not going to throw in the towel so quickly. The bounce was violent, but sellers returned and now we will shift our focus to horizontal resistance.
-The horizontal support breaches were signaling a trend change
-Let's continue to reference the chart above. We can see that the selling pressure is persistent and that horizontal resistance is forming. We can also see that horizontal support has formed and that it is being tested with greater frequency. The market is transitioning from a 12-year raging bull market to a bear market and we are witnessing extreme volatility as buyers and sellers do battle. This battleship will be hard to turn and buyers have not thrown in the towel yet. Sellers are also
-exing their muscles and a large range between horizontal support and resistance has formed. At either extreme, there is no follow through at this stage. Eventually, the sellers win and horizontal support is attacked with stacked red candles. That support failed easily and the downtrend continued. This low o cially put the SPY in bear market territory after a 12-year bull market. In the chart you will notice a blue shaded area. This is called a compression and it is the next topic we need to cover.
-Eventually sellers win the battle and horizontal support is attacked with stacked red candles
-Compressions are very tight ranges with de ned horizontal support and resistance. They are a sign that buyers and sellers are in equilibrium. The longer and tighter the compression, the bigger and more sustained the breakout. With regards to the market, we do not want to trade compressions. This is a time to be passive. Wait for the breakout and follow through. Once we know the direction, the move is likely to be sustained. In Option Stalker Pro you can see compressions on the chart using the 1OSqz indicator. Grey dots mean that the market is moving normally. Yellow dots mean that the market is compressing. Green and red dots signal a big breakout from the compression. We can spot the compressions easily on a SPY chart, but we can use Custom Search to
-nd them for stocks. Once we identify them, we drop horizontal alerts lines above the compression and below the compression so that we know when there is a breakout.
-The tight compression was breached on heavy volume.
-Long green and red candles can also mark horizontal support and resistance levels. They are less common on a daily chart, but when you have them you should watch what happens after they have formed. In general, the long candle forms because the price action in that direction has been very steady. A long green candle indicates steady buying all day long. The SPY opened on its low and closed near its high. A long red candle indicates steady selling pressure. The SPY opened near its high of the day and closed near its low. These long candles lose their relevance quickly and they are used more in analyzing price action during the next few bars.
-The open from long green and red candles can also serve as horizontal support and resistance respectively
-The open of a long green candle is signi cant because that was where buyers were excited. They came in and supported the market all day. If that open fails, it is a sign that the buyers at that level have been exhausted and that this horizontal support level has failed. The halfway point of that long green candle is signi cant, but less so. The open of a long red candle is signi cant because that is where sellers were excited. They unloaded the SPY all day. If the market rallies above the open from that long red candle it is a sign that sellers at that level have been exhausted and that this horizontal resistance level has failed. The half-way point of the long red candle is signi cant, but less so. It does provide valuable price action information so we will discuss it later in that section.
-Conclusion
-Horizontal support and resistance levels are important on longer term and shorter term time frames. They are easy to spot, and how the market approaches those levels is more important than the level itself. If resistance is attacked with stacked consecutive long green candles, we are likely to blow through it. If the move from the recent low covers a lot of territory and the candles are mixed and overlapping, resistance is likely to hold. Even if the market breaks through horizontal resistance, we still need to see follow through in the next few bars. That continuation con rms the breakout. Heavy volume on a breakout also legitimizes the move. Price compressions are a sign of equilibrium. Wait for a breakout and con rmation and expect follow through. The longer and tighter the compression, the bigger and more sustained the breakout.
+*Condensed from OneOption trading education materials. All frameworks apply to SPY (S&P 500 ETF) on daily and intraday charts.*
 
-=== Long-term Context Drives Short-term Trading _ OneOption - Stocks & Options Trading Suite - Reading Mode.pdf ===
-Customize appearance
-Long-term Context Drives Short-term Trading | OneOption - Stocks & Options Trading Suite
-Market First 10 min read 2025-01-28
-Zoom out and identify the pattern. Then determine your trading game plan.
-For those of you who have survived the bear market of 2022, you've learned a lot. The tendency is to use all of your analytical skills and tools to nail every move. Here are a couple of likely scenarios you might
-nd yourself in and a solution that will keep you on the straight and narrow. This could be one of the most important lessons you learn
-from me.
-The rst scenario is the FOMO trader. The market is breaking out to a new 52-week high and they are ready to buy. After a couple of hours they regret that decision. The market has pulled back and they could have entered better. The action dies down and the momentum is gone. Now they are stuck with an overnight trade that they did not plan on swing trading. After a couple of days, the market has given back some of its gains and they take a loss. In some cases it gets back to their entry price and they scratch it. What happened? Everything looked so great and then it turned to mush right after they got in. This scenario can be very frustrating and they are left wondering what they could have done differently.
-The next scenario is the contrarian trader. They wonder how the heck the market got this high when the Fed is still raising rates and when in ation is still running way above the 2% target. Two of the largest bank failures have happened this year and there could be a credit crisis. There is plenty of selling pressure and they can see that in the sluggish price action. When the market surges higher, much of the gain is erased in the next few days. They sense that the market move higher is going to run out of steam at some point and there are signs of resistance. The market had a down day and it came after it made a 52-week high. This could be the rst sign of a top so they start to take some short positions. Red candles off of a relative high often produce a pullback and we can see that on a D1 chart. As the pro t taking continues, the market drifts lower and they add to short positions. Out of nowhere, the market gaps higher on the open just when the short position was starting to gain traction. They know they are trading against the trend and they did not get the breakdown so they take a loss.
-"I can't buy and I can't short, so what in the hell am I supposed to do?"
-The rst thing you have to do is to take a giant step backwards. Get the longer-term market context and understand the prevailing price action. The market has a tendency to continue to do what it has been doing. You just need to gure out a game plan that will take advantage of the current price action.
-In the chart below you can see the prevailing market trend. You can draw a nice upward sloping D1 trendline. When you do that the market direction is clear. We couldn't say that at the beginning of 2023 because the market was still forming a base. As you draw those trendlines, you will notice lots of mixed green and red candles with overlap and there are many periods where the volume is low. This tells you that we are in a choppy trend higher. The market takes three steps forward and two steps backwards. There are plenty of opportunities to get long and there are always second chances to enter the trade. This realization allows you to take a deep breath. The next time you have the urge to chase, you need to realize that there will be a better entry point. This market is not off to the races. Chasing breakouts is nerve wracking and every time you do it, the SPY pulls back and you have to take heat. You convince yourself that this is "normal" and you prepare yourself for it. You might have even conditioned yourself to expect the position to move against you. The solution to this is pretty easy and for many of you, the tactic I am about to explain could turn your trading around.
-Buy dips and take gains when the bounce stalls. Repeat. I've reference AVWAPQ in the chart above and I will describe it in detail later in the course. It is the Volume Weighted Average Price anchored to triple witching. View it as a major moving average for now.
-Bear markets are pretty rare and many of you honed your skills during one. That is excellent because you have respect for the market and you understand that it can move both ways. You also appreciate the importance of "Market First". This knowledge makes you different from all of the other traders who went bust last year or those who are just getting started now and who will only know a bull market. Unfortunately, there is some "post tramatic stress disorder (PTSD)" that you have to work off. Make no mistake, the market has formed a base and it is grinding higher.
-So the pattern is very easy to see on a longer-term chart. The market takes three steps forward and two steps backwards. The problem is that most breakouts happen on the third step forward. You see the technical breakout and the volume is heavy, but you are scared because you are buying a new high. The next level of support is far away if that breakout fails. The trend higher is clear and if you realize you might have to weather another pullback. The drop is nerve wracking, but you stick it out. During that process you wonder why you always seem to enter trades poorly. When the SPY does come back to your entry price, you are on "pins and needles" and you think to yourself, "I am not going to let it go against me again." At the rst sign of trouble, you pull the plug. Then you watch the SPY stage a nice rally and you are on the sidelines fuming. So how do we solve this problem?
-The key is in that D1 chart I posted above. The breakout is nice, but there is no follow through. Instead of jumping on that breakout, be ready to buy dips. If you look at the candles you'll notice they are not all green. There is a mix of red and green candles. That tells you this move is not going straight up and that there are pullbacks. Now you just have to gure out a way to get alerts when the SPY pulls back and it nds support.
-Here's a method you can use with LRSI. If you are unfamiliar with it you can watch this video. When you see this SPY pattern, set an alert. The D1 LRSI will be > 80 and our servers know that. When LRSI drops below 20 and then it rises back above 20 you will get an alert. That is the rule base for LRSI. When the indicator has made a "round trip" (bullish to bearish to bullish) a dip has run its course and that's what I'm looking for. The beauty of the alert is that it did not cost you a dime to set it. You have no emotional attachment because you have no position. You are not tying up capital, you do not have to manage the position and you retain complete control. When the alert is triggered, you can evaluate the SPY dip and then decide if you want to take the trade or if you want to reset the alert. If the market has been in a steady and organized down trend while you are waiting, don't take the trade. If the dip is brief and shallow, you'll have a good entry point. The dotted lines below are where the alert was triggered. If you do not have this alert functionality in your current platform, take the Option Stalker Pro free trial. It has been a game changer for many traders and the user interface is easy to learn. There are a variety of variables and time frame that you can use to set alerts and we will discuss them in the stock section of the course.
-The dip is when you add to longer-term swing trades. The pullback will put you closer to a support level you can lean on so your stops can be tighter. You will also be able to gauge the upside potential because the SPY is likely to challenge the recent high. You will be entering at a great price and you want it to blow through that resistance.
-Your entire mental state will change if you use this approach. Instead of chasing, you will retain control at all times. You will set the alert and wait for that dip. Then you will evaluate what happened from time you set the alert until the time it was triggered. What did the SPY do? were there any giant red candles? Does everything still look good? Did the it
-nd support? When you take that trade you will have a very high level of con dence. You will also understand that the market is not going to go straight up.
-How do I know if the dip still has more downside? If you see stacked red candles and heavy volume, it is a sign that there is heavy selling pressure. Then you need to expect more selling. Reset the alerts. If the SPY has mixed overlapping candles and light volume on the pullback and if the drop is brief and shallow, it still has buyers and support will form quickly. When you see this you know you are close to taking action.
-At the very beginning of the article I mentioned a second scenario. It is the contrarian trader who is always looking for a market top. It is important to be aware of the fundamental market forces that are in play, but trade what you see and not what you think. The sooner you realize that you don't know shit... the better. Until we see a long red candle closing through that up trendline in the rst chart on very heavy volume, you have to trade as if every dip is a buying opportunity. The market is in an uptrend and the spikes higher can be violent. When they happen, you will be managing losses on shorts instead of focusing on new long positions. Don't pick market tops.
-The market has regained its footing after 2022 and the price action has been bullish... so roll with it. Don't buy breakouts, set alerts instead. When the alerts are triggered, evaluate the market dip. If all looks good, take the trade. You should have a tailwind and you want to see the SPY attack the recent high.
-This is your roadmap. I hope this lesson helps. To watch a video I recorded with an example click here.
+---
 
-=== Moving Averages.pdf ===
-=== Price Action - Applying Our Lessons - Part 1 _ OneOption - Stocks & Options Trading Suite - Reader Mode.pdf ===
-Customize appearance
-Price Action - Applying Our Lessons - Part 1 | OneOption - Stocks & Options Trading Suite
-Price Action � Applying Our Lessons � Part 1
-Market First 9 min read 2025-01-28
-Let's conduct longer-term technical analysis for the market using price action. We will go through an entire year and this is the rst of four parts.
-The principles for reading price action can be used for any time frame. If you are a day trader, you would use ve-minute charts. If you are an investor, you would use weekly charts. My longer-term swing trades last from 3-4 weeks so I will use daily charts to read the price action in this section. Later in the course we will use shorter time frames for overnight swing trades and for day trades.
-Before we get started I want to mention a few things. The same chart will be posted throughout this article. The longer term chart allows us to see how the current price action ts into the longer term picture (we call this context). I posted the same chart many times so that you do not have to keep scrolling back in the article to see the data point I am referencing. In the chart you will see hollow candles. These are key bars and they have long bodied candles, short tails/wicks and above average volume. As you know from the previous articles, these candles are very important to us. Finally, we are not using any other forms technical analysis (trendlines or moving averages). This section is purely reading price action. We will add those other forms of technical analysis when we apply everything we've learned.
-In the next section we will reference points 1-4.
-1. The long red candle should be bearish, but notice how we had a long red candle the day before that. When this second long red candle formed, the market gapped higher and all of the losses from the prior day were erased on the open. Eventually, the second red candle did close below the prior red candle. While this price action appears bearish (two long red candles in a row), the overlap tells us that this is not a strong move. Why? If sellers were truly aggressive, the second red candle would never have gapped up the following day. They would have kept the pressure on. This buying pressure is con rmed the next day when the green bar (hollow) closes above the midpoint of the second red candle. We want those midpoints on these key bars preserved. These are long bodied, mixed candles and they suggest volatility.
-2. The market rallied off of the recent low and the long green candle is encouraging. It closed just below horizontal resistance on the daily chart. Unfortunately, it was erased the next day by a long red candle and the midpoint of the green candle was breached (bearish). The interpretation of these two candles and the context from the start of the chart is that conditions are very volatile and there is not a clear sense of market direction. I would not be taking longer term swing trades in this environment because the market could go either way and a big move could be pending.
-3. The market is compressing at horizontal resistance and it made a marginal new high (barely got through the old high). The price action before the compression included a bullish hammer and stacked green candles with little to no overlap. This would normally be bullish, but notice how the rally took place on very light volume. The market was not able to advance after making the new high and the tiny bodied candles suggested that sellers were nearby. Why? If buyers were truly aggressive, they would have been able to add to the breakout after those stacked green candles and the volume would have been heavy.
-4. This long red candle is con rmation that we needed to remain cautious. To that point, we have mixed long candles and extreme volatility. The light volume rally to the new high could not be trusted and now it looks like sellers are going to take a turn. The long red candle breached the halfway point of the prior long green candle, it broke horizontal support at the bottom of the compression (shaded blue) and the red candle closed on its low. From a longer term swing viewpoint, it is still too early to take short positions. The recent volatility tells us that the long red candle could quickly be erased. It did come on heavy volume and that gives it more legitimacy. We want to see that midpoint preserved for a few days. If the SPY can't rally above that midpoint, we might have a shorting opportunity.
-In the next section we will reference points 5-8
-5. The midpoint of the long red candle held for a few days and we could have taken bearish swing positions when we had con rmation that sellers were in control. There was some overlap in the candles on the way down, but the volume was very heavy and there were not any green candles. The long bullish hammer was the rst sign of support. The low from the bullish hammer held and subsequent candles had tails. Sellers remained aggressive, but the fact that the candles could not close on the low of the day indicated that buyers were interested and that support was forming (tails under body). We can also see mixed, overlapping candles and that tells us that the momentum is starting to wane. From a longer term swing trading standpoint, this is a time to take gains on short positions. Given the magnitude of the drop, the heavy volume and the lower highs, it would be too early to take long swing positions. This is a time to evaluate.
-6. The market is trying to bounce after a big drop, but the level of conviction is low. We know that from the light volume. The relative high at this price level retreated instantly/signi cantly and buyers attempted a breakout a second time. The third attempt failed quickly. The bearish hammer was formed by a gap down. During the day the market tried to rally above the resistance level and we know that from the long wick. Sellers did not squander this opportunity and they pounded the market down, forming the bearish hammer. The next day a long red candle was formed and we saw follow through selling.
-7. Conditions remain volatile and the price action from the start of the chart has been all over the board. We can see that a negative bias is starting to form. The market is making lower highs. As long as the midpoint of the long red candle is preserved for a few days, we can take short swing positions.
-8. The bottom fell out of the market and it gapped down to a new low for the year. The opening price that day was also the low that day and this giant candle closed on its high. That was a sign of major support. Buyers gobbled up stocks and that candle closed above the midpoint of the previous red candle. This is a very signi cant intraday reversal because it took place on heavy volume. Swing traders needed to take gains on shorts and a bounce is likely. It is too early to buy from a swing trading standpoint. This is a horizontal support level, but the bias has been to the downside. As I mentioned in the previous article, we need additional con rmation that support is in after big drops. It would be foolish to think that the market is going to rally and never look back after the selling we have witnessed the last few months.
-In this section we will reference points 9-12
-9. The market has breached the midpoint of the long green candle from the low of the year and sellers continue to probe for support. Notice in the chart that the volume during this probe has been light (blue line < 0). That tells us that sellers are not as aggressive. Also notice that we are
-nding support above the low of the year. This is a sign that buyers are defending that support and that they do not believe they will have a chance to buy at that level. A higher low double bottom is starting to form.
-10. The market is bouncing and it has been able to rally above the open from the prior long red candle. The rst green candle is a bullish hammer and the market closed on its high that day.
-11. While these 3 candles are encouraging, it is still too early to trade from the long side. Notice how the green candles have overlap. Each day the market gapped lower, support was con rmed and then the market closed above the prior day's high. Overlap like this is a sign that the trend is weak. That is con rmed by the light volume. Swing traders can try long positions here, but they need to maintain tight stops and exit at the rst sign of trouble. If the market can continue to grind higher on heavy volume, it will con rm the strength and only then can we get more aggressive with longs. At this point we have to respect the negative bias from the start of the chart.
-12. The rally continues on light volume and the candles have overlap (weak trend). The red candle off of the relative high is a warning sign. If the midpoint is preserved for a few days, it would be a sign that buyers do not have the power to challenge the high. This entire move for the last few weeks could be nothing more than a bounce that has run its course. Swing traders with long exposure should start exiting trades. A week has passed since the long red candle and the market is making lower highs. Swing traders should be contemplating short positions.
-In the next article we will continue our price action analysis. As we look back on the entire chart, we can see that the last bar on the chart is lower than the rst bar on the chart. There is a negative bias, but the price action is extremely choppy. The market is taking four steps down and then three steps back. The volume spikes are happening on the drops and that also con rms selling pressure. This is a very di cult swing trading environment and we have to pick our points carefully.
+## 1. Market Cycle Classification
 
-=== Price Action - Applying Our Lessons - Part 2 _ OneOption - Stocks & Options Trading Suite - Reader Mode.pdf ===
-Customize appearance
-Price Action - Applying Our Lessons - Part 2 | OneOption - Stocks & Options Trading Suite
-Price Action � Applying Our Lessons � Part 2
-Market First 5 min read 2025-01-28
-In this article we are going to continue our analysis of price action for the market on a longer term basis. Please make sure to read Part 1.
-We know from our analysis in the previous article that the market has a negative bias and that the conditions are extremely volatile for swing trades that last 3-4 weeks. We are only going to conduct price action analysis, but in future articles we will use all forms of technical analysis. The hollow candles in the chart are important since they have long bodies, short tails/wicks and relatively heavy volume. I will post the same chart many times so that the points are easier to reference.
-13. The market is backing off from a recent high. These mixed candles are fairly long and this is a very wide range. It is a sign of indecision and volatility. A big move is likely. 14. A long red candle transitions us from one range to the next and it appears that sellers have the upper hand. However, we are still seeing giant mixed candles. We can favor the short side since the mid-point of the long red candle that transitioned us from one range to the next is still intact, but this is extreme volatility. Favor the short side, but keep it light. 15. Once again the market has gapped down and a new range has been established at a lower level. We are seeing tails under body and lots of mixed candles. That is a sign of weak trend strength and it is con rmed by the light volume (blue line < 0). We can expect a bounce, so any short positions should be closed. It is way too early to go long. Since the beginning of the chart, the market has dropped 10%. We needed to use a swing trading tactic where we short bounces once they lose momentum and then we take gains and go to cash when we see signs of support.
-16. The market bounced off of the low of the year and it lled in a tiny gap. That bounce quickly found resistance and we know that from the compressed range and the mixed candles. The volume on this bounce was very light. The long red candle breached the compression (blue shaded area) on heavy volume. The mid-point held and this was a good area to enter swing shorts. 17. The market bounced off of a new low for the year on light volume and the mid-point of the red candle (16) has been preserved. The market did ll in an earlier gap, but there is still one that has not been lled. Buyers did not have the re power to do so. The long green candle was immediately erased by a long red candle and sellers are still in control. We should expect follow through and we could test the low of the year. 18. Before the market could test the low of the year, buyers surfaced. The rst candle is a doji and it does not present any problem. The next two candles are a bit more bullish. In both instances, the market opened below the prior close (gap down) and then the candle closed on the high of the day. The market also closed well above the low of the day and it is a sign that buyers are engaged. This could be a higher low double bottom that is forming and bearish swing traders should be taking gains on short positions. 19. The last two green candles have opened below the prior close and they have rallied during the day to close above the opening price. Support is starting to form and this looks like a higher low double bottom. Bearish swing traders should take remaining gains on short positions. It is way too early to get long. We need to have much more con rmation before we consider that.
-20. The market has been able to rally off of the low on light volume. The mid-point of the long green candle has been preserved. The market has been down 25% since the start of the year and that should keep us in a bearish mode. The bounce did not get very far and we are seeing a compression. 21. During this breakout we are seeing overlapping candles and that is a sign of weak trend strength. Each of these green candles started the day in negative territory. Sellers tested the bid early and buyers were able to power the market higher. This move feels like it is getting tired, but we do not have any technical con rmation to short. 22. This is a nice gap down from the high. If the gap is preserved for a few days it will be a sign that buyers do not have enough power to ll it and that will set up a good shorting opportunity.
-The last bar on this chart is signi cantly lower than the rst bar. The market has been very weak and this is o cially a bear market (down more than 20%). A bearish opportunity could be setting up as we continue our price action analysis in the next article.
+### Bullish vs. Bearish Cycle (Primary Filter)
+- **Bullish cycle:** 50-day MA > 100-day MA > 200-day MA (and AVWAPQ above all MAs)
+- **Bearish cycle:** 50-day MA < 100-day MA < 200-day MA (and AVWAPQ below all MAs)
+- The market is in a century-long uptrend; bearish cycles are the exception, not the rule
+- **Bearish cycles** feature violent, short-lived bounces; **bullish cycles** feature slow, sustained advances
+- Expect a bullish cycle to last at least **twice as long** as the preceding bearish cycle
 
-=== Price Action - Applying Our Lessons - Part 3 _ OneOption - Stocks & Options Trading Suite - Reader Mode.pdf ===
-Customize appearance
-Price Action - Applying Our Lessons - Part 3 | OneOption - Stocks & Options Trading Suite
-Price Action � Applying Our Lessons � Part 3
-Market First 5 min read 2025-01-28
-In this article we are going to continue our analysis of price action for the market on a longer term basis. Please make sure to read the rst 2 articles.
-We know from our analysis in the previous article that we are o cially in a bear market (down 20%+) and we might be on the brink of a shorting opportunity. We are only going to conduct price action analysis, but in future articles we will put all of the pieces together and use all forms of technical analysis. The hollow candles in the chart are important since they have long bodies, short tails/wicks and relatively heavy volume. I will post the same chart many times so that the points are easier to reference.
-23. In the previous chart we suspected that a light volume bounce might be running out of steam. We are in a bear market so we need to favor the short side. The gap down in the third candle on the chart was the clue and now we want to see that gap hold for a few days. That would be a sign that buyers do not have the power to ll it. Our suspicions were con rmed by the long red candle. It's time to take swing shorts here and we want to see half of that long red candle preserved. 24. The mid-point of the long red candle held and we saw continued selling. In the rst candle with the blue arrow everything looks great. We had that rst long red candle (23.) and then a doji below the low of that candle and then this long red candle. Everything is going great for a short position. However, notice how the next day the market gapped higher (solid red candle). Sellers regained control and the candle closed on its low, but there were some signs of buying. Also notice now the third candle with the arrow was red, but it had a massive gap up and then it spend the day drifting lower. It closed near its low, but buyers are interested. How do we know? If there were no interest on the part of buyers we would not have gapped higher. Orders to sell would have been layered above the close the previous day and there would not have been a gap up. Swing traders should take some gains here. A bounce looks likely. 25. The market staged a nice little rally and there were a few nice long green candles. The mid point of the long red candle (23) was preserved, but we did rally above the open from the long red candle (24). This long red candle (25) is very damaging for bulls. It erases the previous 3 long green candles and it closes on its low. We need con rmation before we can re-enter shorts. The next candle is a doji at the low from the prior red candle and that is ne. The next candle after that is red and it takes out the low from (24). This is a good entry point for shorts. This is also happening on heavy volume so it legitimizes the move.
-26. This long red candle closes on its low of the day on heavy volume. We want the mid-point preserved and it con rms our short position. 27. The market is working its way lower, but we are starting to see overlap and green candles. That is a sign that support is forming. We can expect a bounce and this would be a good area to take partial gains. We want the mid-point from the red candle (26) preserved. 28. The market gapped down to a new low of the year. The open of that candle was also the low for that candle and a massive gap reversal was underway and buyers were aggressive. By the close, this turned into a giant bullish engul ng candle off of the low of the year. This is a sign of support. The next day a long red candle appeared, but the half-way point of the green engul ng candle was preserved. The price action for the next few days stayed well above the mid-point of the long green candle and that is a sign of support. 29. The long green candle before the blue shaded area came on heavy volume and it closed above the open from a previous red candle (28). We are seeing long mixed green and red candles and that is a sign of volatility. The price action all year has been bearish. It is too early to consider longs, but we should expect volatility. 30. This long green candle came on heavy volume. It closed above the compression and the open from 3 prior long red candles. We are also seeing follow through buying. This is a time to wait on the sidelines. If the bounce stalls and we see tiny bodied candles and light volume, we can expect another wave of selling. If the rally continues on high volume, it might have room to run.
-Reading price action takes some time to learn, but how we get from point A to point B matters. How the current price action ts into the longer term context also matters. These candles help us to gauge momentum. We can tell when it is building or waning. If you learn how to read price action and you combine that skill with basic technical analysis (trendlines, horizontal support/resistance and major moving averages) you don't need any indicators. This was a very di cult year for longer term swing trading. Extreme volatility was evident and we saw long mixed candles, big drops and violent bounces. Using price action alone we were able to identify the directional bias and we were able to nd many "sweet spots" that yielded big gains. You had to take the gains and then wait for the next window.
+### Cycle Stage (Reversal vs. Continuation)
+- **Reversal phase:** MAs in disarray; long mixed candles; heavy volume; buyers and sellers battling — do not take large directional positions
+- **Continuation phase:** MAs aligned; tight, orderly price action; strong volume — this is the "sweet spot"; take positions and add aggressively
+- **End of bullish cycle signals:** marginal new highs; tiny-bodied candles on light volume; dips getting deeper and more frequent; MAs compressing — reduce size and duration
 
-=== Price Action - Is This Breakout Real Or Fake_ _ OneOption - Stocks & Options Trading Suite - Reader Mode.pdf ===
-Customize appearance
-Price Action - Is This Breakout Real Or Fake? | OneOption - Stocks & Options Trading Suite
-Price Action � Is This Breakout Real or Fake?
-Market First 3 min read 2025-01-28
-Breakouts can look very convincing, but time will tell the true nature of the move. Here's what to look for. Below are my actual comments before the open on November 10, 2022.
-The market had a breakout above a downward sloping trendline, above the 100-day MA and above a horizontal resistance level. This was a reaction to a "lighter than expected" CPI and the breakout came on heavy volume. The market has been in a longer term bearish trend. That context is very important because the move could have been caused by short covering.
-Not all breakouts are real.
-Why do we care if it was short covering?
-Short-term traders do not have staying power. They are in and out of positions and they are trying to capture short-term moves. If this was short covering, the breakout could easily fail as that buying dries up. For a sustained move higher we want long term buyers. If Asset Managers feel that the market will be trading higher than this level a year from now, they will start to scale in on the notion that seasonal strength with fuel a year-end rally. Under-allocated Asset Managers will get nervous that they missed a nice entry point and they will buy this breakout.
-How will we know if Asset Managers are buying?
-After a nice breakout through multiple resistance levels we will see small dips and increasing volume on rallies. The mid-point of the long green November 10th candle could be tested, but that retest will be gobbled up immediately. Then we will see follow through buying on good volume and the bounce will have follow through immediately (2-3 days).
-Why does the follow through have to happen immediately?
-It is a sign that buyers are aggressive. They do NOT believe they will have a better opportunity to enter and they do NOT want to miss this entry point. They will layer bids at lower levels, but when they are not lled they will start to raise the bid. That process fuels the move higher and the feeding frenzy is on.
-What happens if we do not see follow through buying and the volume dries up?
-If the market can't add to the gains it will be a sign that the November 10th breakout was just a short covering bounce to squeeze short term traders (this includes trading institutions). It would be a sign that Asset Managers are NOT aggressive and that they do NOT feel like this is the last chance to buy stocks at this level. Traders will recognize that there is no follow through and that the volume is light. They will recognize this as a short covering bounce and they will get more aggressive with their shorts.
-Given this information, here is our trading game plan on November 17th.
-What you read above was actual commentary I provided on November 10th. I just wanted to give you a look at the thought process we were going through at the time. Notice how I framed the context of what had been happening and the price action we were watching for. We did not see follow through buying. Instead we had tight ranges on light volume. This told us that Asset Managers were not buying aggressively and that the chance for follow through was unlikely. The breakout was likely just short covering and traders/institutions will get more aggressive trading from the short side. The market did make a few attempts to move higher, but they were quickly smacked down. The chart below is how everything played out.
+### Death Cross / Golden Cross
+- **Death cross** (50-day crosses below 200-day): confirms bearish cycle start — look for it coinciding with a lower high and breakdown below prior lows
+- **Golden cross** (50-day crosses above 200-day): confirms bullish cycle start — look for it coinciding with a higher-low double bottom and breakout above the most recent bounce high
 
-=== Price Action - Putting It All Together _ OneOption - Stocks & Options Trading Suite - Reader Mode.pdf ===
-Customize appearance
+---
 
-Customize appearance
+## 2. Seasonality Rules
 
-Sans-serif Font
+### Q4 / Year-End Rally (Highest-Confidence Setup)
+- **Best setup:** deep drop in September or early October, ideally with an "air pocket" low early in the day followed by stacked green candles on heavy volume off the low
+- Asset Managers mark portfolios up into year-end (paid on % of AUM) — structural buying pressure from October through December
+- **Entry rule:** enter half position on the first day of the reversal; add the second half the next day
+- **Confirmation needed:** stacked green M5 candles on heavy volume off the low
+- **Hold until:** year-end; if the rally is light-volume, take profits before Dec 31
+- **No deep September/October drop = no meaningful year-end rally** (short covering and bargain hunting are the fuel)
+- **Trading rule:** can be long or in cash in November–December; **cannot be short**
+- **Bad omen:** if there is no year-end rally, expect the market to move lower in Q1
 
+### Seasonal Weakness
+- **August:** dull market; consider cash; potential early selling pressure
+- **September:** typical selling pressure; cautiously trade shorts but don't overstay
+- **Before October:** take gains on shorts; be ready for the Q4 reversal
+- **Year-end failure is rare** but signals a bad omen for the following January
 
+---
 
-Price Action - PuttinSmgall It All ToLargegether | OneOption
+## 3. Moving Averages as Dynamic Support / Resistance
 
-- Stocks & Options Trading Suite
+### In a Bullish Cycle — MAs are "Safety Nets"
+- **Key levels (in order of importance):** AVWAPQ → 50-day MA → 100-day MA → 200-day MA
+- During dips, observe which level provides support — look for the market to **fly off** the level with stacked green candles on heavy volume
+- If the market flounders around a safety net without a sharp reversal, expect it to test the next lower level
+- **Do not short** in a bullish cycle; only look for long entries at dips to MAs
+- Adding opportunities: when the market blows back through each MA on the way back up; again on breakout above the prior high
+- **Dip entry signal:** LRSI alert — D1 LRSI was above 80 → drops below 20 → rises back above 20 (a complete bullish→bearish→bullish "round trip" = dip has run its course)
 
-Price Action � Putting It All Together
+### In a Bearish Cycle — MAs are "Ceilings"
+- Order in a bearish cycle: 200-day MA > 100-day MA > 50-day MA (market is below all)
+- **Short on failed bounces** that are rejected at the 50-day, 100-day, or 200-day MA
+- **Add to shorts** when: a prior horizontal support level is breached; the market drops back through a MA that briefly rallied above
+- **Take gains before October** (seasonal bounce risk)
+- As the bearish cycle matures: marginal new lows + taller bounces = sign a base is forming → reduce size, favor taking gains at horizontal support rather than measured moves
 
-Market First 6 min read 2025-01-28
-The longer term price action set the tone for this trading day.
-By now you know my mantra... market rst, market rst, market rst. That is the starting point for every trade and that is why this lesson is at the beginning of the course. This can be used for stocks as well, but it is critical that you get your market bearings each day before you trade stock.
-Context is critically important when you are reading price action. What do the longer term daily charts look like? Is the market in a strong trend? Is the market trapped in a trading range longer term? Did we get to the current price with a Lamborghini or a bicycle? Are the candles mixed (weak trend) or are they of a single color (strong trend)? Is there overlap with other candles (weak trend) or are they stacked (strong trend)? All of these questions need to be answered so let's start with a longer term chart of the SPY and then let's drill down to an M15 chart and nally an M5 chart. You can see my comments in the charts below. By the way, all of these comments were posted live in the chat room during the last week so I am not playing "Monday morning Quarterback". Reading price action is a skill that can be learned and it works. Below the charts you can read the scenarios I am expecting today with the probability of each. At the very bottom I conclude this section with a chart of what happened and a live video that I recorded on the opening bell where I described the price action bar-by-bar.
+### Key MA Signals
+- Market flies off 50-day MA on heavy volume → Strong buy signal; trend intact
+- Market lingers at 50-day MA with light volume → Likely to test 100-day MA
+- Bounce rejected at 200-day MA in bear cycle → Strong short signal; add on next leg down
+- 50-day crosses back above 200-day → Bullish cycle beginning
+- Market rallies above 50-day MA in bear cycle then fails → Stay short; add when it drops back through
 
-Start with the longer term price action
-Zoom into a shorter time frame like M15
-Drill down to the M5 chart
-Today the SPY is going to challenge a resistance level at $380 and it will open above it. Stacked green candles with little to no overlap in the rst 30 minutes would be a sign of heavy buying. That scenario is unlikely because we know that sellers are present based on the recent price action. If we get that pattern the SPY will start to ll in the D1 gap and we could have a few more days of follow through. There is no reason to chase anything in this market so I will be passive if this scenario plays out (20%). A gradual drift higher on the open with mixed overlapping candles would be a sign of weak trend strength. When that move stalls, a good shorting opportunity would set up. Look for a bearish hammer/bearish engulf off of the high of the day as a sign that a reversal is pending. This scenario has a 20% chance of playing out. A more likely scenario is a bid check. The market tries to ll in some of the overnight gap up. Mixed overlapping candles will be a sign that the trend strength during the dip is weak. That will give us time to nd stocks with relative strength and we can separate the fakes from the real deal. Once the market nds support we can expect a rally and it will be time to buy these stocks. We do not want the retracement to be deep (more than half of the gap up preserved) or to last more than an hour. If that happens it would suggest decent selling pressure. This scenario has a good chance of playing out and it presents the best opportunities for us (30%). A strong gap reversal would have long red candles and brief pauses. Half of the overnight gains would easily be stripped away. This would suggest that sellers are fairly aggressive. The gap ll would be fairly deep and the pullback will take a couple of hours to run its course. In this scenario you would focus on shorts. We want the bounces to last less than 30 minutes. This scenario has a 20% chance of playing out. The nal scenario is a complete gap reversal. Stacked long red candles consecutively in the rst 30 minutes with little to no overlap would be a sign of heavy selling. We have seen decent buying and the big down gap reversal two days ago tells us that buyers are aggressive enough to prevent that. This scenario only has a 10% chance of playing out.
-It is critically important to get the longer term context and then to drill down to the shorter time frames. Understand the possible scenarios and know the characteristics of each one. When they start to unfold, you will know what to expect and what action you plan to take. You should also know which scenario is most desirable and which one is most likely (they are not always the same). The chart below is how the day actually played out.
+---
 
-After 3 bars I could tell a gap and go was likely
-The scenario we got was not the one we wanted. Gap and go patterns force us to chase early in the day and that is never wise. We do not have time to properly vet (observe) stocks and it is di cult to separate the real from the fake. This pattern also has a tendency to run to its destination and compress. That makes it di cult to trade the rest of the day. That means we have to trade smaller size early (because we don't ever want to chase) so that we can make some money early in the day. It also means that we should take gains after 90 minutes of trading because the rest of the day the market will compress. Being able to read price action told us which scenario was going to play out and what actions we should take. The SPY stayed in that tight compression the rest of the day and there was a breakout in the last 10 minutes of trading. In the recording, you can clearly hear these predictions after 15 minutes of trading. I'm not clairvoyant, I just know how to read price action.
+## 4. Horizontal Support & Resistance
 
-=== The 1OP Indicator _ OneOption - Stocks & Options Trading Suite - Reading Mode.pdf ===
-Customize appearance
-The 1OP Indicator | OneOption - Stocks & Options Trading Suite
-This is a proprietary indicator with unique qualities
-1OP stands for 1OPtion. As you will see, it does not correlate with other indicators and about 20% of the time it is inversely correlated with the market. Most other technical indicators mimic each other and they lag. In my opinion, that limits their usefulness. 1OP is predictive, not reactive, and that makes it unique. I don't divulge what 1OP measures or how it is calculated, but I do teach traders how to use it. I use it more for short term trading and it was designed and optimized for day trading the S&P 500. That said, I do use it for con rmation on a longer term basis so I want to introduce it. Like most indicators it has a fast line (1OP2, default color: red) and a slow line (1OP1, default color: blue). When the fast line crosses the slow line, a trade signal is generated. Under ideal conditions the indicator will have cycles with nice tall peaks and deep troughs. When the indicator is in a deep trough and 1OP2 crosses above 1OP1, a buy signal is generated. When the indicator has a tall spike and 1OP2 crosses below 1OP1, a sell signal is generated.
-We like nice deep troughs, big spikes and de ned crosses
-In the image above you can see the big spikes and deep troughs with nice clean crosses. The market had a nice range and good movement within the range. Notice how the 1OP crosses pinpointed those reversals before they started. The market is uid and ever changing. Sometimes the trend is strong and other times the market volume is light and the price action is choppy. When the market is in a strong trend we can tell by the price action. We will see stacked, consecutive candles of a single color on heavy volume. That is when we can expect a divergence. This pattern is particularly useful because it con rms the trend strength. During a bearish 1OP cycle we would expect the market to drop. When 1OP is falling and the market is moving higher, we have a bullish divergence (chart below). This is a sign that the up trend is very strong and that the next bullish cross will be good. Conversely, if we have a bullish cycle and the market drops, we have a bearish divergence. That tells us to trade from the short side and to expect more selling.
-Divergences can be expected during strong trends and they con rm the strength of that trend
-When the market is at during a bullish cycle, we call that "benign". It will tell us that the next bearish cross is likely to be a good one. It is fairly uncommon for more than two cycles to be benign. When that happens it is a sign of slow market conditions. With each passing cycle that does not produce, the odds of one that does produce increases.
-When the trend is weak and the cycles do NOT produce we consider them to be benign
-In this example we have a very long bearish cycle that is benign. The market did not retreat and we should be watching for the bullish cycle to produce. After the bullish cross, the market marched higher. Notice how the 1OP indicator has numerous "mini" crosses. This is a sign of weak trend strength.
-When one cycle is benign it increases the odds that the next one will produce.
-There are times when the market price action is poor. Tiny-bodied, mixed candles, tight ranges and low volume are typical under these conditions. When 1OP is tight to the zero line and there are many mini crosses you should not rely on the indicator and you should keep your trading to a minimum. This is a sign that the market trend strength is poor and that a compression is likely.
-1OP will help you avoid trading light volume chop. Lots of mini crosses around the zero line are a warning sign.
-There is one other important concept to trading 1OP. Remember, it is early/predictive. That means that we need technical con rmation before we take a trade signal. 1OP allows us to prepare for that move. If we are long and we see a bearish cross, we can start taking gains on our long positions and we can start looking for shorts. If we are short and we see a deep drop and a bullish cross, we can take gains on our shorts and we might start considering longs. In the section below we are not going to add technical con rmation, we are just going to look at the 1OP cycles on the SPY using a daily chart.
-These are longer term bullish and bearish cycles for the SPY. During this particular stretch there were not any divergences.
-In the chart above, you can see how well the crosses predicted the next move in the SPY. You can see that there are some mini crosses, but the market was very volatile and there were many mixed candles. In general, 1OP moved well and it had nice ranges.
-The last few months 1OP has had many mini crosses and that is not what we want.
-In the chart above, the 1OP indicator had nice peaks and troughs early and the second red shaded area was a bullish divergence. You can see how the next bullish cross produced a nice rally. The last green shaded area is unusual and we do not typically see extended periods where the indicator is not moving above and below zero. There are many mini crosses and this has been a very long bullish cycle. In the early stages of the bullish cycle the market dropped hard and it looked like a bearish divergence. In the last couple of months the market has bounced and it is almost back to the area where the cycle started. When the indicator is in sync with the market, it is a valuable tool and we can see the big peaks and deep troughs during the cycles. When 1OP has many mini crosses and the indicator does not have nice movement, we have to rely on other forms of technical analysis. I mentioned earlier that I don't use 1OP much on a long term technical basis, but it is useful for con rmation. On a longer term basis I lean more on major moving averages and trendlines... because that is what other traders use. 1OP was designed as a short-term indicator and you will see how effective it is for day trading and short term swing trading. As I shift to short term analysis, I lean on 1OP heavily.
+### Level Significance
+- More touches = more significant
+- Levels confirmed by multiple timeframes (especially daily) are most reliable
+- Long green/red candle **opens** serve as horizontal S/R levels:
+  - Open of long green candle = support (buyers were excited there all day)
+  - Open of long red candle = resistance (sellers were active there all day)
+  - **Midpoint** of these candles is also significant, but less so
 
-=== Trendlines.pdf ===
-=== Volume Reveals Conviction _ OneOption - Stocks & Options Trading Suite - Reading Mode.pdf ===
-Customize appearance
-Volume Reveals Conviction | OneOption Stocks & Options Trading Suite
-Volume Reveals Conviction
-Market First 10 min read 2025-01-28
-Heavy volume moves tell us that the move is legitimate and light volume tells us it can't be trusted.
-Almost every technical indicator has two components: price and volume. That alone should tell you how important volume is to our technical analysis. Volume is very easy to analyze and it is either heavy, average or light. It does not require lengthy explanations so it does not get the attention it deserves. Consequently, it is overlooked by novice traders. Let's not make the mistake of glossing over this topic.
-VOLUME CONVEYS VERY IMPORTANT INFORMATION AND IT NEEDS TO BE A MAJOR PART OF YOUR TECHNICAL ANALYSIS!
-I hope that got your attention. Volume tells us how excited buyers and sellers are. That in turn helps us gauge the strength of a trend. Our goal as traders is to predict price movement and sustained heavy volume helps us to determine direction.
-If a manufacturer reduced the price of their product there would be no way to measure the success/failure of the promotion without volume. They wouldn't know if the product is moving or sitting on the shelves. Volume helps them determine the demand for it at that price and how much of it they need to produce. If the product is ying off of the shelves and the line is out the door and around the corner, they can safely predict that this promotion will be successful. We can't assess the quality of a market move without looking at volume.
-What if there is light volume and no move?
-This is common when the market is compressing in a tight range. It is a sign of equilibrium and neither side has an advantage. At some point a news item will spark a breakout one way or the other. Set alerts above and below the compression and wait. Since there is light volume, the trading range could last a long time.
-What if there is heavy volume and no move?
-This is a good scenario. The heavy volume indicates that buyers and sellers are interested. Shortly, one side or the other will prevail and that breakout is likely to have follow through ("legs"). On the breakout, the losing side will scramble to adjust and the winning side will add to positions. The breakout on volume will hit everyone's radar and the frenzy is on! Custom Search in Option Stalker Pro will nd stocks with heavy volume that are in a compression. Set your alerts above and below the compression and wait for the breakout.
-Why do light volume rallies happen?
-We often see light volume rallies at the end of a long term uptrend. Because the trend is strong, sellers are extremely passive and they are holding out for a higher price. Even a small buyer can drive the price higher. Imagine this attitude on the part of the seller, "If you want it, come and get it at this nice high price. If you are not interested at that level, I will just hang on to it." This is what we call a sellers boycott. They are simply not interested in selling unless they get what they consider to be a premium. At that high price, buyers are not willing to load up so the volume remains light. A light volume spike to a new high could be a buying climax so pay attention to those because a drop is likely very soon. Of course, a light volume trend lower in a bear market would indicate that buyers are not interested. They are expecting lower prices and they will wait for signs of support. This is a "buyer boycott" and it can be characterized by this attitude, "If you are that anxious to sell, come and get me all the way down here."
-Why do light volume bounces happen?
-When we refer to a "bounce", it suggests that the rebound is temporary and that the longer term down trend will prevail. Most traders don't understand bounces. "Why is anyone buying this crap when the market is clearly going down?" The market does not go straight up or straight down. At some point during a big decline, short sellers will start taking pro ts. That buying provides support and other short sellers will also start to take gains. This will cause a bounce. Institutions are always "testing the water" and they can spark short term bounces as well. They will try to spark short covering to shake traders out of positions. Remember, short sellers are looking for signs of support because they are eager to take gains. The institutions are more interested in the magnitude and the duration of the bounce. They are constantly trying to gauge how aggressive buyers and sellers are and they watch volume very closely. A brief and shallow light volume bounce that only lasts six bars will tell them that the selling pressure is heavy. The institutions will exit what they bought and short even more. They don't care if they lost money trying to spark a bounce because that will provide them with important information. Chances are, if the longer term trend is down, they have huge short positions. If the bounce has good height and big volume, there is a likelihood that it could last a long time. In that event, they will start reducing longer term short positions. The same principles I've described would apply to light volume dips in the context of a longer term up trend.
-Does a light volume rally mean sell short?
-Absolutely not! Light volume in and of itself does not constitute a trading opportunity. These moves can continue for long periods of time and they can in ict incredible pain if you are early. Sometimes, the volume will increase during the move and it will transition into a legitimate trend.
-How should we swing trade heavy volume declines?
-If the market is in a long term down trend it will be con rmed by heavy volume. Your objective is to short bounces when they stall and break technical support. Take gains during big drops and go to cash. Repeat. During bounces you can evaluate the magnitude of the bounce and the volume. If the height of the bounce recaptures much of the recent decline (rally above the open from a previous long red candle) and if it comes on heavy volume, it is likely to last a while. If the move starts to gain traction, you can join it with small size (relative to your recent short positions) and know that this is going to be a short term trade. Be ready to take gains at the rst sign of trouble and be ready to go short on a technical breakdown. For most swing traders who can't watch the market during the day, I would discourage this tactic. You are "getting cute" and trading against the longer term down trend. When the bounce reverses you will be scrambling to exit longs instead of focusing on entering short positions. If the bounce is shallow and the volume is light, it is not likely to last long. That would be a sign that sellers are still nearby and you might need to re-establish your short position quickly. Watch for these tiny bounces when the momentum is very strong (stacked red candles) and try to stick with the short position. That price action tells us that sellers are very aggressive. Use these same concepts (in reverse) during heavy volume long term up trends. In a strong up trend, swing traders want to "buy dips and sell rips".
-How long can light volume moves last?
-The Fed printed money like mad after the 2008-2009 nancial crisis and credit risk was low for a decade. Bond yields were near 0% and investors had to stay in equities to generate a return. Corporations were issuing cheap debt and using the proceeds to buy back shares. These forces kept a very strong bid to the market and the dips were brief and shallow. The end result was a very light volume rally that lasted for nearly a decade. Don't discount the longevity of light volume moves. Draw your trendlines and wait for those technical breaches.
-So let's take a look at the volume during the last year and how it helped us to determine which side to be on. The context of the chart below is that the market was in a VERY strong two-year up trend and that it was starting to transition to a bear market. To this point, the dips were brief and shallow. Notice how the drops came on heavy volume and the rallies came on light volume. Initially, the bounces had nice height. Long term bull markets die hard because buyers are still trained to buy dips. 1OVol is our proprietary indicator. If it is above zero, the volume is greater than the 20-period average. If it is below zero, it is below average. When the market bounced in the chart below, the heavy volume only lasted a day or two. When the market dropped, the volume was heavy for many days in a row. This tells us that sellers are in control and to favor the short side. The blue boxes highlighted bounces. Notice how light the volume was. Once the D1 up trendlines were breached, the bottom fell out quickly and the volume spiked.
-Heavy volume is a sign of conviction and it helps us to predict direction.
-At this stage, traders are starting to respect the trend reversal from bullish to bearish. They can see that the heavy volume from the rst half of the year is happening on the drops. They also noticed that the market was making lower highs and lower lows. The rally at the beginning of the chart took place on light volume. There were only a few days where it spiked. The bounce lasted for a month and it had good height. Traders that tried to stick with short positions took extreme "heat". Some did not expect the bounce to last so long or to bounce so high so they exited short positions. That probably extended the life of the bounce. When that up trendline was breached, the selling pressure was fast and furious and the S&P 500 lost almost 1000 points (large shaded blue area). In the last two months the market has staged another light volume rally. Notice how there are only a few heavy volume days within this move. There are also mixed overlapping candles and that is a sign of weak trend strength. Swing traders should be in cash waiting for the up trendline to be breached. Seasonal strength could fuel the move into year-end. Don't be early with short positions, but know that a nasty drop is looming.
-Notice how the rallies only have a spattering of heavy volume days and now the drops have consistent heavy volume for many days.
-Volume is so easy to analyze that there are not many articles written about it. It is either heavy, average or light. Don't discount the importance of volume just because it does not get the same attention as price action. Start your analysis with volume and make it a priority. That's how important it is. Volume tells you how aggressive buyers and sellers are at a particular price level and it will help you to gauge direction. With regards to position sizing, you want to ramp up when you are trading in the direction of a long term trend with heavy volume. During light volume contra trend moves you want to be in cash or in very small positions.
+### Approach to the Level Matters More Than the Level Itself
+- **Bullish approach to resistance:** stacked consecutive green candles with little/no overlap → likely to break through
+- **Weak approach to resistance:** mixed, overlapping candles → likely to hold (insufficient firepower)
+- **Bullish approach to support:** tails under candle bodies; candles not closing on their lows → buyers engaged; support likely to hold
+- **Bearish breach of support:** stacked red candles breaking through on heavy volume → follow-through likely; do not buy the dip immediately
 
-=== Where To Find The Best Odds _ OneOption - Stocks & Options Trading Suite - Reading Mode.pdf ===
-Customize appearance
-Where To Find The Best Odds | OneOption Stocks & Options Trading Suite
-Market First 15 min read 2025-01-02
-Let's recap what we've learned and nd those "sweet spots".
-Getting the market right is 65% of the puzzle. If you swing trade the S&P 500 on a longer-term basis, this is all you need. As directional traders, our job is to predict future price movement. We are constantly searching for ways to improve our odds of success and they will change depending on where we are in the market cycle.
-Market Cycle � Is the market in a bullish cycle (50-day MA > 200-day MA) or a bearish cycle (50-day MA < 200-day MA)? This is a basic and unambiguous rule base. The market has been in a century long rally and bear markets barely register a blip on the long-term chart. That means we have to use a great deal of caution when we trade from the short side and we should generally be bullish. Bearish cycles feature violent short-term moves and bullish cycles feature long and sustained moves. Some bearish cycles are mild (recession) and some are vicious (credit crisis). We need to know the fundamentals that are driving the decline. We should expect the bullish cycle to last at least twice as long as the preceding bearish cycle.
-Cycle Stage � At the start of a new market cycle the previous trend is reversing. The moving averages are in disarray and the price action is volatile. This is when we can expect to see long mixed candles with heavy volume as buyers and sellers battle it out. Eventually the moving averages will align and that is when the trend transitions from the reversal phase to the continuation phase. From the start of this alignment the price action is very tight and orderly. The market is no longer transitioning and everyone is "on board". This is the "sweet spot" and you should take positions and add to them.
-In a bearish cycle, AVWAPQ < 50-day MA < 100-day MA < 200-day MA. We are always in "hit and run" mode during down trends because the snap back rallies are violent. We short tall bounces that hit resistance at the major moving averages and we want to see lower highs (Htrendline intact). The measured moves will be deep. Have faith, the market will reach those targets faster than you thought possible. Your entry was good and if you mentally prepare for bounces, you won't get "shaken out". Add to your short when the market blows through prior horizonal support. Take gains when the measured move is met and don't wait for support. As the bearish cycle matures you will notice marginal new lows and tall bounces. Take notice, reduce your size and take gains at horizontal support (not measured moves). This price action is a sign that a base is forming and a higher low will be the rst sign that the bearish cycle might be ending.
-In a bullish cycle AVWAPQ > 50-day MA > 100-day MA > 200-day MA. The fundamental issues that caused the decline are still looming. Longterm money is looking a couple of years out and it is anxious to join that 100-year long up trend. The rst dips will be deep and that is going to produce very tall measured moves. The market will get there, give your trades plenty of time. As the bullish cycle matures, the market will lose that nice tight orderly price action. The dips will be deeper, they will last longer and they will be more frequent. This is when we reduce our trade duration and size. We take gains on longer-term swing trades and we focus on shorter-term swing trades. At the very end of a bullish cycle the market will make marginal new highs and it will often oat higher with tiny bodied candles on light volume. Take gains when you see this pattern and wait for a dip. If the major moving averages are compressing and the dips are getting deeper, the bullish cycle could be ending.
-Price Action � The ideal price action is a nice, tight, orderly trend higher on strong volume. That is a sign that buyers are aggressive and dips don't form because every sell order is gobbled up. When we see this we know the trend is strong and it will be intact for a long time. We take longer-term swing positions and we add to them. When we see mixed overlapping candles and the volume is light, we know the trend is not very strong. This move higher could still continue for a long time, but we have to shift to shorter-term swing trades. The nice tight price action got used to will only appear when the market comes out of a dip. That is when Asset Managers are interested. During the dip, we watch the price action around the "safety nets" (AVWAPQ, MAs and L+ trendlines). We want to see stacked consecutive green candles on heavy volume when the market ies off of those levels. That's how we know that buyers are aggressive and that's when our odds of predicting price movement are high.
-Measure Moves � This is a very effective and easy way to set targets. When the market is in a bullish cycle, wait for a dip. Take the high from the dip and subtract the low from the dip. Add this distance back to the high before the dip and that horizontal price point is your target. If the price action into that target features tiny bodied candles and light volume, take your gains and wait for the next dip. During a bearish market cycle we wait for a bounce. Calculate the distance between the low before the bounce and the high from the bounce. Subtract that from the low before the bounce and you have your downside price target. Bearish cycles produce violent bounces and you should take gains at that measured move.
-Key Price Levels � When the market is in a bullish cycle, we view trendlines (L+) and major moving averages as "safety nets". We don't know which ones are going to hold so we observe them during dips. If a support level has been breached, we want the market to y off of that level. If it does, that is a good entry point to join the long-term trend. If the market ounders around that safety net, buyers are not that interested and the market is likely to test a lower safety net. You never entertain shorting, you are only interested in buying. Eventually, the market is going to bounce off of one of those "safety nets". When it does, the price action will be swift and orderly. The market is going to
-y through those previous "safety nets" on the way back up. Those are areas where you can add to your position. The market will also breach the previous high with ease. You can add on that breakout as well.
-We use the same logic during bearish market cycles except the trendlines (H-) and major moving averages act as "ceilings". We want to see rejections off of those "ceilings". If the market treads water around the rst level of resistance, it is likely to test the next level. Eventually, the market is going to be rejected and when that happens we want to see it crumble back through the other levels. If it happens quickly, these are areas where you can add to your shorts.
-October � Watch for a market drop in September or early October and an intraday rebound that erases all of the losses in the rst half of the trading session. Buy that low and add on con rmation. If you are a swing trader and you can't watch the market during the day, you should make it a point every day in October to see what the market did 10 minutes before the close. Trust me, it will be worthwhile. Year end rallies are very powerful (even during bearish cycles) and Asset Managers want to mark their portfolios up.
-I don't want you to think that I've "cherry picked" bullish and bearish cycles in my previous examples. I haven't highlighted the ".com bubble of 2000" or the bullish cycle after the "Covid-19 pandemic". Let's apply what we've learned and nd those "sweet spots".
-In the chart below you can see how the price action was getting very volatile even before Y2K (left side). The dips were deeper, they were more frequent and the bounces made marginal new highs. This is when we would have kept our bullish swing trades very short-term. Notice how the rst two bounces on the far left ew back above the 200-day MA and through the H- trendlines (dotted). The marginal new highs would have prompted us to take gains as soon as the bounces stalled. The third breakout hovered around the 50-day MA and it could not distance itself from it. This was a sign to exit bullish trades that we entered. In time, the market was not able to challenge the all-time high and there was a lower high double top. Notice how the low from the last bounce was breached right around the same time of the death cross (red circle). We would not short there because it is year end (blue boxes). Remember when the market doesn't rally into year end it is a bad omen.
-In January we could have shorted anytime (1) and we added (1a) when the market took out the low from the prior bounce. We take gains at the measured move (1e) and we go to cash. The next bounce tried to get through the 200-day MA and it was rejected. When we trade down trends, those MAs are a "ceiling" and we want them to hold. We would take a new short position (2) and we would add on a breach of the 50day MA (2a) and a breach of horizontal support from the prior dip (2b). We would take gains before October (2e). Notice how we got a year end bounce even in a bear market. The 200-day MA acts as a "ceiling" and we would take the rst short when the 50-day MA is breached (3). This is where we would tread cautiously. The market rallies back above the 200-day MA. We don't want it to spend much time above it and this breach is still a lower high so we stay the course. When the market drops back below the 50-day MA we add (3a) and when it is rejected from the 200-day MA we would add again once the low from the last dip is breached (3b). Take gains at the measured move (3e). Why would you take gains there and not at the next measured move? If you look at the low for the last measured move, that was actually a capitulation low (Friday September 21, 2001). The market rallied 5% off of the low that same day and that was in response to the 911 terrorist attack on the World Trade Center. I wanted to include that data point because if you adjust for that long tail, that second measured move would have aligned perfectly with the low. There was a small bounce above the 50day MA that was rejected just before the third blue box. You could have shorted that, but you had to be careful ahead of October. There is one more shorting opportunity when the 50-day MA is breached (4), and we exit (4e) for a small gain when the market rallies back above the 50-day MA. Now we can see that support is forming. The market has bounced off of this level three times and we have a higher low. On the far right you can see the golden cross (green circle) and you can see how well that coincides with a higher low double bottom and a breakout above the high from the recent bounce. A bullish cycle has started.
-I encourage you to watch my YouTube videos before, during and after Covid-19. I recorded three of them each week with picks. No one had traded an event like this. If you ignored what you heard and if you focused on price action, you did great. To the far left you will see the golden cross (green circle). The market broke through horizontal resistance and that presented our rst entry point (1). The market made another new high after a brief dip and there was an opportunity to add (1a). In the chart you will see a parabolic move higher. That was a buying climax and the peak coincided with a measured move (1e). That climax signaled that a nice dip was coming. We should expect that early in the bullish cycle when all of the moving averages are lining up. The market bounced off of the 100-day MA and it ew through the 50-day MA. This was a good entry point for a long (2). The market breached the 50-day MA and this is not the follow through we wanted. It was prudent to exit (2e) at a breakeven (scratch). Remember, global economies had been shut down and thousands of people were dying. This was a time to be cautious. After testing the 100-day MA and ying off of it, another buying opportunity presented itself when the market
-ew back through the 50-day MA and AVWAPQ (3). When the market made a new relative high, we had a chance to add (3a). We hit a measured move and it was time to take gains (3e). The market had a small dip and it tested the 50-day MA and AVWAPQ. It did not stay there long and that was the next entry point (4). When the market made a new relative high it was time to add (4a). Take gains at the measured move (4e). The market ew off of the 50-day MA and AVWAPQ after testing it. You can see that there are lots of brief and shallow dips. This is a sign that buyers are engaged. We had a new entry (5) and an add on a new relative high (5a). We took gains at the measured move (5e). There was another little dip that could have been traded on the way up... but we were heading into seasonal weakness (September). The market pulled back and it tested the 100-day MA. When it rallied above the 50day MA it was time to buy (6) and to add on a new all-time high (6a). You can see that I have an exit (6e) before the measure move. Why? The market should have been able to grind higher into year end. It compressed and it tried to move higher, but it couldn't. There was resistance and the market was close to the measure move. The upside gains were smaller than the downside risk so it was prudent to exit. This was 12/31/21 and you should check the price action after that. I don't know what's going to happen in 2025, but I found myself in a similar situation early in December 2024 and we took gains. Do you remember what happens when the market can't rally in November and December?
-You've learned how to form a market opinion on a long-term basis using some "light" fundamental analysis and technical analysis. I've given you a very simple rule base to follow and I've shown you how to trade the market using this system. In a bearish cycle, when are sellers going to be aggressive? On failed bounces. That is where they pound bids like there's no tomorrow. That is where we get nice, tight, orderly moves lower and that is where our odds of success are high. We take hefty gains and we wait for the next bounce so that we can reload. When the market starts making marginal new lows and the bounces are tall, we know that support is forming. We know that the tide could be turning and we know that Asset Managers are going to be anxious to join that 100-year up trend. We follow this same method during bullish cycles, but we know they unfold at a slower pace. When the moving averages start to align, we can expect a nice strong move that lasts many months. This is where you want to buy, add, add, add and ride as long as you can. When the price action starts to get choppy, there will be more dips and they will last longer. Take gains on longerterm swing trades and shorten your trade duration. There will still be plenty of great opportunities, but the "easy money" has been made. Pay particular attention to market drops in September. Those are going to set up fantastic buying opportunities into year end.
-In the next section I discuss short-term market technicals for S&P 500 day traders. Trade durations that are very short require absolute precision. This style of trading is much more di cult than swing trading. I love day trading and I'm going to break this process down for you.
-Swing traders can skip the short-term market technicals section and move on to Stock Second. I don't want to bog you down with a lot of information you aren't going to use. If you're excited by what you've read so far... just wait. I'm going to show you a trading edge that I've traded for over twenty years. It builds on what you've already learned and it will take your odds of success to new heights!
+### Breakout Confirmation Rules
+- A break through resistance **must have follow-through** in the next 2–3 bars
+- Heavy volume on the breakout legitimizes the move
+- **Head fake breakout signs:** barely penetrates resistance; tiny range above breakout; no volume expansion; market rolls back over
+- **Gap-up breakout above resistance:** if market gaps down through the new high the next day and it **holds for a few days** → buyers could not fill the gap → bearish signal
 
-`;
+### Compressions (Tight Ranges)
+- Defined horizontal support + resistance; buyers and sellers in equilibrium
+- **Do not trade compressions** — be passive; wait for breakout
+- Longer and tighter compression → bigger and more sustained the breakout
+- Set alerts above and below; trade the breakout and follow-through
+
+---
+
+## 5. Price Action Reading
+
+### Candle Quality Signals
+- Stacked consecutive green/red candles, little overlap → Strong trend; momentum is building
+- Mixed green and red candles with overlap → Weak trend; choppy conditions; be cautious
+- Long-bodied candle with short tails + heavy volume ("key bar") → Significant move; midpoint is a critical reference level
+- Bullish hammer (long lower tail, body near top) → Buying pressure emerging; potential support
+- Bearish hammer (long upper wick, body near low) → Sellers rejected the rally; potential reversal
+- Tiny-bodied candles ("doji") → Indecision; watch next bar for direction
+- Candle closing on its low → Bears fully in control that day
+- Candle closing on its high → Bulls fully in control that day
+
+### Midpoint Rule (Critical)
+- After any significant long candle, track whether the **midpoint** is preserved in subsequent sessions
+- **Midpoint holds for multiple days:** confirms the bias from that candle
+- **Midpoint breached:** invalidates the candle's bias; adjust directional view
+- Example: short positions initiated when the midpoint of a long red candle holds for several days
+
+### Bullish Engulfing / Gap Reversals
+- Gap down to a new low + the open is the low + market closes well above the open = major support signal (especially on heavy volume)
+- This is a "capitulation reversal" — take gains on shorts; do not immediately go long without confirmation
+
+### Bearish Signals
+- Lower highs forming across multiple sessions = negative bias strengthening
+- Failed breakout to new high followed by long red candle closing on its low = high-confidence short setup
+- Gap down that holds (not filled) for multiple days = sellers in control
+
+### Trend Strength Checklist
+- **Strong trend up:** green candles are stacked; no overlap; volume is heavy and consistent
+- **Strong trend down:** red candles are stacked; no overlap; volume is heavy and consistent
+- **Weak trend (either direction):** candles have overlap; volume is below average; mixed colors
+
+---
+
+## 6. Volume Analysis
+
+### Core Principle
+Volume indicates aggression. **Heavy volume = conviction; light volume = suspicion.**
+
+### Volume Scenarios
+- Heavy volume + sustained move up → Legitimate trend; buy dips
+- Heavy volume + sustained move down → Legitimate trend; short bounces
+- Heavy volume + no move (compression) → Breakout imminent; set alerts both sides
+- Light volume + sustained move up → "Sellers' boycott"; could last long but do not trust
+- Light volume + sustained move down → "Buyers' boycott"; do not short aggressively
+- Light volume + bounce in downtrend → Short covering; brief and shallow; expect it to fail
+- Heavy on drops / Light on rallies → Bear market pattern; favor short side
+- Heavy on rallies / Light on drops → Bull market pattern; favor long side
+
+### Volume Signals for Swing Trading
+- **Downtrend:** volume spikes on drops and is light on bounces = sellers in control; short bounces that stall
+- **Bounce height + volume:** if bounce recaptures most of recent decline AND comes on heavy volume → it may last; reduce short exposure
+- **Light volume new high ("buying climax"):** warning that a drop is likely soon; do not chase
+- **Heavy volume candle in a single direction** (all green or all red throughout the day) = strong conviction
+
+---
+
+## 7. Trendlines
+
+### Upward Trendlines (L+ trendlines)
+- In a bullish cycle, treat as "safety nets" — watch for bounces off trendline support
+- Breach of upward trendline on heavy volume with a long red candle = potential trend reversal; do not buy immediately
+- A breach back above the trendline on heavy volume = false breakdown; re-enter longs
+
+### Downward Trendlines (H- trendlines)
+- In a bearish cycle, bounces that reach the H- trendline = short opportunity
+- H- trendline + MA acting as ceiling = high-confidence short
+
+### Trendline Breach Protocol
+- Wait for **confirmation** after a breach (1–3 bars)
+- Heavy volume on breach adds legitimacy
+- Breach without follow-through (low volume, candles quickly recover) = likely false break
+
+---
+
+## 8. The 1OP Indicator
+
+### Overview
+- Proprietary indicator for SPY; designed for day trading and short-term swing trading
+- Has two lines: **1OP2** (fast) and **1OP1** (slow)
+- **Predictive / early** — not reactive; generates signals before the move begins
+- Requires **technical confirmation** before acting on a signal
+
+### Signal Rules
+- 1OP in deep trough + 1OP2 crosses above 1OP1 → Buy signal; look for bullish price action to confirm
+- 1OP at tall spike + 1OP2 crosses below 1OP1 → Sell signal; look for bearish price action to confirm
+- Many "mini crosses" around the zero line → Do not trade 1OP; market is choppy/compressing
+- Indicator tight to zero line → Low conviction; wait for next clear cycle
+
+### Divergences
+- **Bullish divergence:** 1OP is falling (bearish cycle) but the market is moving higher → confirms the uptrend is very strong; expect the next bullish cross to produce a strong move
+- **Bearish divergence:** 1OP is rising (bullish cycle) but the market is dropping → trade from the short side; expect more selling
+- After one **benign cycle** (indicator doesn't produce), the odds increase that the next cycle will produce a meaningful move
+
+### Confirmation Before Acting
+- On a bearish cross: start taking gains on longs; begin looking for short setups; do not short without technical confirmation
+- On a bullish cross from a deep trough: start taking gains on shorts; look for long setups (stacked green candles, breakout above resistance)
+
+---
+
+## 9. Measured Moves (Price Targets)
+
+### Bullish Cycle
+1. Identify the **high before the dip** and the **low of the dip**
+2. Distance = high − low
+3. **Target = high before the dip + distance**
+4. Take gains as the market approaches the measured move, especially if candles are becoming tiny-bodied and volume is light
+
+### Bearish Cycle
+1. Identify the **low before the bounce** and the **high of the bounce**
+2. Distance = high of bounce − low before bounce
+3. **Target = low before bounce − distance**
+4. Take gains at the measured move; bearish cycles produce violent bounces so do not wait
+
+---
+
+## 10. Long-Term Context Drives Short-Term Trading
+
+### The Core Framework (Applied Daily)
+1. **Start with the D1 chart** — identify the prevailing trend (trendline direction, candle color stacking, volume on moves)
+2. **Zoom to M15** — understand the shorter-term momentum
+3. **Drill to M5** — identify intraday entry points
+4. **Pre-define scenarios before the open** with assigned probabilities based on the longer-term context
+
+### Pre-Market Scenario Framework
+Define 4–5 scenarios each morning:
+- **Gap and go (strong open):** stacked green candles with no overlap in first 30 minutes → heavy buying; trend day likely
+- **Bid check (gap fill then rally):** mixed overlapping candles on early pullback → weak selling; find support; best setup to buy stocks with relative strength; retracement < 50% of gap resolving within 1 hour
+- **Gradual drift higher then stall:** mixed overlapping candles on drift up → weak trend; short when the move stalls (bearish hammer / bearish engulfing off HOD)
+- **Gap reversal (partial):** long red candles; half of gap erased; selling pressure moderate; focus on shorts
+- **Complete gap reversal:** stacked red candles in first 30 minutes; heavy selling; all-in on shorts
+
+### Context-Based Bias Rules
+- **Bull market, dip context:** set LRSI alerts instead of chasing; buy the confirmed dip; do not short
+- **Bear market, bounce context:** short the bounce when it stalls at resistance; take gains on drops; do not get long
+- **Choppy range (3 steps forward, 2 back):** buy dips, take gains on bounces; do not hold for breakouts
+- **"Trade what you see, not what you think"** — price action overrides fundamental opinions
+
+### Key Patterns to Avoid
+- **FOMO chasing breakouts** in a choppy uptrend → almost always leads to being trapped at a local high
+- **Contrarian shorting** in a strong uptrend → violent rallies will cause losses before the eventual top
+- **Trying to nail every move** — know the odds and the "sweet spots"; preserve capital during low-odds periods
+
+---
+
+## 11. Real vs. Fake Breakouts
+
+### Confirmation Checklist for a Real Breakout
+- Breakout occurs on **heavy volume**
+- Follow-through buying in the **next 2–3 sessions** (buyers aggressive, do not wait for dips)
+- Dips after the breakout are **brief and shallow** and immediately bought
+- Midpoint of the breakout candle is **not violated** on any retest
+
+### Head Fake / Short-Covering Breakout Signs
+- Light volume in the days after the breakout
+- Market compresses in a tight range above the breakout without advancing
+- Multiple failed attempts to hold new high
+- The breakout came after a prolonged downtrend → likely short covering, not new buying
+
+### Breakout Context Rule
+- A breakout against the longer-term trend requires **much stronger confirmation**
+- Asset Managers must participate (sustained institutional buying) for a breakout to be real: look for increasing volume on advances and light volume on dips after the breakout
+
+---
+
+## 12. Finding High-Probability Entry Points ("Sweet Spots")
+
+### Highest-Odds Conditions (ranked)
+1. **Bullish cycle continuation phase:** MAs aligned bullish; dip to a safety net (MA or AVWAPQ); market flies off with stacked green candles on heavy volume
+2. **Bearish cycle continuation phase:** MAs aligned bearish; bounce to a ceiling (MA or H- trendline); market rejected with stacked red candles; enter short
+3. **Seasonal Q4 setup:** deep September/October drop with intraday reversal; buy the low; add on confirmation
+4. **Compression breakout:** tight range; heavy volume breakout; enter in direction of breakout with confirmed follow-through
+
+### Avoid Trading In These Conditions
+- Moving averages in disarray (reversal phase)
+- Mixed, overlapping candles with light volume
+- 1OP has many mini-crosses near zero line
+- Market is at a price extreme without confirmation of support or resistance
+- Entering after a large directional move without waiting for a pullback
+
+### Position Sizing Rules
+- **Size up:** during confirmed trend continuation with aligned MAs, heavy volume, and strong price action
+- **Size down:** during contra-trend moves, light volume environments, or when close to seasonal risk windows
+- **Cash is a valid position** — during August doldrums, high-volatility reversals, or when no clear scenario has >30% odds
+
+---
+
+## 13. Quick-Reference Decision Tree
+
+1. What is the market cycle? → 50-day vs. 200-day: BULLISH or BEARISH?
+2. What stage of the cycle? → MAs aligning (continuation) or in disarray (reversal/choppy)?
+3. What does price action say? → Stacked candles (strong trend) or mixed/overlapping (weak trend)?
+4. What does volume say? → Heavy on the move = conviction; light = suspicion
+5. Where is price relative to key levels? → At a safety net (bullish) or ceiling (bearish)? At horizontal S/R?
+6. What does 1OP say? → Bullish/bearish cross with confirmation? Or mini-crosses (avoid)?
+7. What is the seasonal context? → Sept/Oct drop → buy for Q4 rally? Year-end: no shorts allowed
+8. Is there a measured move target? → Calculate; plan exit before the target if price action weakens
+
+**Only trade when 3+ factors align in the same direction. Size up when all factors align. Stay in cash when they conflict.**
+
+---
+
+## 14. Key Definitions
+
+- **AVWAPQ:** Volume Weighted Average Price anchored to triple witching; major dynamic support/resistance
+- **LRSI:** Proprietary RSI variant; alert triggers when LRSI makes a full round-trip (>80 → <20 → >20)
+- **1OP:** Proprietary indicator with fast (1OP2) and slow (1OP1) lines; predictive, not reactive
+- **1OVol:** Volume indicator; above zero = above 20-period average volume
+- **1OSqz:** Compression indicator; grey = normal, yellow = compressing, green/red = breakout
+- **Key bar:** Long-bodied candle with short tails and above-average volume; midpoint is critical reference
+- **Benign cycle:** An indicator cycle that does not produce a meaningful price move
+- **Measured move:** Price target calculated from the height of the preceding swing, projected in the trend direction
+- **Death cross:** 50-day MA crosses below 200-day MA; bearish cycle confirmation
+- **Golden cross:** 50-day MA crosses above 200-day MA; bullish cycle confirmation
+- **Buying climax:** Light-volume spike to new high at end of trend; expect reversal soon
+- **L+ trendline:** Upward sloping trendline acting as support in a bullish cycle
+- **H- trendline:** Downward sloping trendline acting as resistance in a bearish cycle
+
+---
+
+*Start with the longest timeframe (daily context) and work down to M15/M5 for intraday precision. Never trade in isolation of the higher-timeframe context.*
+`;
