@@ -2119,7 +2119,7 @@ function initDatePicker() {
         if (!n || n < 1) return;
         const now  = new Date();
         const from = new Date(now.getFullYear(), now.getMonth() - (n - 1), 1);
-        const to   = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        const to   = now;
         fp.setDate([from, to], true);
         fp.close();
       };
