@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chapter Trainer</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:     #1a1a2e;
+      --bg2:    #16213e;
+      --bg3:    #0f3460;
+      --accent: #e94560;
+      --teal:   #a8dadc;
+      --text:   #eee;
+      --muted:  #7a8ba0;
+      --border: rgba(168,218,220,0.12);
+      --green:  #4ade80;
+      --red:    #f87171;
+      --radius: 10px;
+    }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 14px;
+      min-height: 100vh;
+      padding-bottom: 80px;
+    }
+    .wrapper { max-width: 980px; margin: 0 auto; padding: 24px 20px; }
+    h1 { font-size: 1.2rem; letter-spacing: 3px; color: var(--accent); margin-bottom: 20px; }
+    .card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      margin-bottom: 16px;
+    }
+    label, .field-label {
+      font-size: 0.75rem; color: var(--muted); display: block;
+      margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    input[type="text"], input[type="password"] {
+      background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
+      color: var(--text); font-size: 0.85rem; padding: 8px 12px; outline: none; width: 100%;
+    }
+    input[type="text"]:focus, input[type="password"]:focus { border-color: var(--teal); }
+    .btn {
+      background: var(--teal); color: #111; border: none; border-radius: 6px;
+      padding: 9px 20px; font-weight: 700; font-size: 0.82rem; cursor: pointer; white-space: nowrap;
+    }
+    .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    .btn-sm { padding: 5px 12px; font-size: 0.78rem; }
+    .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--muted); }
+    .btn-accent { background: var(--accent); color: #fff; }
+    .key-row { display: flex; gap: 8px; align-items: center; }
+    .key-row input { flex: 1; }
+    #keys-toggle-row { display: flex; align-items: center; justify-content: space-between; }
+    #keys-toggle-row .keys-label { color: var(--muted); font-size: 0.82rem; }
+
+    /* Header bar */
+    #header-bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    #chapter-title { flex: 1; min-width: 200px; }
+    .file-label {
+      display: inline-block; background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 6px; padding: 8px 14px; font-size: 0.82rem; cursor: pointer;
+      color: var(--teal); white-space: nowrap; font-weight: 600;
+    }
+    .file-label:hover { background: rgba(15,52,96,0.8); }
+    #filename-display { color: var(--muted); font-size: 0.8rem; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #progress-wrap { width: 100%; margin-top: 12px; }
+    #progress-bar-track { background: var(--bg); border-radius: 4px; height: 4px; margin-bottom: 6px; overflow: hidden; }
+    #progress-bar-fill { background: var(--teal); height: 100%; width: 0%; transition: width 0.3s; }
+    #progress-text { font-size: 0.78rem; color: var(--muted); }
+
+    /* Chapter list */
+    #chapter-list-items { display: flex; flex-direction: column; gap: 8px; }
+    .chapter-item {
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 10px 14px;
+    }
+    .chapter-item .ch-title { font-weight: 600; font-size: 0.85rem; }
+    .chapter-item .ch-meta { color: var(--muted); font-size: 0.75rem; margin-top: 2px; }
+
+    /* Page cards */
+    .page-card {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: var(--radius); margin-bottom: 16px; overflow: hidden;
+    }
+    .page-card-header {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 16px; border-bottom: 1px solid var(--border); background: var(--bg3);
+    }
+    .page-num { font-weight: 700; font-size: 0.85rem; color: var(--teal); }
+    .pill { font-size: 0.7rem; padding: 2px 8px; border-radius: 20px; font-weight: 600; text-transform: uppercase; }
+    .pill-chart { background: rgba(74,222,128,0.15); color: var(--green); border: 1px solid rgba(74,222,128,0.3); }
+    .pill-text  { background: rgba(122,139,160,0.15); color: var(--muted); border: 1px solid var(--border); }
+    .pill-loading { background: rgba(168,218,220,0.1); color: var(--muted); border: 1px solid var(--border); }
+    .include-toggle {
+      margin-left: auto; display: flex; align-items: center; gap: 6px;
+      font-size: 0.8rem; color: var(--muted); cursor: pointer; user-select: none;
+    }
+    .include-toggle input[type="checkbox"] { accent-color: var(--teal); width: 15px; height: 15px; cursor: pointer; }
+    .page-card-body { display: grid; grid-template-columns: 300px 1fr; }
+    .page-img-wrap {
+      border-right: 1px solid var(--border); background: #111;
+      display: flex; align-items: flex-start; justify-content: center;
+      padding: 12px; max-height: 420px; overflow-y: auto;
+    }
+    .page-img-wrap img { width: 100%; height: auto; display: block; border-radius: 4px; }
+    .page-img-loading { color: var(--muted); font-size: 0.8rem; padding: 60px 0; text-align: center; }
+    .page-content { padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
+    .section-label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+    .interp-text {
+      background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
+      padding: 10px 12px; font-size: 0.79rem; line-height: 1.65; color: var(--text);
+      white-space: pre-wrap; max-height: 210px; overflow-y: auto;
+    }
+    .interp-text.loading { color: var(--muted); font-style: italic; }
+    .page-textarea {
+      width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
+      color: var(--text); font-size: 0.82rem; font-family: inherit;
+      padding: 8px 12px; resize: vertical; outline: none; line-height: 1.5; min-height: 80px;
+    }
+    .page-textarea:focus { border-color: var(--teal); }
+
+    /* Commit footer */
+    #commit-footer {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: var(--bg2); border-top: 1px solid var(--border);
+      padding: 12px 24px; display: none; align-items: center; gap: 16px; z-index: 100;
+    }
+    #included-count { color: var(--muted); font-size: 0.82rem; flex: 1; }
+    #commit-status { font-size: 0.82rem; }
+    #commit-status.ok  { color: var(--green); }
+    #commit-status.err { color: var(--red); }
+
+    .note { font-size: 0.75rem; color: var(--muted); line-height: 1.5; margin-top: 8px; }
+    .muted { color: var(--muted); }
+    .section-title { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px; }
+
+    @media (max-width: 640px) {
+      .page-card-body { grid-template-columns: 1fr; }
+      .page-img-wrap { border-right: none; border-bottom: 1px solid var(--border); max-height: 240px; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrapper">
+  <h1>CHAPTER TRAINER</h1>
+
+  <!-- Keys card -->
+  <div class="card" id="keys-card">
+    <div id="keys-toggle-row">
+      <span class="keys-label" id="keys-status-label">API Keys</span>
+      <button class="btn btn-sm btn-ghost" id="keys-toggle-btn">Edit</button>
+    </div>
+    <div id="keys-fields" style="display:none; margin-top:14px;">
+      <div style="margin-bottom:12px;">
+        <label>Anthropic API Key</label>
+        <div class="key-row">
+          <input type="password" id="anthropic-key-input" placeholder="sk-ant-…">
+          <button class="btn btn-sm" id="anthropic-save-btn">Save</button>
+        </div>
+      </div>
+      <div>
+        <label>GitHub Personal Access Token</label>
+        <div class="key-row">
+          <input type="password" id="gh-token-input" placeholder="github_pat_…">
+          <button class="btn btn-sm" id="gh-token-save-btn">Save</button>
+        </div>
+        <p class="note">PAT needs Contents: Read &amp; Write on andrewhogan93/trading-ai</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Header bar: title + upload + analyze -->
+  <div class="card">
+    <div id="header-bar">
+      <input type="text" id="chapter-title" placeholder="Chapter title…">
+      <label class="file-label">
+        Upload PDF
+        <input type="file" id="pdf-input" accept=".pdf" hidden>
+      </label>
+      <span id="filename-display"></span>
+      <button class="btn" id="analyze-btn" disabled>Analyze Chapter</button>
+    </div>
+    <div id="progress-wrap" style="display:none; margin-top:12px;">
+      <div id="progress-bar-track"><div id="progress-bar-fill"></div></div>
+      <span id="progress-text"></span>
+    </div>
+  </div>
+
+  <!-- Previously committed chapters -->
+  <div class="card" id="chapter-list-card">
+    <div class="section-title">Previously Trained Chapters</div>
+    <div id="chapter-list-items"><span class="muted" style="font-size:0.82rem;">Loading…</span></div>
+  </div>
+
+  <!-- Page review cards — populated dynamically -->
+  <div id="pages-container"></div>
+</div>
+
+<!-- Sticky commit footer -->
+<div id="commit-footer">
+  <span id="included-count"></span>
+  <button class="btn btn-accent" id="commit-btn" disabled>Commit Chapter</button>
+  <span id="commit-status"></span>
+</div>
+
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+// ── Constants ────────────────────────────────────────────────────────────────
+const GH_OWNER = 'andrewhogan93';
+const GH_REPO  = 'trading-ai';
+const GH_PATH  = 'chapter_knowledge.json';
+const LS_AK    = 'anthropic_api_key';   // shared with dashboard.html
+const LS_PAT   = 'gh_pat';             // shared with dashboard.html
+
+// ── Runtime state ────────────────────────────────────────────────────────────
+let _chSha       = null;
+let _pageResults = [];   // [{pageNum, dataUrl, base64, hasCharts, included, aiInterpretation, userRefinement}]
+let _pdfFilename = '';
+let _totalPages  = 0;
+let _processing  = false;
+
+// ── localStorage helpers ─────────────────────────────────────────────────────
+function getAnthropicKey() { return localStorage.getItem(LS_AK) || ''; }
+function saveAnthropicKey(k) { localStorage.setItem(LS_AK, k); }
+function getGithubToken()  { return localStorage.getItem(LS_PAT) || ''; }
+function saveGithubToken(t){ localStorage.setItem(LS_PAT, t); }
+
+// ── Keys card ────────────────────────────────────────────────────────────────
+function updateKeysCardState() {
+  const ak = getAnthropicKey();
+  const tk = getGithubToken();
+  const label = document.getElementById('keys-status-label');
+  if (ak && tk) {
+    label.textContent = 'API Keys — both saved ✓';
+    document.getElementById('keys-fields').style.display = 'none';
+  } else {
+    const missing = [!ak && 'Anthropic key', !tk && 'GitHub token'].filter(Boolean).join(', ');
+    label.textContent = `API Keys — missing: ${missing}`;
+    document.getElementById('keys-fields').style.display = 'block';
+  }
+  if (ak) document.getElementById('anthropic-key-input').placeholder = '(saved)';
+  if (tk) document.getElementById('gh-token-input').placeholder = '(saved)';
+}
+
+// ── Analyze button guard ─────────────────────────────────────────────────────
+function updateAnalyzeButtonState() {
+  const ok = document.getElementById('chapter-title').value.trim().length > 0
+          && _pdfFilename.length > 0
+          && !!getAnthropicKey()
+          && !!getGithubToken()
+          && !_processing;
+  document.getElementById('analyze-btn').disabled = !ok;
+}
+
+// ── Include count (footer) ───────────────────────────────────────────────────
+function updateIncludedCount() {
+  const n = _pageResults.filter(r => r.included).length;
+  document.getElementById('included-count').textContent =
+    `${n} of ${_pageResults.length} pages selected`;
+  document.getElementById('commit-btn').disabled = n === 0;
+}
+
+// ── GitHub: load chapter_knowledge.json ─────────────────────────────────────
+async function loadChapterKnowledge(token) {
+  const url = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${GH_PATH}`;
+  const r = await fetch(url, {
+    headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' },
+  });
+  if (r.status === 404) return null;
+  if (!r.ok) throw new Error(`GitHub ${r.status}: ${(await r.json()).message || ''}`);
+  const json = await r.json();
+  const content = JSON.parse(atob(json.content.replace(/\n/g, '')));
+  return { content, sha: json.sha };
+}
+
+// ── GitHub: save chapter_knowledge.json ─────────────────────────────────────
+async function saveChapterKnowledge(token, data) {
+  const url = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${GH_PATH}`;
+  // Re-fetch SHA immediately before PUT to prevent 409 Conflict
+  try {
+    const latest = await loadChapterKnowledge(token);
+    _chSha = latest ? latest.sha : null;
+  } catch (_) { /* proceed with current SHA */ }
+  const raw     = JSON.stringify(data, null, 2);
+  const encoded = btoa(unescape(encodeURIComponent(raw)));
+  const body    = { message: `chore: add/update chapter knowledge — ${_pdfFilename || 'chapter'}`, content: encoded };
+  if (_chSha) body.sha = _chSha;
+  const r = await fetch(url, {
+    method: 'PUT',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      Accept: 'application/vnd.github+json',
+    },
+    body: JSON.stringify(body),
+  });
+  if (!r.ok) throw new Error(`GitHub ${r.status}: ${(await r.json()).message || ''}`);
+  const json = await r.json();
+  _chSha = json.content.sha;
+}
+
+// ── Chapter list renderer ────────────────────────────────────────────────────
+function escHtml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function renderChapterList(data, errorMsg) {
+  const el = document.getElementById('chapter-list-items');
+  if (errorMsg) {
+    el.innerHTML = `<span style="color:var(--red);font-size:0.82rem;">Could not load from GitHub: ${escHtml(errorMsg)}</span>`;
+    return;
+  }
+  if (!data) {
+    el.innerHTML = `<span class="muted" style="font-size:0.82rem;">Loading…</span>`;
+    return;
+  }
+  if (!data.chapters || data.chapters.length === 0) {
+    el.innerHTML = `<span class="muted" style="font-size:0.82rem;">No chapters trained yet.</span>`;
+    return;
+  }
+  el.innerHTML = data.chapters.map(ch => {
+    const date  = ch.committed ? new Date(ch.committed).toLocaleDateString() : '';
+    const pages = ch.pages ? ch.pages.length : 0;
+    return `<div class="chapter-item">
+      <div>
+        <div class="ch-title">${escHtml(ch.title)}</div>
+        <div class="ch-meta">${escHtml(ch.filename)} · ${date} · ${pages} page${pages !== 1 ? 's' : ''}</div>
+      </div>
+      <span class="pill pill-chart">✓</span>
+    </div>`;
+  }).join('');
+}
+
+// ── PDF page renderer ────────────────────────────────────────────────────────
+async function renderPage(pdfDoc, pageNum) {
+  const page = await pdfDoc.getPage(pageNum);
+  let viewport = page.getViewport({ scale: 1.5 });
+  const maxDim = 2000;
+  if (viewport.width > maxDim || viewport.height > maxDim) {
+    const clamp = Math.min(maxDim / viewport.width, maxDim / viewport.height);
+    viewport = page.getViewport({ scale: 1.5 * clamp });
+  }
+  const canvas = document.createElement('canvas');
+  canvas.width  = Math.round(viewport.width);
+  canvas.height = Math.round(viewport.height);
+  await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+  const dataUrl = canvas.toDataURL('image/jpeg', 0.75);
+  return { dataUrl, base64: dataUrl.split(',')[1] };
+}
+
+// ── Claude Vision analysis ───────────────────────────────────────────────────
+async function analyzePageWithClaude(base64, pageNum, chapterTitle, apiKey) {
+  const prompt =
+`You are analyzing page ${pageNum} from a trading education book chapter titled "${chapterTitle}".
+
+Your job is to extract the complete trading knowledge from this page so it can teach an AI trading analyst.
+
+STEP 1 — DETECTION:
+Does this page contain a price chart, candlestick chart, bar chart, or annotated diagram of market/price action?
+
+If this page has NO charts (text only), reply with exactly on the first line: HAS_CHARTS: NO
+Then provide a 2–3 sentence summary of the key trading concept discussed on the text page.
+
+If charts are present, proceed with STEP 2:
+
+STEP 2 — CHART ANALYSIS:
+For each chart on the page:
+
+1. CHART TYPE & CONTEXT
+   - What type of chart is it? (candlestick, line, bar, etc.)
+   - What instrument/market does it appear to show? (if labeled)
+   - What time frame or period is shown? (if visible)
+   - What is the overall price action: trending up, down, consolidating, reversing?
+
+2. ANNOTATIONS INVENTORY (be exhaustive)
+   List every single annotation visible: arrows, text boxes, callout bubbles, drawn lines, shaded zones, horizontal levels, circles, and labels. For each one:
+   - Quote the exact text (if any)
+   - Describe what it is pointing to or marking (e.g., "horizontal green line marking a prior resistance level at approximately $420")
+   - Describe its color and visual style
+
+3. TRADING RULE ILLUSTRATED
+   - What specific trading rule, concept, or setup does this chart demonstrate?
+   - State it as a clear rule: "When [condition], [action/expectation]"
+   - Which phase of a trade does this relate to? (entry, management, exit, market context)
+
+4. CLARIFYING QUESTIONS
+   List 1–2 elements in this chart that are ambiguous or that you could not confidently interpret. Frame them as questions for the trader.`;
+
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'content-type': 'application/json',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({
+      model: 'claude-opus-4-6',
+      max_tokens: 1200,
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: base64 } },
+          { type: 'text', text: prompt },
+        ],
+      }],
+    }),
+  });
+  if (!res.ok) {
+    const e = await res.json().catch(() => ({}));
+    throw new Error(`API ${res.status}: ${e.error?.message || res.statusText}`);
+  }
+  const json = await res.json();
+  const text = json.content[0].text.trim();
+  const hasCharts = !text.startsWith('HAS_CHARTS: NO');
+  return { hasCharts, aiInterpretation: text };
+}
+
+// ── Page card builder ────────────────────────────────────────────────────────
+function buildPageCard(pageNum) {
+  const card = document.createElement('div');
+  card.className = 'page-card';
+  card.id = `page-card-${pageNum}`;
+  card.innerHTML = `
+    <div class="page-card-header">
+      <span class="page-num">Page ${pageNum}</span>
+      <span class="pill pill-loading" id="page-pill-${pageNum}">Loading…</span>
+      <label class="include-toggle" id="page-include-wrap-${pageNum}" style="display:none;">
+        <input type="checkbox" id="page-include-${pageNum}" data-page="${pageNum}">
+        Include
+      </label>
+    </div>
+    <div class="page-card-body">
+      <div class="page-img-wrap" id="page-img-wrap-${pageNum}">
+        <div class="page-img-loading">Rendering…</div>
+      </div>
+      <div class="page-content">
+        <div>
+          <div class="section-label">AI Interpretation</div>
+          <div class="interp-text loading" id="page-interp-${pageNum}">Analyzing with Claude…</div>
+        </div>
+        <div>
+          <div class="section-label">Your notes / corrections</div>
+          <textarea class="page-textarea" id="page-notes-${pageNum}" data-page="${pageNum}"
+            placeholder="Confirm, correct, or elaborate on the AI's reading of this page…" rows="4"></textarea>
+        </div>
+      </div>
+    </div>`;
+  return card;
+}
+
+function updatePageCard(result) {
+  const { pageNum, dataUrl, hasCharts, aiInterpretation, included } = result;
+  const imgWrap = document.getElementById(`page-img-wrap-${pageNum}`);
+  if (imgWrap) imgWrap.innerHTML = `<img src="${dataUrl}" alt="Page ${pageNum}">`;
+  const pill = document.getElementById(`page-pill-${pageNum}`);
+  if (pill) {
+    pill.className = `pill ${hasCharts ? 'pill-chart' : 'pill-text'}`;
+    pill.textContent = hasCharts ? 'Chart' : 'Text only';
+  }
+  const interp = document.getElementById(`page-interp-${pageNum}`);
+  if (interp) { interp.classList.remove('loading'); interp.textContent = aiInterpretation; }
+  const includeWrap = document.getElementById(`page-include-wrap-${pageNum}`);
+  if (includeWrap) includeWrap.style.display = '';
+  const checkbox = document.getElementById(`page-include-${pageNum}`);
+  if (checkbox) checkbox.checked = included;
+}
+
+// ── finalKnowledge compiler ──────────────────────────────────────────────────
+function buildFinalKnowledge(result) {
+  const parts = [`=== Page ${result.pageNum} ===`, result.aiInterpretation];
+  if (result.userRefinement && result.userRefinement.trim()) {
+    parts.push(`[Trader's notes]: ${result.userRefinement.trim()}`);
+  }
+  return parts.join('\n\n');
+}
+
+// ── Main processing orchestrator ─────────────────────────────────────────────
+async function processChapter() {
+  const apiKey       = getAnthropicKey();
+  const token        = getGithubToken();
+  const chapterTitle = document.getElementById('chapter-title').value.trim();
+  if (!apiKey || !token || !chapterTitle || !_pdfFilename) return;
+
+  _processing = true;
+  _pageResults = [];
+  updateAnalyzeButtonState();
+
+  document.getElementById('pages-container').innerHTML = '';
+  document.getElementById('commit-footer').style.display = 'none';
+  document.getElementById('progress-wrap').style.display = 'block';
+  document.getElementById('progress-bar-fill').style.width = '0%';
+  document.getElementById('progress-text').textContent = 'Loading PDF…';
+
+  let pdfDoc;
+  try {
+    const file = document.getElementById('pdf-input').files[0];
+    const buf  = await file.arrayBuffer();
+    pdfDoc     = await pdfjsLib.getDocument({ data: buf }).promise;
+  } catch (e) {
+    document.getElementById('progress-text').textContent = `Error loading PDF: ${e.message}`;
+    _processing = false;
+    updateAnalyzeButtonState();
+    return;
+  }
+
+  _totalPages = pdfDoc.numPages;
+  const container = document.getElementById('pages-container');
+
+  for (let p = 1; p <= _totalPages; p++) {
+    // Show card immediately in loading state
+    const card = buildPageCard(p);
+    container.appendChild(card);
+    card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+    const result = {
+      pageNum: p, dataUrl: '', base64: '',
+      hasCharts: false, included: false,
+      aiInterpretation: '', userRefinement: '',
+    };
+
+    try {
+      // Render page image
+      const { dataUrl, base64 } = await renderPage(pdfDoc, p);
+      result.dataUrl = dataUrl;
+      result.base64  = base64;
+      // Show image immediately, don't wait for Claude
+      const imgWrap = document.getElementById(`page-img-wrap-${p}`);
+      if (imgWrap) imgWrap.innerHTML = `<img src="${dataUrl}" alt="Page ${p}">`;
+
+      // Analyze with Claude Vision
+      document.getElementById('progress-text').textContent =
+        `Analyzing page ${p} of ${_totalPages} with Claude…`;
+      const { hasCharts, aiInterpretation } = await analyzePageWithClaude(
+        base64, p, chapterTitle, apiKey
+      );
+      result.hasCharts        = hasCharts;
+      result.aiInterpretation = aiInterpretation;
+      result.included         = hasCharts; // default: include chart pages only
+    } catch (e) {
+      result.aiInterpretation = `Error analyzing this page: ${e.message}`;
+      result.included = false;
+    }
+
+    _pageResults.push(result);
+    updatePageCard(result);
+
+    const pct = Math.round((p / _totalPages) * 100);
+    document.getElementById('progress-bar-fill').style.width = `${pct}%`;
+    document.getElementById('progress-text').textContent =
+      `${p} of ${_totalPages} pages analyzed`;
+
+    if (p < _totalPages) await new Promise(r => setTimeout(r, 600));
+  }
+
+  document.getElementById('progress-text').textContent =
+    `Analysis complete — ${_totalPages} pages processed. Review below, then commit.`;
+  document.getElementById('commit-footer').style.display = 'flex';
+  updateIncludedCount();
+
+  _processing = false;
+  updateAnalyzeButtonState();
+}
+
+// ── Commit handler ────────────────────────────────────────────────────────────
+async function commitChapter() {
+  const token        = getGithubToken();
+  const chapterTitle = document.getElementById('chapter-title').value.trim();
+  const included     = _pageResults.filter(r => r.included);
+  if (!token || !chapterTitle || included.length === 0) return;
+
+  const commitBtn = document.getElementById('commit-btn');
+  const statusEl  = document.getElementById('commit-status');
+  commitBtn.disabled  = true;
+  statusEl.className  = '';
+  statusEl.textContent = 'Committing…';
+
+  try {
+    // Fetch latest data (also refreshes SHA)
+    let data = { chapters: [] };
+    try {
+      const existing = await loadChapterKnowledge(token);
+      if (existing) { data = existing.content; _chSha = existing.sha; }
+    } catch (_) { /* first-ever commit, file doesn't exist */ }
+
+    const newChapter = {
+      title:     chapterTitle,
+      filename:  _pdfFilename,
+      committed: new Date().toISOString(),
+      pages: included.map(r => ({
+        pageNum:          r.pageNum,
+        hasCharts:        r.hasCharts,
+        aiInterpretation: r.aiInterpretation,
+        userRefinement:   r.userRefinement,
+        finalKnowledge:   buildFinalKnowledge(r),
+      })),
+    };
+
+    // Upsert: replace if same filename, else append
+    const idx = data.chapters.findIndex(c => c.filename === _pdfFilename);
+    if (idx >= 0) data.chapters[idx] = newChapter;
+    else          data.chapters.push(newChapter);
+
+    await saveChapterKnowledge(token, data);
+
+    statusEl.className   = 'ok';
+    statusEl.textContent = '✓ Committed to GitHub!';
+    renderChapterList(data);
+    setTimeout(() => { statusEl.textContent = ''; }, 5000);
+  } catch (e) {
+    statusEl.className   = 'err';
+    statusEl.textContent = `Error: ${e.message}`;
+  } finally {
+    commitBtn.disabled = _pageResults.filter(r => r.included).length === 0;
+  }
+}
+
+// ── Event wiring ──────────────────────────────────────────────────────────────
+function wireEvents() {
+  document.getElementById('keys-toggle-btn').addEventListener('click', () => {
+    const f = document.getElementById('keys-fields');
+    f.style.display = f.style.display === 'none' ? 'block' : 'none';
+  });
+
+  document.getElementById('anthropic-save-btn').addEventListener('click', () => {
+    const v = document.getElementById('anthropic-key-input').value.trim();
+    if (v) { saveAnthropicKey(v); document.getElementById('anthropic-key-input').value = ''; }
+    updateKeysCardState();
+    updateAnalyzeButtonState();
+  });
+
+  document.getElementById('gh-token-save-btn').addEventListener('click', async () => {
+    const v = document.getElementById('gh-token-input').value.trim();
+    if (v) { saveGithubToken(v); document.getElementById('gh-token-input').value = ''; }
+    updateKeysCardState();
+    updateAnalyzeButtonState();
+    // Reload chapter list with new token
+    const token = getGithubToken();
+    if (token) {
+      renderChapterList(null);
+      try {
+        const result = await loadChapterKnowledge(token);
+        if (result) { _chSha = result.sha; renderChapterList(result.content); }
+        else renderChapterList({ chapters: [] });
+      } catch(e) { renderChapterList(null, e.message); }
+    }
+  });
+
+  document.getElementById('chapter-title').addEventListener('input', updateAnalyzeButtonState);
+
+  document.getElementById('pdf-input').addEventListener('change', function() {
+    const file = this.files[0];
+    _pdfFilename = file ? file.name : '';
+    document.getElementById('filename-display').textContent = _pdfFilename;
+    updateAnalyzeButtonState();
+  });
+
+  document.getElementById('analyze-btn').addEventListener('click', processChapter);
+
+  // Delegated: textarea → update _pageResults
+  document.getElementById('pages-container').addEventListener('input', e => {
+    if (e.target.matches('.page-textarea')) {
+      const pn = parseInt(e.target.dataset.page, 10);
+      const r  = _pageResults.find(x => x.pageNum === pn);
+      if (r) r.userRefinement = e.target.value;
+    }
+  });
+
+  // Delegated: include checkbox → update _pageResults + footer
+  document.getElementById('pages-container').addEventListener('change', e => {
+    if (e.target.matches('input[type="checkbox"][data-page]')) {
+      const pn = parseInt(e.target.dataset.page, 10);
+      const r  = _pageResults.find(x => x.pageNum === pn);
+      if (r) r.included = e.target.checked;
+      updateIncludedCount();
+    }
+  });
+
+  document.getElementById('commit-btn').addEventListener('click', commitChapter);
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  updateKeysCardState();
+  updateAnalyzeButtonState();
+
+  const token = getGithubToken();
+  if (token) {
+    try {
+      const result = await loadChapterKnowledge(token);
+      if (result) { _chSha = result.sha; renderChapterList(result.content); }
+      else renderChapterList({ chapters: [] });
+    } catch(e) { renderChapterList(null, e.message); }
+  } else {
+    renderChapterList({ chapters: [] });
+  }
+
+  wireEvents();
+});
+</script>
+</body>
+</html>

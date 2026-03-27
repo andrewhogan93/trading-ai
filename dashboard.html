@@ -1985,6 +1985,10 @@ function showDashboard() {
         setSyncStatus('ok');
       })
       .catch(() => setSyncStatus('err'));
+    // Also load chapter knowledge (non-blocking, no status indicator needed)
+    loadChapterKnowledgeFromGitHub(token)
+      .then(data => { if (data) window._CHAPTER_KNOWLEDGE = data; })
+      .catch(() => {});
   }
 }
 
@@ -2465,6 +2469,7 @@ const GITHUB_TOKEN_KEY   = 'gh_pat';
 const GH_OWNER           = 'andrewhogan93';
 const GH_REPO            = 'trading-ai';
 const GH_PATH            = 'annotations.json';
+const GH_PATH_CHAPTERS   = 'chapter_knowledge.json';
 
 // ── GitHub Sync ──────────────────────────────────────────────────
 let _ghSha = null; // current SHA of annotations.json on GitHub
@@ -2488,6 +2493,17 @@ function applyAnnotations(data) {
   if (data.rulesCache && Object.keys(data.rulesCache).length) {
     localStorage.setItem(RULES_CACHE_KEY, JSON.stringify(data.rulesCache));
   }
+}
+
+async function loadChapterKnowledgeFromGitHub(token) {
+  const url = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${GH_PATH_CHAPTERS}`;
+  const r = await fetch(url, {
+    headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' },
+  });
+  if (r.status === 404) return null;
+  if (!r.ok) throw new Error(`GitHub ${r.status}`);
+  const json = await r.json();
+  return JSON.parse(atob(json.content.replace(/\n/g, '')));
 }
 
 async function loadAnnotationsFromGitHub(token) {
@@ -3223,7 +3239,20 @@ let intelHistory    = [];   // [{role:'user'|'assistant', content:string}]
 let intelSpySummary = '';   // recent candle data passed to Claude
 
 function getAnthropicKey() { return localStorage.getItem(ANTHROPIC_KEY_STORAGE) || ''; }
-function getMarketDocs()   { return window.MARKET_DOCS_TEXT || ''; }
+function getMarketDocs() {
+  let base = window.MARKET_DOCS_TEXT || '';
+  const ck = window._CHAPTER_KNOWLEDGE;
+  if (ck && ck.chapters && ck.chapters.length) {
+    base += '\n\n---\n\n## ANNOTATED CHART KNOWLEDGE (from training book chapters)\n\n';
+    for (const ch of ck.chapters) {
+      base += `### ${ch.title} (${ch.filename})\n\n`;
+      for (const pg of ch.pages) {
+        base += pg.finalKnowledge + '\n\n';
+      }
+    }
+  }
+  return base;
+}
 
 // ── PDF text extraction ──
 async function extractPdfText(file) {
