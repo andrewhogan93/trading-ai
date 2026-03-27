@@ -11,6 +11,9 @@
     "GOOG|1774374728000|1774377286000|Short|2": [
       "Day Trade",
       "own trade"
+    ],
+    "META|1774535534000|1774536357000|Short|4": [
+      "Day Trade"
     ]
   },
   "rulesCache": {
