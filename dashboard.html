@@ -2996,6 +2996,10 @@ function saveEditModal() {
   // Recalculate derived fields for closed trades
   if (!t._isOpen && t.openDate && t.closeDate) {
     t.holdMs = t.closeDate - t.openDate;
+    const multiplier = t.type === 'Option' ? 100 : 1;
+    t.cost      = t.avgEntryPrice * t.size * multiplier;
+    t.netPnL    = (t.side === 'Long' ? 1 : -1) * (t.avgExitPrice - t.avgEntryPrice) * t.size * multiplier;
+    t.netPnLPct = t.cost > 0 ? (t.netPnL / t.cost) * 100 : 0;
     if (t.netPnLPct > 0.1)       t.status = 'Win';
     else if (t.netPnLPct < -0.1) t.status = 'Loss';
     else                         t.status = 'Breakeven';
