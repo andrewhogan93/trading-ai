@@ -366,12 +366,12 @@ async function analyzePageWithClaude(base64, pageNum, chapterTitle, apiKey) {
 Your job is to extract the complete trading knowledge from this page so it can teach an AI trading analyst.
 
 STEP 1 — DETECTION:
-Does this page contain a price chart, candlestick chart, bar chart, or annotated diagram of market/price action?
+Does this page contain ANY visual element that is not pure body text? This includes: price charts, candlestick charts, line charts, bar charts, annotated diagrams, figures, illustrations, screenshots, tables, or any image showing market/price data or trading concepts.
 
-If this page has NO charts (text only), reply with exactly on the first line: HAS_CHARTS: NO
-Then provide a 2–3 sentence summary of the key trading concept discussed on the text page.
+If this page is PURELY body text with no visual elements at all, reply with exactly on the first line: HAS_CHARTS: NO
+Then provide a 2–3 sentence summary of the key trading concept discussed.
 
-If charts are present, proceed with STEP 2:
+If there is ANY visual element (charts, diagrams, figures, annotated images), proceed with STEP 2:
 
 STEP 2 — CHART ANALYSIS:
 For each chart on the page:
@@ -546,7 +546,7 @@ async function processChapter() {
       );
       result.hasCharts        = hasCharts;
       result.aiInterpretation = aiInterpretation;
-      result.included         = hasCharts; // default: include chart pages only
+      result.included         = true; // default all pages to included — user can deselect
     } catch (e) {
       result.aiInterpretation = `Error analyzing this page: ${e.message}`;
       result.included = false;
