@@ -135,6 +135,13 @@
     .filter-bar input[type="text"]:focus,
     .filter-bar select:focus { border-color: var(--teal); }
     #f-daterange { min-width: 190px; cursor: pointer; }
+    .dp-presets { display: flex; gap: 6px; padding: 8px 10px 6px; flex-wrap: wrap; border-bottom: 1px solid #3a3a3a; }
+    .dp-preset-btn {
+      background: #2a2a2a; border: 1px solid #3a3a3a; color: #8a9bb0;
+      border-radius: 4px; padding: 3px 10px; font-size: 0.78rem; cursor: pointer;
+      font-family: inherit;
+    }
+    .dp-preset-btn:hover { border-color: #a8dadc; color: #a8dadc; }
     .toggle-group { display: flex; gap: 4px; }
     .toggle-btn {
       background: var(--bg3);
@@ -2093,6 +2100,22 @@ function initDatePicker() {
     },
     onReady(_, __, fp) {
       fp.calendarContainer.style.fontFamily = 'Segoe UI, system-ui, sans-serif';
+      const presets = document.createElement('div');
+      presets.className = 'dp-presets';
+      presets.innerHTML = [1, 3, 6, 12].map(n =>
+        `<button class="dp-preset-btn" data-months="${n}">Last ${n === 12 ? '12M' : n + 'M'}</button>`
+      ).join('');
+      presets.addEventListener('click', e => {
+        const btn = e.target.closest('.dp-preset-btn');
+        if (!btn) return;
+        const n   = parseInt(btn.dataset.months);
+        const now = new Date();
+        const from = new Date(now.getFullYear(), now.getMonth() - (n - 1), 1);
+        const to   = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        fp.setDate([from, to], true);
+        fp.close();
+      });
+      fp.calendarContainer.prepend(presets);
     },
   });
 }
