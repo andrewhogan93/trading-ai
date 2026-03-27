@@ -28,7 +28,7 @@
       min-height: 100vh;
       padding-bottom: 80px;
     }
-    .wrapper { max-width: 980px; margin: 0 auto; padding: 24px 20px; }
+    .wrapper { max-width: 1100px; margin: 0 auto; padding: 24px 20px; }
     h1 { font-size: 1.2rem; letter-spacing: 3px; color: var(--accent); margin-bottom: 20px; }
     .card {
       background: var(--bg2);
@@ -54,12 +54,13 @@
     .btn-sm { padding: 5px 12px; font-size: 0.78rem; }
     .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--muted); }
     .btn-accent { background: var(--accent); color: #fff; }
+    .btn-danger { background: transparent; border: 1px solid rgba(248,113,113,0.3); color: var(--red); }
     .key-row { display: flex; gap: 8px; align-items: center; }
     .key-row input { flex: 1; }
     #keys-toggle-row { display: flex; align-items: center; justify-content: space-between; }
-    #keys-toggle-row .keys-label { color: var(--muted); font-size: 0.82rem; }
+    .keys-label { color: var(--muted); font-size: 0.82rem; }
 
-    /* Header bar */
+    /* Header */
     #header-bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
     #chapter-title { flex: 1; min-width: 200px; }
     .file-label {
@@ -68,13 +69,13 @@
       color: var(--teal); white-space: nowrap; font-weight: 600;
     }
     .file-label:hover { background: rgba(15,52,96,0.8); }
-    #filename-display { color: var(--muted); font-size: 0.8rem; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #filename-display { color: var(--muted); font-size: 0.8rem; }
     #progress-wrap { width: 100%; margin-top: 12px; }
     #progress-bar-track { background: var(--bg); border-radius: 4px; height: 4px; margin-bottom: 6px; overflow: hidden; }
     #progress-bar-fill { background: var(--teal); height: 100%; width: 0%; transition: width 0.3s; }
     #progress-text { font-size: 0.78rem; color: var(--muted); }
 
-    /* Chapter list */
+    /* Previously trained chapters */
     #chapter-list-items { display: flex; flex-direction: column; gap: 8px; }
     .chapter-item {
       display: flex; align-items: center; justify-content: space-between;
@@ -83,66 +84,96 @@
     .chapter-item .ch-title { font-weight: 600; font-size: 0.85rem; }
     .chapter-item .ch-meta { color: var(--muted); font-size: 0.75rem; margin-top: 2px; }
 
-    /* Page cards */
-    .page-card {
+    /* Page display */
+    .section-title { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 14px; }
+    .pages-grid { display: flex; flex-direction: column; gap: 24px; }
+    .page-wrap {
+      background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden;
+    }
+    .page-label {
+      padding: 8px 14px; background: var(--bg3);
+      font-size: 0.78rem; color: var(--teal); font-weight: 700; letter-spacing: 0.05em;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .page-hint { font-size: 0.72rem; color: var(--muted); font-weight: 400; letter-spacing: 0; }
+    .page-img-container {
+      position: relative;
+      display: block;
+      background: #0d0d16;
+      cursor: crosshair;
+      user-select: none;
+    }
+    .page-img-container img {
+      display: block;
+      width: 100%;
+      height: auto;
+      pointer-events: none;
+    }
+    .page-overlay {
+      position: absolute;
+      inset: 0;
+      cursor: crosshair;
+      z-index: 2;
+    }
+    .selection-rect {
+      position: absolute;
+      border: 2px solid var(--teal);
+      background: rgba(168, 218, 220, 0.12);
+      pointer-events: none;
+      z-index: 3;
+    }
+
+    /* Clips */
+    #clips-section { margin-top: 8px; }
+    .clip-card {
       background: var(--bg2); border: 1px solid var(--border);
-      border-radius: var(--radius); margin-bottom: 16px; overflow: hidden;
+      border-radius: var(--radius); margin-bottom: 14px; overflow: hidden;
     }
-    .page-card-header {
+    .clip-card-header {
       display: flex; align-items: center; gap: 10px;
-      padding: 10px 16px; border-bottom: 1px solid var(--border); background: var(--bg3);
+      padding: 9px 14px; background: var(--bg3); border-bottom: 1px solid var(--border);
     }
-    .page-num { font-weight: 700; font-size: 0.85rem; color: var(--teal); }
-    .pill { font-size: 0.7rem; padding: 2px 8px; border-radius: 20px; font-weight: 600; text-transform: uppercase; }
-    .pill-chart { background: rgba(74,222,128,0.15); color: var(--green); border: 1px solid rgba(74,222,128,0.3); }
-    .pill-text  { background: rgba(122,139,160,0.15); color: var(--muted); border: 1px solid var(--border); }
-    .pill-loading { background: rgba(168,218,220,0.1); color: var(--muted); border: 1px solid var(--border); }
-    .include-toggle {
-      margin-left: auto; display: flex; align-items: center; gap: 6px;
-      font-size: 0.8rem; color: var(--muted); cursor: pointer; user-select: none;
+    .clip-label { font-size: 0.8rem; color: var(--teal); font-weight: 700; }
+    .clip-card-body { display: grid; grid-template-columns: 220px 1fr; }
+    .clip-thumb {
+      border-right: 1px solid var(--border); background: #0d0d16;
+      padding: 10px; display: flex; align-items: flex-start; justify-content: center;
     }
-    .include-toggle input[type="checkbox"] { accent-color: var(--teal); width: 15px; height: 15px; cursor: pointer; }
-    .page-card-body { display: grid; grid-template-columns: 300px 1fr; }
-    .page-img-wrap {
-      border-right: 1px solid var(--border); background: #111;
-      display: flex; align-items: flex-start; justify-content: center;
-      padding: 12px; max-height: 420px; overflow-y: auto;
-    }
-    .page-img-wrap img { width: 100%; height: auto; display: block; border-radius: 4px; }
-    .page-img-loading { color: var(--muted); font-size: 0.8rem; padding: 60px 0; text-align: center; }
-    .page-content { padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
+    .clip-thumb img { width: 100%; height: auto; display: block; border-radius: 3px; }
+    .clip-thumb .analyzing { color: var(--muted); font-size: 0.78rem; padding: 30px 0; text-align: center; }
+    .clip-content { padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
     .section-label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
     .interp-text {
       background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
-      padding: 10px 12px; font-size: 0.79rem; line-height: 1.65; color: var(--text);
-      white-space: pre-wrap; max-height: 210px; overflow-y: auto;
+      padding: 10px 12px; font-size: 0.8rem; line-height: 1.7; color: var(--text);
+      white-space: pre-wrap; max-height: 260px; overflow-y: auto;
     }
     .interp-text.loading { color: var(--muted); font-style: italic; }
-    .page-textarea {
+    .clip-textarea {
       width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
       color: var(--text); font-size: 0.82rem; font-family: inherit;
-      padding: 8px 12px; resize: vertical; outline: none; line-height: 1.5; min-height: 80px;
+      padding: 8px 12px; resize: vertical; outline: none; line-height: 1.5; min-height: 72px;
     }
-    .page-textarea:focus { border-color: var(--teal); }
+    .clip-textarea:focus { border-color: var(--teal); }
 
-    /* Commit footer */
+    /* Footer */
     #commit-footer {
       position: fixed; bottom: 0; left: 0; right: 0;
       background: var(--bg2); border-top: 1px solid var(--border);
       padding: 12px 24px; display: none; align-items: center; gap: 16px; z-index: 100;
     }
-    #included-count { color: var(--muted); font-size: 0.82rem; flex: 1; }
+    #clip-count { color: var(--muted); font-size: 0.82rem; flex: 1; }
     #commit-status { font-size: 0.82rem; }
     #commit-status.ok  { color: var(--green); }
     #commit-status.err { color: var(--red); }
 
     .note { font-size: 0.75rem; color: var(--muted); line-height: 1.5; margin-top: 8px; }
     .muted { color: var(--muted); }
-    .section-title { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px; }
 
     @media (max-width: 640px) {
-      .page-card-body { grid-template-columns: 1fr; }
-      .page-img-wrap { border-right: none; border-bottom: 1px solid var(--border); max-height: 240px; }
+      .clip-card-body { grid-template-columns: 1fr; }
+      .clip-thumb { border-right: none; border-bottom: 1px solid var(--border); }
     }
   </style>
 </head>
@@ -150,7 +181,7 @@
 <div class="wrapper">
   <h1>CHAPTER TRAINER</h1>
 
-  <!-- Keys card -->
+  <!-- Keys -->
   <div class="card" id="keys-card">
     <div id="keys-toggle-row">
       <span class="keys-label" id="keys-status-label">API Keys</span>
@@ -175,7 +206,7 @@
     </div>
   </div>
 
-  <!-- Header bar: title + upload + analyze -->
+  <!-- Header: chapter title + upload -->
   <div class="card">
     <div id="header-bar">
       <input type="text" id="chapter-title" placeholder="Chapter title…">
@@ -183,8 +214,7 @@
         Upload PDF
         <input type="file" id="pdf-input" accept=".pdf" hidden>
       </label>
-      <span id="filename-display"></span>
-      <button class="btn" id="analyze-btn" disabled>Analyze Chapter</button>
+      <span id="filename-display" class="muted"></span>
     </div>
     <div id="progress-wrap" style="display:none; margin-top:12px;">
       <div id="progress-bar-track"><div id="progress-bar-fill"></div></div>
@@ -192,19 +222,27 @@
     </div>
   </div>
 
-  <!-- Previously committed chapters -->
-  <div class="card" id="chapter-list-card">
+  <!-- Previously trained chapters -->
+  <div class="card">
     <div class="section-title">Previously Trained Chapters</div>
     <div id="chapter-list-items"><span class="muted" style="font-size:0.82rem;">Loading…</span></div>
   </div>
 
-  <!-- Page review cards — populated dynamically -->
-  <div id="pages-container"></div>
+  <!-- Pages -->
+  <div id="pages-section" style="display:none;">
+    <div class="section-title" style="margin-bottom:10px;">Pages — drag to select a chart or diagram</div>
+    <div id="pages-grid" class="pages-grid"></div>
+  </div>
+
+  <!-- Selected clips -->
+  <div id="clips-section" style="display:none; margin-top:24px;">
+    <div class="section-title" id="clips-heading">Selected Clips</div>
+    <div id="clips-container"></div>
+  </div>
 </div>
 
-<!-- Sticky commit footer -->
 <div id="commit-footer">
-  <span id="included-count"></span>
+  <span id="clip-count"></span>
   <button class="btn btn-accent" id="commit-btn" disabled>Commit Chapter</button>
   <span id="commit-status"></span>
 </div>
@@ -217,17 +255,19 @@ pdfjsLib.GlobalWorkerOptions.workerSrc =
 const GH_OWNER = 'andrewhogan93';
 const GH_REPO  = 'trading-ai';
 const GH_PATH  = 'chapter_knowledge.json';
-const LS_AK    = 'anthropic_api_key';   // shared with dashboard.html
-const LS_PAT   = 'gh_pat';             // shared with dashboard.html
+const LS_AK    = 'anthropic_api_key';
+const LS_PAT   = 'gh_pat';
 
-// ── Runtime state ────────────────────────────────────────────────────────────
+// ── State ────────────────────────────────────────────────────────────────────
 let _chSha       = null;
-let _pageResults = [];   // [{pageNum, dataUrl, base64, hasCharts, included, aiInterpretation, userRefinement}]
+let _pageResults = [];   // [{pageNum, dataUrl, imgWidth, imgHeight}]
+let _clips       = [];   // [{id, pageNum, cropDataUrl, aiInterpretation, userRefinement}]
 let _pdfFilename = '';
-let _totalPages  = 0;
 let _processing  = false;
+let _drag        = null; // current drag state
+let _clipCounter = 0;
 
-// ── localStorage helpers ─────────────────────────────────────────────────────
+// ── localStorage ─────────────────────────────────────────────────────────────
 function getAnthropicKey() { return localStorage.getItem(LS_AK) || ''; }
 function saveAnthropicKey(k) { localStorage.setItem(LS_AK, k); }
 function getGithubToken()  { return localStorage.getItem(LS_PAT) || ''; }
@@ -235,8 +275,7 @@ function saveGithubToken(t){ localStorage.setItem(LS_PAT, t); }
 
 // ── Keys card ────────────────────────────────────────────────────────────────
 function updateKeysCardState() {
-  const ak = getAnthropicKey();
-  const tk = getGithubToken();
+  const ak = getAnthropicKey(), tk = getGithubToken();
   const label = document.getElementById('keys-status-label');
   if (ak && tk) {
     label.textContent = 'API Keys — both saved ✓';
@@ -250,25 +289,18 @@ function updateKeysCardState() {
   if (tk) document.getElementById('gh-token-input').placeholder = '(saved)';
 }
 
-// ── Analyze button guard ─────────────────────────────────────────────────────
-function updateAnalyzeButtonState() {
-  const ok = document.getElementById('chapter-title').value.trim().length > 0
-          && _pdfFilename.length > 0
-          && !!getAnthropicKey()
-          && !!getGithubToken()
-          && !_processing;
-  document.getElementById('analyze-btn').disabled = !ok;
-}
-
-// ── Include count (footer) ───────────────────────────────────────────────────
-function updateIncludedCount() {
-  const n = _pageResults.filter(r => r.included).length;
-  document.getElementById('included-count').textContent =
-    `${n} of ${_pageResults.length} pages selected`;
+// ── Clip count / commit footer ───────────────────────────────────────────────
+function updateClipCount() {
+  const n = _clips.length;
+  document.getElementById('clip-count').textContent =
+    `${n} clip${n !== 1 ? 's' : ''} selected`;
   document.getElementById('commit-btn').disabled = n === 0;
+  document.getElementById('commit-footer').style.display = n > 0 || _pageResults.length > 0 ? 'flex' : 'none';
+  const heading = document.getElementById('clips-heading');
+  if (heading) heading.textContent = `Selected Clips (${n})`;
 }
 
-// ── GitHub: load chapter_knowledge.json ─────────────────────────────────────
+// ── GitHub ───────────────────────────────────────────────────────────────────
 async function loadChapterKnowledge(token) {
   const url = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${GH_PATH}`;
   const r = await fetch(url, {
@@ -277,124 +309,108 @@ async function loadChapterKnowledge(token) {
   if (r.status === 404) return null;
   if (!r.ok) throw new Error(`GitHub ${r.status}: ${(await r.json()).message || ''}`);
   const json = await r.json();
-  const content = JSON.parse(atob(json.content.replace(/\n/g, '')));
-  return { content, sha: json.sha };
+  return { content: JSON.parse(atob(json.content.replace(/\n/g, ''))), sha: json.sha };
 }
 
-// ── GitHub: save chapter_knowledge.json ─────────────────────────────────────
 async function saveChapterKnowledge(token, data) {
   const url = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${GH_PATH}`;
-  // Re-fetch SHA immediately before PUT to prevent 409 Conflict
   try {
     const latest = await loadChapterKnowledge(token);
     _chSha = latest ? latest.sha : null;
-  } catch (_) { /* proceed with current SHA */ }
-  const raw     = JSON.stringify(data, null, 2);
-  const encoded = btoa(unescape(encodeURIComponent(raw)));
-  const body    = { message: `chore: add/update chapter knowledge — ${_pdfFilename || 'chapter'}`, content: encoded };
+  } catch (_) {}
+  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(data, null, 2))));
+  const body = { message: `chore: add/update chapter knowledge — ${_pdfFilename || 'chapter'}`, content: encoded };
   if (_chSha) body.sha = _chSha;
   const r = await fetch(url, {
     method: 'PUT',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-      Accept: 'application/vnd.github+json',
-    },
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', Accept: 'application/vnd.github+json' },
     body: JSON.stringify(body),
   });
   if (!r.ok) throw new Error(`GitHub ${r.status}: ${(await r.json()).message || ''}`);
-  const json = await r.json();
-  _chSha = json.content.sha;
+  _chSha = (await r.json()).content.sha;
 }
 
-// ── Chapter list renderer ────────────────────────────────────────────────────
+// ── Chapter list ─────────────────────────────────────────────────────────────
 function escHtml(s) {
-  return String(s)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 function renderChapterList(data, errorMsg) {
   const el = document.getElementById('chapter-list-items');
-  if (errorMsg) {
-    el.innerHTML = `<span style="color:var(--red);font-size:0.82rem;">Could not load from GitHub: ${escHtml(errorMsg)}</span>`;
-    return;
-  }
-  if (!data) {
-    el.innerHTML = `<span class="muted" style="font-size:0.82rem;">Loading…</span>`;
-    return;
-  }
-  if (!data.chapters || data.chapters.length === 0) {
-    el.innerHTML = `<span class="muted" style="font-size:0.82rem;">No chapters trained yet.</span>`;
-    return;
-  }
-  el.innerHTML = data.chapters.map(ch => {
+  if (errorMsg) { el.innerHTML = `<span style="color:var(--red);font-size:0.82rem;">Could not load: ${escHtml(errorMsg)}</span>`; return; }
+  if (!data)    { el.innerHTML = `<span class="muted" style="font-size:0.82rem;">Loading…</span>`; return; }
+  const chapters = data.chapters || [];
+  if (!chapters.length) { el.innerHTML = `<span class="muted" style="font-size:0.82rem;">No chapters trained yet.</span>`; return; }
+  el.innerHTML = chapters.map(ch => {
     const date  = ch.committed ? new Date(ch.committed).toLocaleDateString() : '';
-    const pages = ch.pages ? ch.pages.length : 0;
+    const items = (ch.clips || ch.pages || []).length;
     return `<div class="chapter-item">
       <div>
         <div class="ch-title">${escHtml(ch.title)}</div>
-        <div class="ch-meta">${escHtml(ch.filename)} · ${date} · ${pages} page${pages !== 1 ? 's' : ''}</div>
+        <div class="ch-meta">${escHtml(ch.filename)} · ${date} · ${items} clip${items !== 1 ? 's' : ''}</div>
       </div>
-      <span class="pill pill-chart">✓</span>
+      <span style="color:var(--green);font-size:0.8rem;">✓</span>
     </div>`;
   }).join('');
 }
 
-// ── PDF page renderer ────────────────────────────────────────────────────────
+// ── PDF rendering ─────────────────────────────────────────────────────────────
 async function renderPage(pdfDoc, pageNum) {
   const page = await pdfDoc.getPage(pageNum);
-  let viewport = page.getViewport({ scale: 1.5 });
-  const maxDim = 2000;
+  let viewport = page.getViewport({ scale: 2.0 }); // higher scale = sharper for cropping
+  const maxDim = 2400;
   if (viewport.width > maxDim || viewport.height > maxDim) {
     const clamp = Math.min(maxDim / viewport.width, maxDim / viewport.height);
-    viewport = page.getViewport({ scale: 1.5 * clamp });
+    viewport = page.getViewport({ scale: 2.0 * clamp });
   }
   const canvas = document.createElement('canvas');
   canvas.width  = Math.round(viewport.width);
   canvas.height = Math.round(viewport.height);
   await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-  const dataUrl = canvas.toDataURL('image/jpeg', 0.75);
-  return { dataUrl, base64: dataUrl.split(',')[1] };
+  const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+  return { dataUrl, imgWidth: canvas.width, imgHeight: canvas.height };
 }
 
-// ── Claude Vision analysis ───────────────────────────────────────────────────
-async function analyzePageWithClaude(base64, pageNum, chapterTitle, apiKey) {
+// ── Crop a region from a stored dataUrl ─────────────────────────────────────
+async function cropRegion(dataUrl, imgWidth, imgHeight, dispX, dispY, dispW, dispH, displayW, displayH) {
+  const img = new Image();
+  await new Promise(res => { img.onload = res; img.src = dataUrl; });
+  const scaleX = imgWidth / displayW;
+  const scaleY = imgHeight / displayH;
+  const sx = Math.max(0, Math.round(dispX * scaleX));
+  const sy = Math.max(0, Math.round(dispY * scaleY));
+  const sw = Math.min(Math.round(dispW * scaleX), imgWidth - sx);
+  const sh = Math.min(Math.round(dispH * scaleY), imgHeight - sy);
+  const crop = document.createElement('canvas');
+  crop.width  = sw;
+  crop.height = sh;
+  crop.getContext('2d').drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+  return crop.toDataURL('image/jpeg', 0.92);
+}
+
+// ── Claude Vision: analyze a clip ────────────────────────────────────────────
+async function analyzeClipWithClaude(base64, pageNum, chapterTitle, apiKey) {
   const prompt =
-`You are analyzing page ${pageNum} from a trading education book chapter titled "${chapterTitle}".
+`You are analyzing a chart or diagram selected by the user from page ${pageNum} of a trading education book chapter titled "${chapterTitle}".
 
-Your job is to extract the complete trading knowledge from this page so it can teach an AI trading analyst.
+The user has cropped this specific region because it contains important trading knowledge they want you to learn. Analyze it thoroughly.
 
-STEP 1 — DETECTION:
-Does this page contain ANY visual element that is not pure body text? This includes: price charts, candlestick charts, line charts, bar charts, annotated diagrams, figures, illustrations, screenshots, tables, or any image showing market/price data or trading concepts.
+1. WHAT IS SHOWN
+   Describe what you see: chart type, instrument/market (if labeled), time frame (if visible), overall price action or structure.
 
-If this page is PURELY body text with no visual elements at all, reply with exactly on the first line: HAS_CHARTS: NO
-Then provide a 2–3 sentence summary of the key trading concept discussed.
+2. ANNOTATIONS INVENTORY — be exhaustive
+   List every single annotation: arrows, text labels, callout boxes, drawn lines, trend lines, support/resistance levels, shaded zones, circles, brackets. For each one:
+   - Quote the exact text if any
+   - Describe precisely what it is marking or pointing to
+   - Note its color and visual style
 
-If there is ANY visual element (charts, diagrams, figures, annotated images), proceed with STEP 2:
+3. PATTERN OR CONCEPT BEING TAUGHT
+   - What trading pattern, setup, or concept does this chart illustrate?
+   - State the rule clearly: "When [condition], [action/expectation]"
+   - What should a trader look for, do, or avoid based on this?
 
-STEP 2 — CHART ANALYSIS:
-For each chart on the page:
-
-1. CHART TYPE & CONTEXT
-   - What type of chart is it? (candlestick, line, bar, etc.)
-   - What instrument/market does it appear to show? (if labeled)
-   - What time frame or period is shown? (if visible)
-   - What is the overall price action: trending up, down, consolidating, reversing?
-
-2. ANNOTATIONS INVENTORY (be exhaustive)
-   List every single annotation visible: arrows, text boxes, callout bubbles, drawn lines, shaded zones, horizontal levels, circles, and labels. For each one:
-   - Quote the exact text (if any)
-   - Describe what it is pointing to or marking (e.g., "horizontal green line marking a prior resistance level at approximately $420")
-   - Describe its color and visual style
-
-3. TRADING RULE ILLUSTRATED
-   - What specific trading rule, concept, or setup does this chart demonstrate?
-   - State it as a clear rule: "When [condition], [action/expectation]"
-   - Which phase of a trade does this relate to? (entry, management, exit, market context)
-
-4. CLARIFYING QUESTIONS
-   List 1–2 elements in this chart that are ambiguous or that you could not confidently interpret. Frame them as questions for the trader.`;
+4. YOUR UNDERSTANDING
+   Go beyond just describing labels. Demonstrate that you understand the nuance — what is the core insight a trader should internalize from this chart? What would make this setup valid vs invalid?`;
 
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -406,7 +422,7 @@ For each chart on the page:
     },
     body: JSON.stringify({
       model: 'claude-opus-4-6',
-      max_tokens: 1200,
+      max_tokens: 1400,
       messages: [{
         role: 'user',
         content: [
@@ -420,83 +436,112 @@ For each chart on the page:
     const e = await res.json().catch(() => ({}));
     throw new Error(`API ${res.status}: ${e.error?.message || res.statusText}`);
   }
-  const json = await res.json();
-  const text = json.content[0].text.trim();
-  const hasCharts = !text.startsWith('HAS_CHARTS: NO');
-  return { hasCharts, aiInterpretation: text };
+  return (await res.json()).content[0].text.trim();
 }
 
-// ── Page card builder ────────────────────────────────────────────────────────
-function buildPageCard(pageNum) {
+// ── Clip cards ────────────────────────────────────────────────────────────────
+function buildClipCard(clip) {
   const card = document.createElement('div');
-  card.className = 'page-card';
-  card.id = `page-card-${pageNum}`;
+  card.className = 'clip-card';
+  card.id = `clip-card-${clip.id}`;
   card.innerHTML = `
-    <div class="page-card-header">
-      <span class="page-num">Page ${pageNum}</span>
-      <span class="pill pill-loading" id="page-pill-${pageNum}">Loading…</span>
-      <label class="include-toggle" id="page-include-wrap-${pageNum}" style="display:none;">
-        <input type="checkbox" id="page-include-${pageNum}" data-page="${pageNum}">
-        Include
-      </label>
+    <div class="clip-card-header">
+      <span class="clip-label">Page ${clip.pageNum} — Clip #${clip.seq}</span>
+      <button class="btn btn-sm btn-danger" style="margin-left:auto;" data-clip-id="${clip.id}">Remove</button>
     </div>
-    <div class="page-card-body">
-      <div class="page-img-wrap" id="page-img-wrap-${pageNum}">
-        <div class="page-img-loading">Rendering…</div>
+    <div class="clip-card-body">
+      <div class="clip-thumb">
+        <img src="${clip.cropDataUrl}" alt="Clip from page ${clip.pageNum}">
       </div>
-      <div class="page-content">
+      <div class="clip-content">
         <div>
-          <div class="section-label">AI Interpretation</div>
-          <div class="interp-text loading" id="page-interp-${pageNum}">Analyzing with Claude…</div>
+          <div class="section-label">AI Analysis</div>
+          <div class="interp-text loading" id="clip-interp-${clip.id}">Analyzing with Claude…</div>
         </div>
         <div>
           <div class="section-label">Your notes / corrections</div>
-          <textarea class="page-textarea" id="page-notes-${pageNum}" data-page="${pageNum}"
-            placeholder="Confirm, correct, or elaborate on the AI's reading of this page…" rows="4"></textarea>
+          <textarea class="clip-textarea" data-clip-id="${clip.id}"
+            placeholder="Confirm, correct, or add context to the AI's analysis…" rows="4"></textarea>
         </div>
       </div>
     </div>`;
   return card;
 }
 
-function updatePageCard(result) {
-  const { pageNum, dataUrl, hasCharts, aiInterpretation, included } = result;
-  const imgWrap = document.getElementById(`page-img-wrap-${pageNum}`);
-  if (imgWrap) imgWrap.innerHTML = `<img src="${dataUrl}" alt="Page ${pageNum}">`;
-  const pill = document.getElementById(`page-pill-${pageNum}`);
-  if (pill) {
-    pill.className = `pill ${hasCharts ? 'pill-chart' : 'pill-text'}`;
-    pill.textContent = hasCharts ? 'Chart' : 'Text only';
-  }
-  const interp = document.getElementById(`page-interp-${pageNum}`);
-  if (interp) { interp.classList.remove('loading'); interp.textContent = aiInterpretation; }
-  const includeWrap = document.getElementById(`page-include-wrap-${pageNum}`);
-  if (includeWrap) includeWrap.style.display = '';
-  const checkbox = document.getElementById(`page-include-${pageNum}`);
-  if (checkbox) checkbox.checked = included;
+function updateClipInterp(id, text, isError) {
+  const el = document.getElementById(`clip-interp-${id}`);
+  if (!el) return;
+  el.classList.remove('loading');
+  if (isError) el.style.color = 'var(--red)';
+  el.textContent = text;
 }
 
-// ── finalKnowledge compiler ──────────────────────────────────────────────────
-function buildFinalKnowledge(result) {
-  const parts = [`=== Page ${result.pageNum} ===`, result.aiInterpretation];
-  if (result.userRefinement && result.userRefinement.trim()) {
-    parts.push(`[Trader's notes]: ${result.userRefinement.trim()}`);
-  }
-  return parts.join('\n\n');
-}
+// ── Create a clip from a drag selection ──────────────────────────────────────
+async function createClip(pageNum, dispX, dispY, dispW, dispH, displayW, displayH) {
+  const pr = _pageResults.find(r => r.pageNum === pageNum);
+  if (!pr) return;
 
-// ── Main processing orchestrator ─────────────────────────────────────────────
-async function processChapter() {
   const apiKey       = getAnthropicKey();
-  const token        = getGithubToken();
   const chapterTitle = document.getElementById('chapter-title').value.trim();
-  if (!apiKey || !token || !chapterTitle || !_pdfFilename) return;
+  if (!apiKey) { alert('Anthropic API key not saved.'); return; }
+
+  const cropDataUrl = await cropRegion(
+    pr.dataUrl, pr.imgWidth, pr.imgHeight,
+    dispX, dispY, dispW, dispH, displayW, displayH
+  );
+
+  _clipCounter++;
+  const clip = { id: Date.now(), seq: _clipCounter, pageNum, cropDataUrl, aiInterpretation: '', userRefinement: '' };
+  _clips.push(clip);
+
+  const clipsSection = document.getElementById('clips-section');
+  clipsSection.style.display = 'block';
+  const card = buildClipCard(clip);
+  document.getElementById('clips-container').appendChild(card);
+  card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  updateClipCount();
+
+  // Analyze asynchronously
+  try {
+    const analysis = await analyzeClipWithClaude(cropDataUrl.split(',')[1], pageNum, chapterTitle, apiKey);
+    clip.aiInterpretation = analysis;
+    updateClipInterp(clip.id, analysis, false);
+  } catch (e) {
+    clip.aiInterpretation = `Error: ${e.message}`;
+    updateClipInterp(clip.id, `Error: ${e.message}`, true);
+  }
+}
+
+// ── Drag-to-select overlay ───────────────────────────────────────────────────
+function attachSelectOverlay(overlayEl, pageNum) {
+  overlayEl.addEventListener('mousedown', e => {
+    if (_drag) return;
+    e.preventDefault();
+    const rect  = overlayEl.getBoundingClientRect();
+    const startX = e.clientX - rect.left;
+    const startY = e.clientY - rect.top;
+    const selEl  = document.createElement('div');
+    selEl.className = 'selection-rect';
+    selEl.style.cssText = `left:${startX}px;top:${startY}px;width:0;height:0`;
+    overlayEl.appendChild(selEl);
+    _drag = { overlayEl, pageNum, startX, startY, selEl };
+  });
+}
+
+// ── Render all pages ─────────────────────────────────────────────────────────
+async function renderPages() {
+  const chapterTitle = document.getElementById('chapter-title').value.trim();
+  if (!chapterTitle || !_pdfFilename) return;
 
   _processing = true;
   _pageResults = [];
-  updateAnalyzeButtonState();
+  _clips = [];
+  _clipCounter = 0;
 
-  document.getElementById('pages-container').innerHTML = '';
+  document.getElementById('pages-grid').innerHTML = '';
+  document.getElementById('clips-container').innerHTML = '';
+  document.getElementById('pages-section').style.display = 'none';
+  document.getElementById('clips-section').style.display = 'none';
   document.getElementById('commit-footer').style.display = 'none';
   document.getElementById('progress-wrap').style.display = 'block';
   document.getElementById('progress-bar-fill').style.width = '0%';
@@ -505,108 +550,95 @@ async function processChapter() {
   let pdfDoc;
   try {
     const file = document.getElementById('pdf-input').files[0];
-    const buf  = await file.arrayBuffer();
-    pdfDoc     = await pdfjsLib.getDocument({ data: buf }).promise;
+    pdfDoc = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
   } catch (e) {
     document.getElementById('progress-text').textContent = `Error loading PDF: ${e.message}`;
     _processing = false;
-    updateAnalyzeButtonState();
     return;
   }
 
-  _totalPages = pdfDoc.numPages;
-  const container = document.getElementById('pages-container');
+  const total = pdfDoc.numPages;
+  const grid  = document.getElementById('pages-grid');
+  document.getElementById('pages-section').style.display = 'block';
 
-  for (let p = 1; p <= _totalPages; p++) {
-    // Show card immediately in loading state
-    const card = buildPageCard(p);
-    container.appendChild(card);
-    card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-
-    const result = {
-      pageNum: p, dataUrl: '', base64: '',
-      hasCharts: false, included: false,
-      aiInterpretation: '', userRefinement: '',
-    };
+  for (let p = 1; p <= total; p++) {
+    document.getElementById('progress-text').textContent = `Rendering page ${p} of ${total}…`;
 
     try {
-      // Render page image
-      const { dataUrl, base64 } = await renderPage(pdfDoc, p);
-      result.dataUrl = dataUrl;
-      result.base64  = base64;
-      // Show image immediately, don't wait for Claude
-      const imgWrap = document.getElementById(`page-img-wrap-${p}`);
-      if (imgWrap) imgWrap.innerHTML = `<img src="${dataUrl}" alt="Page ${p}">`;
+      const { dataUrl, imgWidth, imgHeight } = await renderPage(pdfDoc, p);
+      _pageResults.push({ pageNum: p, dataUrl, imgWidth, imgHeight });
 
-      // Analyze with Claude Vision
-      document.getElementById('progress-text').textContent =
-        `Analyzing page ${p} of ${_totalPages} with Claude…`;
-      const { hasCharts, aiInterpretation } = await analyzePageWithClaude(
-        base64, p, chapterTitle, apiKey
-      );
-      result.hasCharts        = hasCharts;
-      result.aiInterpretation = aiInterpretation;
-      result.included         = true; // default all pages to included — user can deselect
+      const wrap = document.createElement('div');
+      wrap.className = 'page-wrap';
+      wrap.innerHTML = `
+        <div class="page-label">
+          PAGE ${p}
+          <span class="page-hint">Drag to select a chart or diagram</span>
+        </div>
+        <div class="page-img-container" id="page-container-${p}">
+          <img src="${dataUrl}" alt="Page ${p}" draggable="false">
+          <div class="page-overlay" id="page-overlay-${p}"></div>
+        </div>`;
+      grid.appendChild(wrap);
+
+      const overlay = wrap.querySelector('.page-overlay');
+      attachSelectOverlay(overlay, p);
     } catch (e) {
-      result.aiInterpretation = `Error analyzing this page: ${e.message}`;
-      result.included = false;
+      console.warn(`Page ${p} render error:`, e.message);
     }
 
-    _pageResults.push(result);
-    updatePageCard(result);
-
-    const pct = Math.round((p / _totalPages) * 100);
+    const pct = Math.round((p / total) * 100);
     document.getElementById('progress-bar-fill').style.width = `${pct}%`;
-    document.getElementById('progress-text').textContent =
-      `${p} of ${_totalPages} pages analyzed`;
-
-    if (p < _totalPages) await new Promise(r => setTimeout(r, 600));
   }
 
   document.getElementById('progress-text').textContent =
-    `Analysis complete — ${_totalPages} pages processed. Review below, then commit.`;
+    `${total} pages rendered — drag on any page to select a chart or diagram.`;
   document.getElementById('commit-footer').style.display = 'flex';
-  updateIncludedCount();
-
+  updateClipCount();
   _processing = false;
-  updateAnalyzeButtonState();
 }
 
-// ── Commit handler ────────────────────────────────────────────────────────────
+// ── finalKnowledge compiler ───────────────────────────────────────────────────
+function buildFinalKnowledge(clip) {
+  const parts = [`=== Page ${clip.pageNum}, Clip #${clip.seq} ===`, clip.aiInterpretation];
+  if (clip.userRefinement && clip.userRefinement.trim()) {
+    parts.push(`[Trader's notes]: ${clip.userRefinement.trim()}`);
+  }
+  return parts.join('\n\n');
+}
+
+// ── Commit ────────────────────────────────────────────────────────────────────
 async function commitChapter() {
   const token        = getGithubToken();
   const chapterTitle = document.getElementById('chapter-title').value.trim();
-  const included     = _pageResults.filter(r => r.included);
-  if (!token || !chapterTitle || included.length === 0) return;
+  if (!token || !chapterTitle || _clips.length === 0) return;
 
   const commitBtn = document.getElementById('commit-btn');
   const statusEl  = document.getElementById('commit-status');
-  commitBtn.disabled  = true;
-  statusEl.className  = '';
+  commitBtn.disabled   = true;
+  statusEl.className   = '';
   statusEl.textContent = 'Committing…';
 
   try {
-    // Fetch latest data (also refreshes SHA)
     let data = { chapters: [] };
     try {
       const existing = await loadChapterKnowledge(token);
       if (existing) { data = existing.content; _chSha = existing.sha; }
-    } catch (_) { /* first-ever commit, file doesn't exist */ }
+    } catch (_) {}
 
     const newChapter = {
       title:     chapterTitle,
       filename:  _pdfFilename,
       committed: new Date().toISOString(),
-      pages: included.map(r => ({
-        pageNum:          r.pageNum,
-        hasCharts:        r.hasCharts,
-        aiInterpretation: r.aiInterpretation,
-        userRefinement:   r.userRefinement,
-        finalKnowledge:   buildFinalKnowledge(r),
+      clips: _clips.map(c => ({
+        pageNum:          c.pageNum,
+        seq:              c.seq,
+        aiInterpretation: c.aiInterpretation,
+        userRefinement:   c.userRefinement,
+        finalKnowledge:   buildFinalKnowledge(c),
       })),
     };
 
-    // Upsert: replace if same filename, else append
     const idx = data.chapters.findIndex(c => c.filename === _pdfFilename);
     if (idx >= 0) data.chapters[idx] = newChapter;
     else          data.chapters.push(newChapter);
@@ -614,16 +646,45 @@ async function commitChapter() {
     await saveChapterKnowledge(token, data);
 
     statusEl.className   = 'ok';
-    statusEl.textContent = '✓ Committed to GitHub!';
+    statusEl.textContent = `✓ Committed ${_clips.length} clips to GitHub!`;
     renderChapterList(data);
     setTimeout(() => { statusEl.textContent = ''; }, 5000);
   } catch (e) {
     statusEl.className   = 'err';
     statusEl.textContent = `Error: ${e.message}`;
   } finally {
-    commitBtn.disabled = _pageResults.filter(r => r.included).length === 0;
+    commitBtn.disabled = _clips.length === 0;
   }
 }
+
+// ── Global drag handlers (single set, handles all pages) ─────────────────────
+document.addEventListener('mousemove', e => {
+  if (!_drag) return;
+  const rect = _drag.overlayEl.getBoundingClientRect();
+  const x = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
+  const y = Math.max(0, Math.min(e.clientY - rect.top, rect.height));
+  const w = x - _drag.startX, h = y - _drag.startY;
+  _drag.selEl.style.left   = (w < 0 ? x : _drag.startX) + 'px';
+  _drag.selEl.style.top    = (h < 0 ? y : _drag.startY) + 'px';
+  _drag.selEl.style.width  = Math.abs(w) + 'px';
+  _drag.selEl.style.height = Math.abs(h) + 'px';
+});
+
+document.addEventListener('mouseup', async e => {
+  if (!_drag) return;
+  const { overlayEl, pageNum, startX, startY, selEl } = _drag;
+  const rect   = overlayEl.getBoundingClientRect();
+  const x      = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
+  const y      = Math.max(0, Math.min(e.clientY - rect.top, rect.height));
+  const left   = Math.min(startX, x);
+  const top    = Math.min(startY, y);
+  const width  = Math.abs(x - startX);
+  const height = Math.abs(y - startY);
+  selEl.remove();
+  _drag = null;
+  if (width < 30 || height < 30) return; // too small, ignore accidental click
+  await createClip(pageNum, left, top, width, height, rect.width, rect.height);
+});
 
 // ── Event wiring ──────────────────────────────────────────────────────────────
 function wireEvents() {
@@ -631,20 +692,15 @@ function wireEvents() {
     const f = document.getElementById('keys-fields');
     f.style.display = f.style.display === 'none' ? 'block' : 'none';
   });
-
   document.getElementById('anthropic-save-btn').addEventListener('click', () => {
     const v = document.getElementById('anthropic-key-input').value.trim();
     if (v) { saveAnthropicKey(v); document.getElementById('anthropic-key-input').value = ''; }
     updateKeysCardState();
-    updateAnalyzeButtonState();
   });
-
   document.getElementById('gh-token-save-btn').addEventListener('click', async () => {
     const v = document.getElementById('gh-token-input').value.trim();
     if (v) { saveGithubToken(v); document.getElementById('gh-token-input').value = ''; }
     updateKeysCardState();
-    updateAnalyzeButtonState();
-    // Reload chapter list with new token
     const token = getGithubToken();
     if (token) {
       renderChapterList(null);
@@ -656,34 +712,39 @@ function wireEvents() {
     }
   });
 
-  document.getElementById('chapter-title').addEventListener('input', updateAnalyzeButtonState);
-
   document.getElementById('pdf-input').addEventListener('change', function() {
     const file = this.files[0];
     _pdfFilename = file ? file.name : '';
     document.getElementById('filename-display').textContent = _pdfFilename;
-    updateAnalyzeButtonState();
-  });
-
-  document.getElementById('analyze-btn').addEventListener('click', processChapter);
-
-  // Delegated: textarea → update _pageResults
-  document.getElementById('pages-container').addEventListener('input', e => {
-    if (e.target.matches('.page-textarea')) {
-      const pn = parseInt(e.target.dataset.page, 10);
-      const r  = _pageResults.find(x => x.pageNum === pn);
-      if (r) r.userRefinement = e.target.value;
+    if (file && document.getElementById('chapter-title').value.trim()) {
+      renderPages();
     }
   });
 
-  // Delegated: include checkbox → update _pageResults + footer
-  document.getElementById('pages-container').addEventListener('change', e => {
-    if (e.target.matches('input[type="checkbox"][data-page]')) {
-      const pn = parseInt(e.target.dataset.page, 10);
-      const r  = _pageResults.find(x => x.pageNum === pn);
-      if (r) r.included = e.target.checked;
-      updateIncludedCount();
+  document.getElementById('chapter-title').addEventListener('change', () => {
+    if (_pdfFilename && document.getElementById('chapter-title').value.trim()) {
+      renderPages();
     }
+  });
+
+  // Delegated: clip textarea
+  document.getElementById('clips-container').addEventListener('input', e => {
+    if (e.target.matches('.clip-textarea')) {
+      const id  = parseInt(e.target.dataset.clipId, 10);
+      const clip = _clips.find(c => c.id === id);
+      if (clip) clip.userRefinement = e.target.value;
+    }
+  });
+
+  // Delegated: remove clip button
+  document.getElementById('clips-container').addEventListener('click', e => {
+    const btn = e.target.closest('button[data-clip-id]');
+    if (!btn) return;
+    const id = parseInt(btn.dataset.clipId, 10);
+    _clips = _clips.filter(c => c.id !== id);
+    document.getElementById(`clip-card-${id}`)?.remove();
+    updateClipCount();
+    if (_clips.length === 0) document.getElementById('clips-section').style.display = 'none';
   });
 
   document.getElementById('commit-btn').addEventListener('click', commitChapter);
@@ -692,8 +753,7 @@ function wireEvents() {
 // ── Init ──────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
   updateKeysCardState();
-  updateAnalyzeButtonState();
-
+  wireEvents();
   const token = getGithubToken();
   if (token) {
     try {
@@ -704,8 +764,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   } else {
     renderChapterList({ chapters: [] });
   }
-
-  wireEvents();
 });
 </script>
 </body>
