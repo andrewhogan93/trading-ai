@@ -135,13 +135,42 @@
       padding: 9px 14px; background: var(--bg3); border-bottom: 1px solid var(--border);
     }
     .clip-label { font-size: 0.8rem; color: var(--teal); font-weight: 700; }
-    .clip-card-body { display: grid; grid-template-columns: 220px 1fr; }
-    .clip-thumb {
-      border-right: 1px solid var(--border); background: #0d0d16;
-      padding: 10px; display: flex; align-items: flex-start; justify-content: center;
+    .clip-card-body { display: grid; grid-template-columns: 1fr 1fr; }
+    .clip-left {
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
     }
-    .clip-thumb img { width: 100%; height: auto; display: block; border-radius: 3px; }
-    .clip-thumb .analyzing { color: var(--muted); font-size: 0.78rem; padding: 30px 0; text-align: center; }
+    .clip-left-label {
+      font-size: 0.68rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em;
+      padding: 6px 12px; border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.2);
+    }
+    /* Paste zone */
+    .paste-zone {
+      flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 10px; padding: 20px 16px; cursor: pointer; outline: none;
+      border: 2px dashed transparent; transition: border-color 0.15s, background 0.15s;
+      background: #0d0d16; min-height: 180px; text-align: center;
+    }
+    .paste-zone:hover { border-color: rgba(168,218,220,0.3); background: rgba(168,218,220,0.03); }
+    .paste-zone.active { border-color: var(--teal) !important; background: rgba(168,218,220,0.07) !important; }
+    .paste-zone.has-image { padding: 0; cursor: default; border-color: transparent; }
+    .paste-zone.has-image img { width: 100%; height: auto; display: block; }
+    .paste-kbd {
+      font-size: 1.4rem; font-weight: 800; color: var(--teal); letter-spacing: 2px;
+      background: rgba(168,218,220,0.1); border: 1px solid rgba(168,218,220,0.2);
+      border-radius: 6px; padding: 4px 14px;
+    }
+    .paste-hint { font-size: 0.8rem; color: var(--muted); line-height: 1.5; }
+    .paste-hint strong { color: var(--text); }
+    .paste-ok { font-size: 0.82rem; color: var(--green); }
+    /* Clip reference thumb */
+    .clip-ref-thumb {
+      padding: 8px 12px; border-top: 1px solid var(--border); background: rgba(0,0,0,0.2);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .clip-ref-thumb img { height: 40px; width: auto; border-radius: 3px; opacity: 0.6; }
+    .clip-ref-thumb span { font-size: 0.7rem; color: var(--muted); }
+    /* Clip right panel */
     .clip-content { padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
     .section-label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
     .interp-text {
@@ -149,7 +178,6 @@
       padding: 10px 12px; font-size: 0.8rem; line-height: 1.7; color: var(--text);
       white-space: pre-wrap; max-height: 260px; overflow-y: auto;
     }
-    .interp-text.loading { color: var(--muted); font-style: italic; }
     .clip-textarea {
       width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
       color: var(--text); font-size: 0.82rem; font-family: inherit;
@@ -259,13 +287,14 @@ const LS_AK    = 'anthropic_api_key';
 const LS_PAT   = 'gh_pat';
 
 // ── State ────────────────────────────────────────────────────────────────────
-let _chSha       = null;
-let _pageResults = [];   // [{pageNum, dataUrl, imgWidth, imgHeight}]
-let _clips       = [];   // [{id, pageNum, cropDataUrl, aiInterpretation, userRefinement}]
-let _pdfFilename = '';
-let _processing  = false;
-let _drag        = null; // current drag state
-let _clipCounter = 0;
+let _chSha            = null;
+let _pageResults      = [];   // [{pageNum, dataUrl, imgWidth, imgHeight}]
+let _clips            = [];   // [{id, seq, pageNum, cropDataUrl, pastedDataUrl, aiInterpretation, userRefinement}]
+let _pdfFilename      = '';
+let _processing       = false;
+let _drag             = null; // current drag state
+let _clipCounter      = 0;
+let _activePasteClipId = null; // which clip is currently awaiting a paste
 
 // ── localStorage ─────────────────────────────────────────────────────────────
 function getAnthropicKey() { return localStorage.getItem(LS_AK) || ''; }
@@ -389,32 +418,37 @@ async function cropRegion(dataUrl, imgWidth, imgHeight, dispX, dispY, dispW, dis
 }
 
 // ── Claude Vision: analyze a clip ────────────────────────────────────────────
-async function analyzeClipWithClaude(cropBase64, fullPageBase64, pageNum, chapterTitle, apiKey) {
+async function analyzeClipWithClaude(pastedBase64, pastedMediaType, fullPageBase64, pageNum, chapterTitle, apiKey) {
   const prompt =
-`You are analyzing a selected chart or diagram from page ${pageNum} of a trading education book chapter titled "${chapterTitle}".
+`You are analyzing a chart or diagram from page ${pageNum} of a trading education book chapter titled "${chapterTitle}".
 
 You have been given TWO images:
-- IMAGE 1: The full page — use this for context (surrounding text, labels outside the selection, overall layout)
-- IMAGE 2: The user's selected region — this is the chart or diagram they want you to learn from in detail
-
-Use Image 1 to understand context. Use Image 2 for your detailed analysis. If any annotations are partially cut off in Image 2, refer to Image 1 to complete them.
+- IMAGE 1: The full book page — use this for surrounding context, text, and any labels that extend beyond the chart area
+- IMAGE 2: A full-resolution screenshot of the chart the user wants you to learn from — this is your primary analysis target
 
 1. WHAT IS SHOWN
    Describe what you see: chart type, instrument/market (if labeled), time frame (if visible), overall price action or structure.
 
 2. ANNOTATIONS INVENTORY — be exhaustive
-   Carefully examine both images. List every single annotation visible on the chart: arrows, text labels, callout boxes, drawn lines, trend lines, support/resistance levels, shaded zones, circles, brackets, any handwritten or overlaid marks. For each one:
-   - Quote the exact text (check Image 1 if the text is cut off in Image 2)
-   - Describe precisely what it is marking or pointing to on the chart
-   - Note its color and visual style
+   List every single annotation on the chart: arrows, text labels, callout boxes, drawn lines, trend lines, support/resistance levels, shaded zones, circles, brackets, any overlaid marks. For each:
+   - Quote the exact text
+   - Describe precisely what it marks or points to on the chart
+   - Note color and style
 
 3. PATTERN OR CONCEPT BEING TAUGHT
    - What trading pattern, setup, or concept does this chart illustrate?
    - State the rule clearly: "When [condition], [action/expectation]"
-   - What should a trader look for, do, or avoid based on this?
+   - What should a trader look for, do, or avoid?
 
 4. YOUR UNDERSTANDING
-   Go beyond describing labels. Demonstrate that you understand the nuance — what is the core insight a trader should internalize? What makes this setup valid vs invalid?`;
+   Go beyond labeling. Demonstrate you understand the nuance — what is the core insight a trader should internalize? What makes this setup valid vs invalid?`;
+
+  const content = [];
+  if (fullPageBase64) {
+    content.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: fullPageBase64 } });
+  }
+  content.push({ type: 'image', source: { type: 'base64', media_type: pastedMediaType, data: pastedBase64 } });
+  content.push({ type: 'text', text: prompt });
 
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -427,14 +461,7 @@ Use Image 1 to understand context. Use Image 2 for your detailed analysis. If an
     body: JSON.stringify({
       model: 'claude-opus-4-6',
       max_tokens: 1600,
-      messages: [{
-        role: 'user',
-        content: [
-          { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: fullPageBase64 } },
-          { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: cropBase64 } },
-          { type: 'text', text: prompt },
-        ],
-      }],
+      messages: [{ role: 'user', content }],
     }),
   });
   if (!res.ok) {
@@ -452,33 +479,47 @@ function buildClipCard(clip) {
   card.innerHTML = `
     <div class="clip-card-header">
       <span class="clip-label">Page ${clip.pageNum} — Clip #${clip.seq}</span>
-      <button class="btn btn-sm btn-danger" style="margin-left:auto;" data-clip-id="${clip.id}">Remove</button>
+      <button class="btn btn-sm btn-danger" style="margin-left:auto;" data-clip-id="${clip.id}" data-action="remove">Remove</button>
     </div>
     <div class="clip-card-body">
-      <div class="clip-thumb">
-        <img src="${clip.cropDataUrl}" alt="Clip from page ${clip.pageNum}">
-      </div>
-      <div class="clip-content">
-        <div>
-          <div class="section-label">AI Analysis</div>
-          <div class="interp-text loading" id="clip-interp-${clip.id}">Analyzing with Claude…</div>
+      <div class="clip-left" id="clip-left-${clip.id}">
+        <div class="clip-left-label">Your high-res image</div>
+        <div class="paste-zone" id="paste-zone-${clip.id}" data-clip-id="${clip.id}" tabindex="0">
+          <div class="paste-kbd">Ctrl+V</div>
+          <div class="paste-hint">
+            <strong>Click here</strong>, then paste a<br>
+            full-resolution screenshot of this chart
+          </div>
         </div>
-        <div>
-          <div class="section-label">Your notes / corrections</div>
-          <textarea class="clip-textarea" data-clip-id="${clip.id}"
-            placeholder="Confirm, correct, or add context to the AI's analysis…" rows="4"></textarea>
+        <div class="clip-ref-thumb">
+          <img src="${clip.cropDataUrl}" alt="PDF selection">
+          <span>PDF selection (reference)</span>
+        </div>
+      </div>
+      <div class="clip-content" id="clip-content-${clip.id}">
+        <div id="clip-pre-${clip.id}">
+          <div class="section-label">AI Analysis</div>
+          <p style="font-size:0.8rem; color:var(--muted); line-height:1.6;">
+            Paste your screenshot on the left, then click Analyze.
+          </p>
+          <button class="btn" style="margin-top:10px;" data-clip-id="${clip.id}" data-action="analyze" disabled>
+            Analyze with Claude ▶
+          </button>
+        </div>
+        <div id="clip-post-${clip.id}" style="display:none;">
+          <div>
+            <div class="section-label">AI Analysis</div>
+            <div class="interp-text" id="clip-interp-${clip.id}"></div>
+          </div>
+          <div>
+            <div class="section-label">Your notes / corrections</div>
+            <textarea class="clip-textarea" data-clip-id="${clip.id}"
+              placeholder="Confirm, correct, or add context…" rows="4"></textarea>
+          </div>
         </div>
       </div>
     </div>`;
   return card;
-}
-
-function updateClipInterp(id, text, isError) {
-  const el = document.getElementById(`clip-interp-${id}`);
-  if (!el) return;
-  el.classList.remove('loading');
-  if (isError) el.style.color = 'var(--red)';
-  el.textContent = text;
 }
 
 // ── Create a clip from a drag selection ──────────────────────────────────────
@@ -486,36 +527,64 @@ async function createClip(pageNum, dispX, dispY, dispW, dispH, displayW, display
   const pr = _pageResults.find(r => r.pageNum === pageNum);
   if (!pr) return;
 
-  const apiKey       = getAnthropicKey();
-  const chapterTitle = document.getElementById('chapter-title').value.trim();
-  if (!apiKey) { alert('Anthropic API key not saved.'); return; }
-
   const cropDataUrl = await cropRegion(
     pr.dataUrl, pr.imgWidth, pr.imgHeight,
     dispX, dispY, dispW, dispH, displayW, displayH
   );
 
   _clipCounter++;
-  const clip = { id: Date.now(), seq: _clipCounter, pageNum, cropDataUrl, aiInterpretation: '', userRefinement: '' };
+  const clip = {
+    id: Date.now(), seq: _clipCounter, pageNum,
+    cropDataUrl, pastedDataUrl: null,
+    aiInterpretation: '', userRefinement: '',
+  };
   _clips.push(clip);
 
-  const clipsSection = document.getElementById('clips-section');
-  clipsSection.style.display = 'block';
+  document.getElementById('clips-section').style.display = 'block';
   const card = buildClipCard(clip);
   document.getElementById('clips-container').appendChild(card);
   card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   updateClipCount();
 
-  // Analyze asynchronously
+  // Auto-focus the paste zone so user can Ctrl+V immediately
+  setTimeout(() => {
+    const zone = document.getElementById(`paste-zone-${clip.id}`);
+    if (zone) { zone.focus(); zone.classList.add('active'); _activePasteClipId = clip.id; }
+  }, 100);
+}
+
+// ── Analyze a specific clip (called when user clicks Analyze button) ──────────
+async function analyzeClip(id) {
+  const clip = _clips.find(c => c.id === id);
+  if (!clip || !clip.pastedDataUrl) return;
+
+  const apiKey       = getAnthropicKey();
+  const chapterTitle = document.getElementById('chapter-title').value.trim();
+  if (!apiKey) { alert('Anthropic API key not saved.'); return; }
+
+  const pr = _pageResults.find(r => r.pageNum === clip.pageNum);
+  const analyzeBtn = document.querySelector(`button[data-action="analyze"][data-clip-id="${id}"]`);
+  if (analyzeBtn) { analyzeBtn.disabled = true; analyzeBtn.textContent = 'Analyzing…'; }
+
   try {
+    const mediaType = clip.pastedDataUrl.startsWith('data:image/png') ? 'image/png'
+                    : clip.pastedDataUrl.startsWith('data:image/webp') ? 'image/webp'
+                    : 'image/jpeg';
+    const pastedBase64   = clip.pastedDataUrl.split(',')[1];
+    const fullPageBase64 = pr ? pr.dataUrl.split(',')[1] : null;
+
     const analysis = await analyzeClipWithClaude(
-      cropDataUrl.split(',')[1], pr.dataUrl.split(',')[1], pageNum, chapterTitle, apiKey
+      pastedBase64, mediaType, fullPageBase64, clip.pageNum, chapterTitle, apiKey
     );
     clip.aiInterpretation = analysis;
-    updateClipInterp(clip.id, analysis, false);
+
+    document.getElementById(`clip-pre-${id}`).style.display  = 'none';
+    document.getElementById(`clip-post-${id}`).style.display = 'block';
+    document.getElementById(`clip-interp-${id}`).textContent  = analysis;
   } catch (e) {
-    clip.aiInterpretation = `Error: ${e.message}`;
-    updateClipInterp(clip.id, `Error: ${e.message}`, true);
+    if (analyzeBtn) { analyzeBtn.disabled = false; analyzeBtn.textContent = 'Analyze with Claude ▶'; }
+    const interp = document.getElementById(`clip-interp-${id}`);
+    if (interp) { interp.style.color = 'var(--red)'; interp.textContent = `Error: ${e.message}`; }
   }
 }
 
@@ -734,24 +803,88 @@ function wireEvents() {
     }
   });
 
-  // Delegated: clip textarea
+  // Delegated: clip textarea → update clip state
   document.getElementById('clips-container').addEventListener('input', e => {
     if (e.target.matches('.clip-textarea')) {
-      const id  = parseInt(e.target.dataset.clipId, 10);
+      const id = parseInt(e.target.dataset.clipId, 10);
       const clip = _clips.find(c => c.id === id);
       if (clip) clip.userRefinement = e.target.value;
     }
   });
 
-  // Delegated: remove clip button
+  // Delegated: paste zone click → set as active paste target
   document.getElementById('clips-container').addEventListener('click', e => {
-    const btn = e.target.closest('button[data-clip-id]');
+    const zone = e.target.closest('.paste-zone');
+    if (zone && !zone.classList.contains('has-image')) {
+      document.querySelectorAll('.paste-zone.active').forEach(z => z.classList.remove('active'));
+      zone.classList.add('active');
+      zone.focus();
+      _activePasteClipId = parseInt(zone.dataset.clipId, 10);
+      return;
+    }
+
+    const btn = e.target.closest('button[data-action]');
     if (!btn) return;
     const id = parseInt(btn.dataset.clipId, 10);
-    _clips = _clips.filter(c => c.id !== id);
-    document.getElementById(`clip-card-${id}`)?.remove();
-    updateClipCount();
-    if (_clips.length === 0) document.getElementById('clips-section').style.display = 'none';
+
+    if (btn.dataset.action === 'remove') {
+      _clips = _clips.filter(c => c.id !== id);
+      document.getElementById(`clip-card-${id}`)?.remove();
+      if (_activePasteClipId === id) _activePasteClipId = null;
+      updateClipCount();
+      if (_clips.length === 0) document.getElementById('clips-section').style.display = 'none';
+    }
+
+    if (btn.dataset.action === 'analyze') {
+      analyzeClip(id);
+    }
+  });
+
+  // Global paste handler → route image to active paste zone
+  document.addEventListener('paste', e => {
+    if (_activePasteClipId === null) return;
+    const imgItem = Array.from(e.clipboardData.items).find(i => i.type.startsWith('image/'));
+    if (!imgItem) return;
+    e.preventDefault();
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const dataUrl = ev.target.result;
+      const clip = _clips.find(c => c.id === _activePasteClipId);
+      if (!clip) return;
+      clip.pastedDataUrl = dataUrl;
+
+      const zone = document.getElementById(`paste-zone-${clip.id}`);
+      if (zone) {
+        zone.classList.add('has-image');
+        zone.classList.remove('active');
+        zone.innerHTML = `<img src="${dataUrl}" alt="Pasted screenshot">`;
+      }
+
+      // Enable analyze button
+      const analyzeBtn = document.querySelector(`button[data-action="analyze"][data-clip-id="${clip.id}"]`);
+      if (analyzeBtn) {
+        analyzeBtn.disabled = false;
+        analyzeBtn.textContent = 'Analyze with Claude ▶';
+      }
+
+      // Update pre-analyze text
+      const preEl = document.getElementById(`clip-pre-${clip.id}`);
+      if (preEl) {
+        const hint = preEl.querySelector('p');
+        if (hint) hint.textContent = 'Image pasted ✓ — click Analyze when ready.';
+      }
+
+      _activePasteClipId = null;
+    };
+    reader.readAsDataURL(imgItem.getAsFile());
+  });
+
+  // Click outside paste zone → deactivate
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.paste-zone')) {
+      document.querySelectorAll('.paste-zone.active').forEach(z => z.classList.remove('active'));
+      if (!e.target.closest('.clip-card')) _activePasteClipId = null;
+    }
   });
 
   document.getElementById('commit-btn').addEventListener('click', commitChapter);
