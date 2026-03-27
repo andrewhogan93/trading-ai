@@ -357,9 +357,15 @@
     }
     .setup-cell { min-width: 90px; max-width: 160px; }
     .modal-footer {
-      display: flex; gap: 10px; justify-content: flex-end;
+      display: flex; gap: 10px; justify-content: flex-end; align-items: center;
       padding: 16px 20px; border-top: 1px solid var(--border);
     }
+    .modal-delete-btn {
+      background: transparent; border: 1px solid var(--red);
+      color: var(--red); border-radius: 6px; padding: 8px 16px;
+      cursor: pointer; font-size: 0.85rem; margin-right: auto;
+    }
+    .modal-delete-btn:hover { background: rgba(255,80,80,0.1); }
     .modal-save-btn {
       background: var(--teal); color: var(--bg); border: none;
       border-radius: 6px; padding: 8px 20px; cursor: pointer;
@@ -1093,6 +1099,7 @@
       <div class="modal-footer">
         <button class="modal-save-btn" id="modal-save-btn">Save Changes</button>
         <button class="modal-cancel-btn" id="modal-cancel-btn">Cancel</button>
+        <button class="modal-delete-btn" id="modal-delete-btn">Delete Trade</button>
       </div>
     </div>
   </div>
@@ -2952,6 +2959,18 @@ function closeEditModal() {
   modalState.trade = null;
 }
 
+function deleteTradeFromModal() {
+  const t = modalState.trade;
+  if (!t) return;
+  if (!confirm(`Delete ${t.symbol} trade from the dashboard? This cannot be undone.`)) return;
+  state.allTrades  = state.allTrades.filter(x => x._fp !== t._fp);
+  state.openTrades = state.openTrades.filter(x => x._fp !== t._fp);
+  saveToStorage();
+  scheduleGithubSave();
+  closeEditModal();
+  refresh();
+}
+
 function saveEditModal() {
   const t = modalState.trade;
   if (!t) return;
@@ -3022,6 +3041,7 @@ document.getElementById('t-body').addEventListener('click', e => {
 document.getElementById('modal-close-btn').addEventListener('click',  closeEditModal);
 document.getElementById('modal-cancel-btn').addEventListener('click', closeEditModal);
 document.getElementById('modal-save-btn').addEventListener('click',   saveEditModal);
+document.getElementById('modal-delete-btn').addEventListener('click', deleteTradeFromModal);
 
 // Close modal on backdrop click
 document.getElementById('edit-modal').addEventListener('click', e => {
