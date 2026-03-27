@@ -1,8 +1,5 @@
 {
   "setups": {
-    "open|APH|1774016170000|BOT|3": [
-      "Day Trade"
-    ],
     "NOW|1774361793000|1774363662000|Short|9": [
       "Day Trade",
       "own trade"
@@ -15,13 +12,10 @@
       "Day Trade",
       "own trade"
     ],
+    "open|APH|1774016170000|BOT|3": [
+      "Day Trade"
+    ],
     "open|PL|1774376355000|SOLD|1": [
-      "Day Trade"
-    ],
-    "META|1774535534000|1774536357000|Short|4": [
-      "Day Trade"
-    ],
-    "GIL|1774536493000|1774537378000|Short|8": [
       "Day Trade"
     ]
   },
@@ -251,12 +245,12 @@
       "w60": 0.828044273941719
     },
     "open|APH|1774016170000|BOT|3": {
-      "spy": true,
-      "vwap": true,
-      "w5": 1.168601522257243,
-      "w15": 1.168601522257243,
-      "w30": 1.168601522257243,
-      "w60": 1.168601522257243
+      "spy": false,
+      "vwap": false,
+      "w5": null,
+      "w15": null,
+      "w30": null,
+      "w60": null
     }
   }
 }
