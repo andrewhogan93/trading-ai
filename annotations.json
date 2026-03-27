@@ -1,5 +1,8 @@
 {
   "setups": {
+    "open|APH|1774016170000|BOT|3": [
+      "Day Trade"
+    ],
     "NOW|1774361793000|1774363662000|Short|9": [
       "Day Trade",
       "own trade"
@@ -11,9 +14,6 @@
     "GOOG|1774374728000|1774377286000|Short|2": [
       "Day Trade",
       "own trade"
-    ],
-    "open|APH|1774016170000|BOT|3": [
-      "Day Trade"
     ],
     "open|PL|1774376355000|SOLD|1": [
       "Day Trade"
