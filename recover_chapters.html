@@ -92,6 +92,10 @@ finds all unique chapters, and lets you push the merged result back to GitHub.</
 </div>
 
 <script>
+function b64ToStr(b64) {
+  return decodeURIComponent(escape(atob(b64.replace(/\n/g, ''))));
+}
+
 const GH_OWNER = 'andrewhogan93';
 const GH_REPO  = 'trading-ai';
 const GH_PATH  = 'chapter_knowledge.json';
@@ -118,7 +122,7 @@ async function getFileAtCommit(commitSha, token) {
   if (!r.ok) return null;
   const j = await r.json();
   try {
-    return JSON.parse(atob(j.content.replace(/\n/g, '')));
+    return JSON.parse(b64ToStr(j.content));
   } catch { return null; }
 }
 
