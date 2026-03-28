@@ -41,6 +41,7 @@
     .ver-commit { font-family: monospace; font-size: 0.72rem; color: var(--muted); }
     .ver-date   { font-size: 0.72rem; color: var(--muted); }
     .ver-clips  { font-size: 0.72rem; }
+    .ver-msg    { font-size: 0.68rem; color: var(--muted); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px; }
     .ver-clips.best { color: var(--green); font-weight: 700; }
     .use-btn    { font-size: 0.68rem !important; padding: 2px 9px !important; }
     .use-btn.selected { background: var(--green) !important; color: #111 !important; }
@@ -92,8 +93,13 @@ finds all unique chapters, and lets you push the merged result back to GitHub.</
 </div>
 
 <script>
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
 function b64ToStr(b64) {
-  return decodeURIComponent(escape(atob(b64.replace(/\n/g, ''))));
+  const bytes = Uint8Array.from(atob(b64.replace(/\n/g, '')), c => c.charCodeAt(0));
+  return new TextDecoder('utf-8', { fatal: false }).decode(bytes);
 }
 
 const GH_OWNER = 'andrewhogan93';
@@ -155,20 +161,21 @@ document.getElementById('scan-btn').addEventListener('click', async () => {
     const curR = await gh(`/contents/${GH_PATH}`, token);
     if (curR.ok) { const j = await curR.json(); _currentFileSha = j.sha; }
 
-    // 3. Fetch each version
+    // 3. Fetch each version — process oldest-first so original commits win ties
     _found = {};
-    for (let i = 0; i < commits.length; i++) {
-      const c = commits[i];
+    const commitsOldFirst = [...commits].reverse();
+    for (let i = 0; i < commitsOldFirst.length; i++) {
+      const c = commitsOldFirst[i];
       const sha  = c.sha;
       const date = c.commit.committer.date.slice(0, 10);
-      const msg  = c.commit.message.slice(0, 60);
-      log(`Fetching commit ${i + 1}/${commits.length}: <span class="info">${sha.slice(0,7)}</span> ${date} — ${msg}`);
+      const msg  = c.commit.message.split('\n')[0].slice(0, 60);
+      log(`Fetching commit ${i + 1}/${commitsOldFirst.length}: <span class="info">${sha.slice(0,7)}</span> ${date} — ${msg}`);
       const data = await getFileAtCommit(sha, token);
       if (!data || !data.chapters) { log(`  (no valid data)`, 'err'); continue; }
       for (const ch of data.chapters) {
         if (!ch.filename) continue;
         if (!_found[ch.filename]) _found[ch.filename] = [];
-        _found[ch.filename].push({ commitSha: sha, date, chapter: ch });
+        _found[ch.filename].push({ commitSha: sha, date, msg, chapter: ch });
       }
       await new Promise(r => setTimeout(r, 120)); // avoid rate limits
     }
@@ -182,13 +189,15 @@ document.getElementById('scan-btn').addEventListener('click', async () => {
 
     log(`<span class="ok">✓ Found ${filenames.length} unique chapter file${filenames.length !== 1 ? 's' : ''} across history.</span>`);
 
-    // 4. Default selection = version with most clips
+    // 4. Default selection = version with most clips; among ties, oldest wins
+    // (commits are now oldest-first, so last entry with maxClips = oldest = original)
     _choices = {};
     filenames.forEach(fn => {
-      const best = _found[fn].reduce((a, b) =>
-        (b.chapter.clips || b.chapter.pages || []).length >
-        (a.chapter.clips || a.chapter.pages || []).length ? b : a
-      );
+      const maxClips = Math.max(..._found[fn].map(v =>
+        (v.chapter.clips || v.chapter.pages || []).length));
+      // pick first (oldest) entry that matches maxClips
+      const best = _found[fn].find(v =>
+        (v.chapter.clips || v.chapter.pages || []).length === maxClips);
       _choices[fn] = best.commitSha;
     });
 
@@ -217,6 +226,7 @@ function renderTable() {
         <span class="ver-commit">${v.commitSha.slice(0,7)}</span>
         <span class="ver-date">${v.date}</span>
         <span class="ver-clips${isBest ? ' best' : ''}">${clips} clip${clips !== 1 ? 's' : ''}</span>
+        <span class="ver-msg">${escHtml(v.msg || '')}</span>
         <button class="btn btn-sm btn-ghost use-btn${isChosen ? ' selected' : ''}"
           data-fn="${fn}" data-sha="${v.commitSha}">
           ${isChosen ? '✓ Using' : 'Use this'}
