@@ -3246,6 +3246,7 @@ function getMarketDocs() {
     base += '\n\n---\n\n## ANNOTATED CHART KNOWLEDGE (from training book chapters)\n\n';
     for (const ch of ck.chapters) {
       base += `### ${ch.title} (${ch.filename})\n\n`;
+      if (ch.pageText) base += `#### Chapter Text\n${ch.pageText}\n\n`;
       for (const item of (ch.clips || ch.pages || [])) {
         base += item.finalKnowledge + '\n\n';
       }

@@ -642,7 +642,10 @@ async function renderPages() {
 
     try {
       const { dataUrl, imgWidth, imgHeight } = await renderPage(pdfDoc, p);
-      _pageResults.push({ pageNum: p, dataUrl, imgWidth, imgHeight });
+      const pdfPage = await pdfDoc.getPage(p);
+      const textContent = await pdfPage.getTextContent();
+      const pageText = textContent.items.map(i => i.str).join(' ').replace(/\s+/g, ' ').trim();
+      _pageResults.push({ pageNum: p, dataUrl, imgWidth, imgHeight, pageText });
 
       const wrap = document.createElement('div');
       wrap.className = 'page-wrap';
@@ -702,10 +705,16 @@ async function commitChapter() {
       if (existing) { data = existing.content; _chSha = existing.sha; }
     } catch (_) {}
 
+    const pageText = _pageResults
+      .map(r => r.pageText ? `--- Page ${r.pageNum} ---\n${r.pageText}` : '')
+      .filter(Boolean)
+      .join('\n\n');
+
     const newChapter = {
       title:     chapterTitle,
       filename:  _pdfFilename,
       committed: new Date().toISOString(),
+      pageText,
       clips: _clips.map(c => ({
         pageNum:          c.pageNum,
         seq:              c.seq,
