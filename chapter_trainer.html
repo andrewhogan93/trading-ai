@@ -866,10 +866,9 @@ async function commitChapter() {
 
   try {
     let data = { chapters: [] };
-    try {
-      const existing = await loadChapterKnowledge(token);
-      if (existing) { data = existing.content; _chSha = existing.sha; }
-    } catch (_) {}
+    // Load existing chapters — abort if this fails to prevent overwriting data
+    const existing = await loadChapterKnowledge(token);
+    if (existing) { data = existing.content; _chSha = existing.sha; }
 
     const pageText = _pageResults
       .map(r => r.pageText ? `--- Page ${r.pageNum} ---\n${r.pageText}` : '')
