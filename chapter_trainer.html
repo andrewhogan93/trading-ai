@@ -199,6 +199,63 @@
     .note { font-size: 0.75rem; color: var(--muted); line-height: 1.5; margin-top: 8px; }
     .muted { color: var(--muted); }
 
+    /* Tab nav */
+    .tab-nav {
+      display: flex; gap: 3px; margin-bottom: 20px;
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 4px;
+    }
+    .tab-btn {
+      flex: 1; background: transparent; border: none; border-radius: 7px;
+      color: var(--muted); font-size: 0.82rem; font-weight: 600;
+      padding: 9px 16px; cursor: pointer; transition: background 0.15s, color 0.15s;
+    }
+    .tab-btn.active { background: var(--bg3); color: var(--teal); }
+    .tab-btn:hover:not(.active) { color: var(--text); }
+
+    /* Test page */
+    #test-image-wrap {
+      position: relative; background: #0d0d16;
+      border: 1px solid var(--border); border-radius: var(--radius);
+      margin-bottom: 16px; overflow: hidden;
+    }
+    #test-image-wrap img { display: block; width: 100%; height: auto; }
+    #test-paste-zone {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 10px; padding: 40px 20px; cursor: pointer; outline: none;
+      min-height: 200px; text-align: center;
+    }
+    #test-paste-zone:hover { background: rgba(168,218,220,0.03); }
+    #test-paste-zone.active { background: rgba(168,218,220,0.07); outline: 2px solid var(--teal); outline-offset: -2px; }
+    #test-chat-messages {
+      display: flex; flex-direction: column; gap: 10px;
+      min-height: 80px; max-height: 520px; overflow-y: auto;
+      margin-bottom: 14px; padding-right: 4px;
+    }
+    .test-msg { display: flex; flex-direction: column; }
+    .test-msg.user { align-items: flex-end; }
+    .test-msg.assistant { align-items: flex-start; }
+    .test-msg-role { font-size: 0.68rem; color: var(--muted); margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .test-msg-bubble {
+      max-width: 88%; padding: 10px 14px; border-radius: 10px;
+      font-size: 0.82rem; line-height: 1.65; white-space: pre-wrap;
+    }
+    .test-msg.user .test-msg-bubble { background: var(--bg3); color: var(--text); }
+    .test-msg.assistant .test-msg-bubble {
+      background: var(--bg2); border: 1px solid var(--border); color: var(--text);
+    }
+    .test-msg-bubble.thinking { color: var(--muted); font-style: italic; }
+    .test-input-row { display: flex; gap: 8px; align-items: flex-start; }
+    #test-input {
+      flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
+      color: var(--text); font-size: 0.85rem; padding: 9px 12px; outline: none;
+      font-family: inherit; resize: none; min-height: 42px; max-height: 140px;
+    }
+    #test-input:focus { border-color: var(--teal); }
+    .test-meta { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
+    .test-knowledge-status { font-size: 0.75rem; color: var(--muted); }
+    .test-knowledge-status.loaded { color: var(--green); }
+
     @media (max-width: 640px) {
       .clip-card-body { grid-template-columns: 1fr; }
       .clip-thumb { border-right: none; border-bottom: 1px solid var(--border); }
@@ -209,7 +266,7 @@
 <div class="wrapper">
   <h1>CHAPTER TRAINER</h1>
 
-  <!-- Keys -->
+  <!-- Keys (global) -->
   <div class="card" id="keys-card">
     <div id="keys-toggle-row">
       <span class="keys-label" id="keys-status-label">API Keys</span>
@@ -234,38 +291,71 @@
     </div>
   </div>
 
-  <!-- Header: chapter title + upload -->
-  <div class="card">
-    <div id="header-bar">
-      <input type="text" id="chapter-title" placeholder="Chapter title…">
-      <label class="file-label">
-        Upload PDF
-        <input type="file" id="pdf-input" accept=".pdf" hidden>
-      </label>
-      <span id="filename-display" class="muted"></span>
+  <!-- Tab nav -->
+  <div class="tab-nav">
+    <button class="tab-btn active" data-tab="1">Training</button>
+    <button class="tab-btn" data-tab="2">Test Knowledge</button>
+  </div>
+
+  <!-- ── PAGE 1: Training ── -->
+  <div id="tab-page-1">
+    <div class="card">
+      <div id="header-bar">
+        <input type="text" id="chapter-title" placeholder="Chapter title…">
+        <label class="file-label">
+          Upload PDF
+          <input type="file" id="pdf-input" accept=".pdf" hidden>
+        </label>
+        <span id="filename-display" class="muted"></span>
+      </div>
+      <div id="progress-wrap" style="display:none; margin-top:12px;">
+        <div id="progress-bar-track"><div id="progress-bar-fill"></div></div>
+        <span id="progress-text"></span>
+      </div>
     </div>
-    <div id="progress-wrap" style="display:none; margin-top:12px;">
-      <div id="progress-bar-track"><div id="progress-bar-fill"></div></div>
-      <span id="progress-text"></span>
+
+    <div class="card">
+      <div class="section-title">Previously Trained Chapters</div>
+      <div id="chapter-list-items"><span class="muted" style="font-size:0.82rem;">Loading…</span></div>
+    </div>
+
+    <div id="pages-section" style="display:none;">
+      <div class="section-title" style="margin-bottom:10px;">Pages — drag to select a chart or diagram</div>
+      <div id="pages-grid" class="pages-grid"></div>
+    </div>
+
+    <div id="clips-section" style="display:none; margin-top:24px;">
+      <div class="section-title" id="clips-heading">Selected Clips</div>
+      <div id="clips-container"></div>
     </div>
   </div>
 
-  <!-- Previously trained chapters -->
-  <div class="card">
-    <div class="section-title">Previously Trained Chapters</div>
-    <div id="chapter-list-items"><span class="muted" style="font-size:0.82rem;">Loading…</span></div>
-  </div>
+  <!-- ── PAGE 2: Test Knowledge ── -->
+  <div id="tab-page-2" style="display:none;">
+    <div id="test-image-wrap">
+      <div id="test-paste-zone" tabindex="0">
+        <div class="paste-kbd">Ctrl+V</div>
+        <div class="paste-hint">
+          <strong>Click here</strong>, then paste any chart image to test<br>
+          whether the AI can identify patterns from its training
+        </div>
+      </div>
+    </div>
 
-  <!-- Pages -->
-  <div id="pages-section" style="display:none;">
-    <div class="section-title" style="margin-bottom:10px;">Pages — drag to select a chart or diagram</div>
-    <div id="pages-grid" class="pages-grid"></div>
-  </div>
-
-  <!-- Selected clips -->
-  <div id="clips-section" style="display:none; margin-top:24px;">
-    <div class="section-title" id="clips-heading">Selected Clips</div>
-    <div id="clips-container"></div>
+    <div class="card">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+        <div class="section-title" style="margin-bottom:0;">Ask Claude</div>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <span class="test-knowledge-status" id="test-knowledge-status">Loading knowledge…</span>
+          <button class="btn btn-sm btn-ghost" id="test-clear-btn">Clear chat</button>
+        </div>
+      </div>
+      <div id="test-chat-messages"></div>
+      <div class="test-input-row">
+        <textarea id="test-input" placeholder="Ask about this chart — what pattern is this? should I trade it? what are the key levels?…" rows="2"></textarea>
+        <button class="btn" id="test-send-btn">Send</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -287,14 +377,18 @@ const LS_AK    = 'anthropic_api_key';
 const LS_PAT   = 'gh_pat';
 
 // ── State ────────────────────────────────────────────────────────────────────
-let _chSha            = null;
-let _pageResults      = [];   // [{pageNum, dataUrl, imgWidth, imgHeight}]
-let _clips            = [];   // [{id, seq, pageNum, cropDataUrl, pastedDataUrl, aiInterpretation, userRefinement}]
-let _pdfFilename      = '';
-let _processing       = false;
-let _drag             = null; // current drag state
-let _clipCounter      = 0;
-let _activePasteClipId = null; // which clip is currently awaiting a paste
+let _chSha             = null;
+let _pageResults       = [];   // [{pageNum, dataUrl, imgWidth, imgHeight, pageText}]
+let _clips             = [];   // [{id, seq, pageNum, cropDataUrl, pastedDataUrl, aiInterpretation, userRefinement}]
+let _pdfFilename       = '';
+let _processing        = false;
+let _drag              = null;
+let _clipCounter       = 0;
+let _activePasteClipId = null; // clip currently awaiting paste
+let _knowledgeData     = null; // loaded chapter_knowledge.json content
+let _testImage         = null; // {dataUrl, mediaType} pasted on test page
+let _testPasteActive   = false;
+let _testHistory       = [];   // [{role, content}] for test chat
 
 // ── localStorage ─────────────────────────────────────────────────────────────
 function getAnthropicKey() { return localStorage.getItem(LS_AK) || ''; }
@@ -365,6 +459,7 @@ function escHtml(s) {
 }
 
 function renderChapterList(data, errorMsg) {
+  if (data && !errorMsg) { _knowledgeData = data; updateTestKnowledgeStatus(); }
   const el = document.getElementById('chapter-list-items');
   if (errorMsg) { el.innerHTML = `<span style="color:var(--red);font-size:0.82rem;">Could not load: ${escHtml(errorMsg)}</span>`; return; }
   if (!data)    { el.innerHTML = `<span class="muted" style="font-size:0.82rem;">Loading…</span>`; return; }
@@ -771,8 +866,178 @@ document.addEventListener('mouseup', async e => {
   await createClip(pageNum, left, top, width, height, rect.width, rect.height);
 });
 
+// ── Test page ────────────────────────────────────────────────────────────────
+function updateTestKnowledgeStatus() {
+  const el = document.getElementById('test-knowledge-status');
+  if (!el) return;
+  if (!_knowledgeData || !_knowledgeData.chapters || !_knowledgeData.chapters.length) {
+    el.className = 'test-knowledge-status';
+    el.textContent = 'No chapters trained yet';
+    return;
+  }
+  const n = _knowledgeData.chapters.length;
+  el.className = 'test-knowledge-status loaded';
+  el.textContent = `✓ ${n} chapter${n !== 1 ? 's' : ''} loaded`;
+}
+
+function buildTestSystemPrompt() {
+  let prompt = `You are a trading analyst who has studied specific chart patterns, setups, and concepts from a structured training program. When shown a chart, apply your training directly and specifically — reference the exact rules and patterns you have learned, not generic trading knowledge.
+
+When analyzing a chart:
+- Identify which specific patterns or setups from your training are present (or absent)
+- Quote or paraphrase the relevant rule from your training
+- Be clear about what you are confident in vs what is ambiguous
+- If the chart does NOT match any trained pattern, say so explicitly
+
+`;
+  if (_knowledgeData && _knowledgeData.chapters && _knowledgeData.chapters.length) {
+    prompt += `## YOUR TRAINING KNOWLEDGE\n\n`;
+    for (const ch of _knowledgeData.chapters) {
+      prompt += `### ${ch.title}\n\n`;
+      if (ch.pageText) prompt += `${ch.pageText}\n\n`;
+      for (const item of (ch.clips || ch.pages || [])) {
+        if (item.finalKnowledge) prompt += item.finalKnowledge + '\n\n';
+      }
+    }
+  } else {
+    prompt += `(No chapters have been trained yet — commit chapters on the Training tab first.)`;
+  }
+  return prompt;
+}
+
+function escHtmlTest(s) { return escHtml(s); }
+
+function renderTestMessages() {
+  const el = document.getElementById('test-chat-messages');
+  if (!el) return;
+  if (!_testHistory.length) { el.innerHTML = ''; return; }
+  el.innerHTML = _testHistory.map(m => {
+    const isUser = m.role === 'user';
+    const textContent = Array.isArray(m.content)
+      ? m.content.find(c => c.type === 'text')?.text || ''
+      : m.content;
+    return `<div class="test-msg ${m.role}">
+      <div class="test-msg-role">${isUser ? 'You' : 'Claude'}</div>
+      <div class="test-msg-bubble">${escHtml(textContent)}</div>
+    </div>`;
+  }).join('');
+  el.scrollTop = el.scrollHeight;
+}
+
+async function sendTestMessage() {
+  const inputEl  = document.getElementById('test-input');
+  const sendBtn  = document.getElementById('test-send-btn');
+  const text     = inputEl.value.trim();
+  if (!text) return;
+  const apiKey   = getAnthropicKey();
+  if (!apiKey) { alert('Anthropic API key not saved.'); return; }
+
+  // Build user message content
+  const userContent = [];
+  if (_testImage && _testHistory.length === 0) {
+    // Include image only in the first message of a conversation
+    userContent.push({ type: 'image', source: { type: 'base64', media_type: _testImage.mediaType, data: _testImage.base64 } });
+  }
+  userContent.push({ type: 'text', text });
+
+  _testHistory.push({ role: 'user', content: userContent });
+  inputEl.value = '';
+  inputEl.style.height = '';
+  renderTestMessages();
+
+  // Show thinking bubble
+  const messagesEl = document.getElementById('test-chat-messages');
+  const thinkingEl = document.createElement('div');
+  thinkingEl.className = 'test-msg assistant';
+  thinkingEl.innerHTML = `<div class="test-msg-role">Claude</div><div class="test-msg-bubble thinking">Thinking…</div>`;
+  messagesEl.appendChild(thinkingEl);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+
+  sendBtn.disabled = true;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({
+        model: 'claude-opus-4-6',
+        max_tokens: 1600,
+        system: buildTestSystemPrompt(),
+        messages: _testHistory,
+      }),
+    });
+    if (!res.ok) {
+      const e = await res.json().catch(() => ({}));
+      throw new Error(`API ${res.status}: ${e.error?.message || res.statusText}`);
+    }
+    const reply = (await res.json()).content[0].text;
+    _testHistory.push({ role: 'assistant', content: reply });
+  } catch (e) {
+    _testHistory.push({ role: 'assistant', content: `Error: ${e.message}` });
+  } finally {
+    thinkingEl.remove();
+    sendBtn.disabled = false;
+    renderTestMessages();
+  }
+}
+
 // ── Event wiring ──────────────────────────────────────────────────────────────
 function wireEvents() {
+  // Tab switching
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const tab = btn.dataset.tab;
+      document.getElementById('tab-page-1').style.display = tab === '1' ? '' : 'none';
+      document.getElementById('tab-page-2').style.display = tab === '2' ? '' : 'none';
+      document.getElementById('commit-footer').style.display = tab === '2' ? 'none'
+        : (_clips.length > 0 || _pageResults.length > 0 ? 'flex' : 'none');
+    });
+  });
+
+  // Test paste zone — click to activate
+  document.getElementById('test-paste-zone').addEventListener('click', () => {
+    _testPasteActive = true;
+    _activePasteClipId = null;
+    document.getElementById('test-paste-zone').classList.add('active');
+    document.getElementById('test-paste-zone').focus();
+  });
+  document.getElementById('test-paste-zone').addEventListener('blur', () => {
+    document.getElementById('test-paste-zone').classList.remove('active');
+  });
+
+  // Test send button + Enter key
+  document.getElementById('test-send-btn').addEventListener('click', sendTestMessage);
+  document.getElementById('test-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendTestMessage(); }
+  });
+  // Auto-resize textarea
+  document.getElementById('test-input').addEventListener('input', function() {
+    this.style.height = '';
+    this.style.height = Math.min(this.scrollHeight, 140) + 'px';
+  });
+
+  // Clear test chat
+  document.getElementById('test-clear-btn').addEventListener('click', () => {
+    _testHistory = [];
+    _testImage   = null;
+    _testPasteActive = false;
+    const zone = document.getElementById('test-paste-zone');
+    zone.style.display = '';
+    zone.innerHTML = `<div class="paste-kbd">Ctrl+V</div>
+      <div class="paste-hint"><strong>Click here</strong>, then paste any chart image to test<br>whether the AI can identify patterns from its training</div>`;
+    const imgWrap = document.getElementById('test-image-wrap');
+    const existing = imgWrap.querySelector('img');
+    if (existing) existing.remove();
+    renderTestMessages();
+  });
+
   document.getElementById('keys-toggle-btn').addEventListener('click', () => {
     const f = document.getElementById('keys-fields');
     f.style.display = f.style.display === 'none' ? 'block' : 'none';
@@ -849,10 +1114,52 @@ function wireEvents() {
     }
   });
 
-  // Global paste handler → route image to active paste zone
+  // Global paste handler → route image to test page or active clip paste zone
   document.addEventListener('paste', e => {
-    if (_activePasteClipId === null) return;
     const imgItem = Array.from(e.clipboardData.items).find(i => i.type.startsWith('image/'));
+    if (!imgItem) return;
+
+    // Test page paste
+    if (_testPasteActive) {
+      e.preventDefault();
+      _testPasteActive = false;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        const dataUrl = ev.target.result;
+        const mediaType = dataUrl.startsWith('data:image/png') ? 'image/png'
+                        : dataUrl.startsWith('data:image/webp') ? 'image/webp' : 'image/jpeg';
+        _testImage = { dataUrl, mediaType, base64: dataUrl.split(',')[1] };
+        _testHistory = []; // reset conversation when new image pasted
+
+        // Replace paste zone with image
+        const wrap = document.getElementById('test-image-wrap');
+        const zone = document.getElementById('test-paste-zone');
+        zone.style.display = 'none';
+        const existing = wrap.querySelector('img.test-chart-img');
+        if (existing) existing.remove();
+        const img = document.createElement('img');
+        img.className = 'test-chart-img';
+        img.src = dataUrl;
+        img.style.cssText = 'display:block;width:100%;height:auto;cursor:pointer;';
+        img.title = 'Click to replace image';
+        img.addEventListener('click', () => {
+          img.remove();
+          zone.style.display = '';
+          _testImage = null;
+          _testHistory = [];
+          renderTestMessages();
+        });
+        wrap.appendChild(img);
+        renderTestMessages();
+        document.getElementById('test-input').focus();
+      };
+      reader.readAsDataURL(imgItem.getAsFile());
+      return;
+    }
+
+    // Clip paste zone
+    if (_activePasteClipId === null) return;
+    if (!imgItem) return;
     if (!imgItem) return;
     e.preventDefault();
     const reader = new FileReader();
