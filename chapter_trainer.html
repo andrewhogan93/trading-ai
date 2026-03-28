@@ -256,6 +256,47 @@
     .test-knowledge-status { font-size: 0.75rem; color: var(--muted); }
     .test-knowledge-status.loaded { color: var(--green); }
 
+    /* Test page layout */
+    #test-layout { display: grid; grid-template-columns: 1fr 400px; gap: 16px; align-items: start; }
+    #test-left-panel { position: sticky; top: 16px; }
+    #test-image-wrap {
+      position: relative; background: #0d0d16;
+      border: 1px solid var(--border); border-radius: var(--radius);
+      overflow: hidden; margin-bottom: 10px; min-height: 120px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    #test-image-wrap img.test-chart-img { display: block; width: 100%; height: auto; }
+    #annotation-canvas {
+      position: absolute; top: 0; left: 0;
+      display: none; cursor: default; pointer-events: auto;
+    }
+    #annotation-canvas.placing { cursor: crosshair; }
+    #placement-indicator {
+      background: var(--bg3); border: 1px solid var(--teal); border-radius: 6px;
+      padding: 8px 14px; font-size: 0.8rem; color: var(--teal);
+      display: none; align-items: center; gap: 10px; margin-bottom: 10px;
+    }
+    #placement-indicator span { flex: 1; }
+    /* Annotation panel */
+    .ann-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 0.8rem;
+    }
+    .ann-item:last-child { border-bottom: none; }
+    .ann-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .ann-badge {
+      font-size: 0.65rem; color: var(--muted); background: var(--bg);
+      border: 1px solid var(--border); border-radius: 4px;
+      padding: 1px 5px; white-space: nowrap; flex-shrink: 0;
+    }
+    .ann-label { flex: 1; color: var(--text); line-height: 1.3; }
+    .ann-place-btn { font-size: 0.7rem !important; padding: 3px 10px !important; flex-shrink: 0; }
+    .ann-place-btn.placed { background: transparent !important; color: var(--green) !important; border: 1px solid rgba(74,222,128,0.3); cursor: default; }
+
+    @media (max-width: 900px) {
+      #test-layout { grid-template-columns: 1fr; }
+      #test-left-panel { position: static; }
+    }
     @media (max-width: 640px) {
       .clip-card-body { grid-template-columns: 1fr; }
       .clip-thumb { border-right: none; border-bottom: 1px solid var(--border); }
@@ -332,29 +373,52 @@
 
   <!-- ── PAGE 2: Test Knowledge ── -->
   <div id="tab-page-2" style="display:none;">
-    <div id="test-image-wrap">
-      <div id="test-paste-zone" tabindex="0">
-        <div class="paste-kbd">Ctrl+V</div>
-        <div class="paste-hint">
-          <strong>Click here</strong>, then paste any chart image to test<br>
-          whether the AI can identify patterns from its training
-        </div>
-      </div>
-    </div>
+    <div id="test-layout">
 
-    <div class="card">
-      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
-        <div class="section-title" style="margin-bottom:0;">Ask Claude</div>
-        <div style="display:flex; gap:8px; align-items:center;">
-          <span class="test-knowledge-status" id="test-knowledge-status">Loading knowledge…</span>
-          <button class="btn btn-sm btn-ghost" id="test-clear-btn">Clear chat</button>
+      <!-- Left: chart image + canvas -->
+      <div id="test-left-panel">
+        <div id="placement-indicator">
+          <span id="placement-label">Click on the chart to place annotation</span>
+          <button class="btn btn-sm btn-ghost" id="cancel-placement-btn">Cancel</button>
+        </div>
+        <div id="test-image-wrap">
+          <div id="test-paste-zone" tabindex="0">
+            <div class="paste-kbd">Ctrl+V</div>
+            <div class="paste-hint">
+              <strong>Click here</strong>, then paste any chart image to test<br>
+              whether the AI can identify patterns from its training
+            </div>
+          </div>
+          <canvas id="annotation-canvas"></canvas>
+        </div>
+        <div style="margin-top:8px;">
+          <button class="btn btn-sm btn-ghost btn-danger" id="clear-annotations-btn" style="display:none;">Clear Annotations</button>
         </div>
       </div>
-      <div id="test-chat-messages"></div>
-      <div class="test-input-row">
-        <textarea id="test-input" placeholder="Ask about this chart — what pattern is this? should I trade it? what are the key levels?…" rows="2"></textarea>
-        <button class="btn" id="test-send-btn">Send</button>
+
+      <!-- Right: annotation panel + chat -->
+      <div id="test-right-panel">
+        <div class="card" id="annotation-panel" style="display:none;">
+          <div class="section-title" style="margin-bottom:10px;">Suggested Annotations — click Place to position on chart</div>
+          <div id="annotation-list"></div>
+        </div>
+
+        <div class="card">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+            <div class="section-title" style="margin-bottom:0;">Ask Claude</div>
+            <div style="display:flex; gap:8px; align-items:center;">
+              <span class="test-knowledge-status" id="test-knowledge-status">Loading knowledge…</span>
+              <button class="btn btn-sm btn-ghost" id="test-clear-btn">Clear chat</button>
+            </div>
+          </div>
+          <div id="test-chat-messages"></div>
+          <div class="test-input-row">
+            <textarea id="test-input" placeholder="Ask about this chart — what pattern is this? should I trade it? what are the key levels?…" rows="2"></textarea>
+            <button class="btn" id="test-send-btn">Send</button>
+          </div>
+        </div>
       </div>
+
     </div>
   </div>
 </div>
@@ -389,6 +453,10 @@ let _knowledgeData     = null; // loaded chapter_knowledge.json content
 let _testImage         = null; // {dataUrl, mediaType} pasted on test page
 let _testPasteActive   = false;
 let _testHistory       = [];   // [{role, content}] for test chat
+let _suggestedAnnotations = []; // annotations Claude suggested in latest response
+let _placedAnnotations    = []; // {id, type, color, label, x, y, x1, y1, x2, y2, r}
+let _placementMode        = null; // null | {ann, step, x1, y1}
+let _canvasRO             = null; // ResizeObserver for annotation canvas
 
 // ── localStorage ─────────────────────────────────────────────────────────────
 function getAnthropicKey() { return localStorage.getItem(LS_AK) || ''; }
@@ -890,6 +958,28 @@ When analyzing a chart:
 - If the chart does NOT match any trained pattern, say so explicitly
 
 `;
+
+  if (_testImage) {
+    prompt += `## ANNOTATION INSTRUCTIONS
+If your analysis references specific price levels, zones, or points on the chart that would benefit from visual annotation, include a JSON block at the END of your response in this exact format:
+
+\`\`\`json
+{
+  "annotations": [
+    {"id": 1, "type": "hline", "label": "Support", "color": "#4ade80"},
+    {"id": 2, "type": "zone", "label": "Resistance zone", "color": "#f87171"},
+    {"id": 3, "type": "trendline", "label": "Uptrend line", "color": "#a8dadc"},
+    {"id": 4, "type": "arrow", "label": "Entry signal", "color": "#fbbf24"},
+    {"id": 5, "type": "text", "label": "Key pivot", "color": "#e0e8ef"}
+  ]
+}
+\`\`\`
+
+Annotation types: hline (horizontal line — 1 click), vline (vertical line — 1 click), text (label — 1 click), circle (circle — 1 click), trendline (diagonal — 2 clicks), arrow (2 clicks), zone (rectangle — 2 clicks).
+Only include this JSON block when you are suggesting specific annotations. Keep labels short (2–4 words). Do not include the JSON block if no annotations are relevant.
+
+`;
+  }
   if (_knowledgeData && _knowledgeData.chapters && _knowledgeData.chapters.length) {
     prompt += `## YOUR TRAINING KNOWLEDGE\n\n`;
     for (const ch of _knowledgeData.chapters) {
@@ -906,6 +996,167 @@ When analyzing a chart:
 }
 
 function escHtmlTest(s) { return escHtml(s); }
+
+// ── Annotation: parse Claude response ────────────────────────────────────────
+function parseAnnotations(text) {
+  const m = text.match(/```json\s*(\{[\s\S]*?"annotations"[\s\S]*?\})\s*```/);
+  if (!m) return { displayText: text, annotations: [] };
+  try {
+    const parsed = JSON.parse(m[1]);
+    return {
+      displayText: text.replace(m[0], '').trim(),
+      annotations: parsed.annotations || [],
+    };
+  } catch (_) {
+    return { displayText: text, annotations: [] };
+  }
+}
+
+// ── Annotation: render panel ─────────────────────────────────────────────────
+function renderAnnotationPanel(annotations) {
+  _suggestedAnnotations = annotations;
+  const panel = document.getElementById('annotation-panel');
+  const list  = document.getElementById('annotation-list');
+  if (!annotations.length) { panel.style.display = 'none'; return; }
+  panel.style.display = 'block';
+  const needsTwoClicks = t => ['arrow', 'trendline', 'zone'].includes(t);
+  list.innerHTML = annotations.map(ann => {
+    const placed = _placedAnnotations.some(p => p.id === ann.id);
+    const hint   = needsTwoClicks(ann.type) ? '(2 clicks)' : '(1 click)';
+    return `<div class="ann-item" id="ann-item-${ann.id}">
+      <div class="ann-dot" style="background:${escHtml(ann.color || '#a8dadc')}"></div>
+      <span class="ann-badge">${escHtml(ann.type)}&nbsp;${hint}</span>
+      <span class="ann-label">${escHtml(ann.label)}</span>
+      <button class="btn btn-sm ann-place-btn${placed ? ' placed' : ''}"
+        data-ann-id="${ann.id}"${placed ? ' disabled' : ''}>
+        ${placed ? '✓ Placed' : 'Place'}
+      </button>
+    </div>`;
+  }).join('');
+}
+
+// ── Annotation: canvas setup ─────────────────────────────────────────────────
+function setupCanvas() {
+  const canvas = document.getElementById('annotation-canvas');
+  const wrap   = document.getElementById('test-image-wrap');
+  if (_canvasRO) { _canvasRO.disconnect(); _canvasRO = null; }
+
+  function syncCanvas() {
+    const img = wrap.querySelector('img.test-chart-img');
+    if (!img || !img.offsetWidth) return;
+    canvas.width  = img.offsetWidth;
+    canvas.height = img.offsetHeight;
+    canvas.style.width  = img.offsetWidth  + 'px';
+    canvas.style.height = img.offsetHeight + 'px';
+    canvas.style.display = 'block';
+    redrawCanvas();
+  }
+
+  _canvasRO = new ResizeObserver(syncCanvas);
+  _canvasRO.observe(wrap);
+  // Also wait for image to load
+  const img = wrap.querySelector('img.test-chart-img');
+  if (img && !img.complete) img.addEventListener('load', syncCanvas, { once: true });
+  syncCanvas();
+}
+
+// ── Annotation: draw all ─────────────────────────────────────────────────────
+function redrawCanvas() {
+  const canvas = document.getElementById('annotation-canvas');
+  if (!canvas || !canvas.width) return;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  _placedAnnotations.forEach(ann => drawAnnotation(ctx, ann, canvas.width, canvas.height));
+}
+
+function drawAnnotation(ctx, ann, w, h) {
+  const color = ann.color || '#a8dadc';
+  ctx.save();
+  ctx.font = '11px "Segoe UI", system-ui, sans-serif';
+
+  switch (ann.type) {
+    case 'hline':
+      ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.setLineDash([8, 5]);
+      ctx.beginPath(); ctx.moveTo(0, ann.y * h); ctx.lineTo(w, ann.y * h); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = color;
+      ctx.fillRect(4, ann.y * h - 16, ctx.measureText(ann.label).width + 8, 17);
+      ctx.fillStyle = '#111';
+      ctx.fillText(ann.label, 8, ann.y * h - 3);
+      break;
+    case 'vline':
+      ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.setLineDash([8, 5]);
+      ctx.beginPath(); ctx.moveTo(ann.x * w, 0); ctx.lineTo(ann.x * w, h); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = color;
+      const vlw = ctx.measureText(ann.label).width + 8;
+      ctx.fillRect(ann.x * w - vlw / 2, 4, vlw, 17);
+      ctx.fillStyle = '#111';
+      ctx.fillText(ann.label, ann.x * w - vlw / 2 + 4, 17);
+      break;
+    case 'zone': {
+      const rx = Math.min(ann.x1, ann.x2) * w;
+      const ry = Math.min(ann.y1, ann.y2) * h;
+      const rw = Math.abs(ann.x2 - ann.x1) * w;
+      const rh = Math.abs(ann.y2 - ann.y1) * h;
+      ctx.fillStyle = color + '28'; ctx.strokeStyle = color; ctx.lineWidth = 1.5;
+      ctx.fillRect(rx, ry, rw, rh); ctx.strokeRect(rx, ry, rw, rh);
+      ctx.fillStyle = color;
+      ctx.fillRect(rx + 2, ry + 2, ctx.measureText(ann.label).width + 8, 17);
+      ctx.fillStyle = '#111';
+      ctx.fillText(ann.label, rx + 6, ry + 15);
+      break;
+    }
+    case 'trendline':
+      ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.setLineDash([]);
+      ctx.beginPath(); ctx.moveTo(ann.x1 * w, ann.y1 * h); ctx.lineTo(ann.x2 * w, ann.y2 * h); ctx.stroke();
+      ctx.fillStyle = color;
+      ctx.fillText(ann.label, (ann.x1 + ann.x2) / 2 * w + 4, (ann.y1 + ann.y2) / 2 * h - 6);
+      break;
+    case 'arrow':
+      drawArrowLine(ctx, ann.x1 * w, ann.y1 * h, ann.x2 * w, ann.y2 * h, color);
+      ctx.fillStyle = color;
+      ctx.fillText(ann.label, ann.x2 * w + 6, ann.y2 * h + 4);
+      break;
+    case 'circle':
+      ctx.strokeStyle = color; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(ann.x * w, ann.y * h, (ann.r || 0.05) * Math.min(w, h), 0, Math.PI * 2); ctx.stroke();
+      ctx.fillStyle = color;
+      ctx.fillText(ann.label, ann.x * w + (ann.r || 0.05) * Math.min(w, h) + 4, ann.y * h + 4);
+      break;
+    default: // text
+      ctx.fillStyle = 'rgba(0,0,0,0.6)';
+      ctx.fillRect(ann.x * w - 2, ann.y * h - 13, ctx.measureText(ann.label).width + 8, 16);
+      ctx.fillStyle = color;
+      ctx.font = 'bold 12px "Segoe UI", system-ui, sans-serif';
+      ctx.fillText(ann.label, ann.x * w + 2, ann.y * h);
+      break;
+  }
+  ctx.restore();
+}
+
+function drawArrowLine(ctx, x1, y1, x2, y2, color) {
+  const angle   = Math.atan2(y2 - y1, x2 - x1);
+  const headlen = 13;
+  ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.setLineDash([]);
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - headlen * Math.cos(angle - Math.PI / 6), y2 - headlen * Math.sin(angle - Math.PI / 6));
+  ctx.lineTo(x2 - headlen * Math.cos(angle + Math.PI / 6), y2 - headlen * Math.sin(angle + Math.PI / 6));
+  ctx.closePath(); ctx.fill();
+}
+
+// ── Annotation: finish placement ─────────────────────────────────────────────
+function finishPlacement(annId) {
+  _placementMode = null;
+  document.getElementById('placement-indicator').style.display = 'none';
+  document.getElementById('annotation-canvas').classList.remove('placing');
+  const btn = document.querySelector(`.ann-place-btn[data-ann-id="${annId}"]`);
+  if (btn) { btn.classList.add('placed'); btn.disabled = true; btn.textContent = '✓ Placed'; }
+  document.getElementById('clear-annotations-btn').style.display = '';
+}
 
 function renderTestMessages() {
   const el = document.getElementById('test-chat-messages');
@@ -975,8 +1226,10 @@ async function sendTestMessage() {
       const e = await res.json().catch(() => ({}));
       throw new Error(`API ${res.status}: ${e.error?.message || res.statusText}`);
     }
-    const reply = (await res.json()).content[0].text;
-    _testHistory.push({ role: 'assistant', content: reply });
+    const rawReply = (await res.json()).content[0].text;
+    const { displayText, annotations } = parseAnnotations(rawReply);
+    _testHistory.push({ role: 'assistant', content: displayText });
+    renderAnnotationPanel(annotations);
   } catch (e) {
     _testHistory.push({ role: 'assistant', content: `Error: ${e.message}` });
   } finally {
@@ -1028,6 +1281,9 @@ function wireEvents() {
     _testHistory = [];
     _testImage   = null;
     _testPasteActive = false;
+    _placedAnnotations = [];
+    _suggestedAnnotations = [];
+    _placementMode = null;
     const zone = document.getElementById('test-paste-zone');
     zone.style.display = '';
     zone.innerHTML = `<div class="paste-kbd">Ctrl+V</div>
@@ -1035,7 +1291,79 @@ function wireEvents() {
     const imgWrap = document.getElementById('test-image-wrap');
     const existing = imgWrap.querySelector('img');
     if (existing) existing.remove();
+    const canvas = document.getElementById('annotation-canvas');
+    canvas.style.display = 'none';
+    document.getElementById('placement-indicator').style.display = 'none';
+    document.getElementById('annotation-panel').style.display = 'none';
+    document.getElementById('clear-annotations-btn').style.display = 'none';
+    canvas.classList.remove('placing');
+    if (_canvasRO) { _canvasRO.disconnect(); _canvasRO = null; }
     renderTestMessages();
+  });
+
+  // Annotation: Place button click (delegated from annotation-list)
+  document.getElementById('annotation-list').addEventListener('click', e => {
+    const btn = e.target.closest('.ann-place-btn');
+    if (!btn || btn.classList.contains('placed')) return;
+    const annId = parseInt(btn.dataset.annId, 10);
+    const ann   = _suggestedAnnotations.find(a => a.id === annId);
+    if (!ann) return;
+    _placementMode = { ann, step: 1 };
+    const twoClick = ['arrow', 'trendline', 'zone'].includes(ann.type);
+    document.getElementById('placement-label').textContent =
+      twoClick ? `Click start point: ${ann.label}` : `Click to place: ${ann.label}`;
+    document.getElementById('placement-indicator').style.display = 'flex';
+    document.getElementById('annotation-canvas').classList.add('placing');
+  });
+
+  // Annotation: Cancel placement
+  document.getElementById('cancel-placement-btn').addEventListener('click', () => {
+    _placementMode = null;
+    document.getElementById('placement-indicator').style.display = 'none';
+    document.getElementById('annotation-canvas').classList.remove('placing');
+  });
+
+  // Annotation: Clear all placed annotations
+  document.getElementById('clear-annotations-btn').addEventListener('click', () => {
+    _placedAnnotations = [];
+    redrawCanvas();
+    document.getElementById('clear-annotations-btn').style.display = 'none';
+    document.querySelectorAll('.ann-place-btn.placed').forEach(b => {
+      b.classList.remove('placed'); b.disabled = false; b.textContent = 'Place';
+    });
+  });
+
+  // Annotation: Canvas click → place annotation
+  document.getElementById('annotation-canvas').addEventListener('click', e => {
+    if (!_placementMode) return;
+    const canvas = document.getElementById('annotation-canvas');
+    const rect   = canvas.getBoundingClientRect();
+    const xRel   = (e.clientX - rect.left) / rect.width;
+    const yRel   = (e.clientY - rect.top)  / rect.height;
+    const { ann } = _placementMode;
+
+    if (ann.type === 'hline') {
+      _placedAnnotations.push({ ...ann, y: yRel });
+      finishPlacement(ann.id);
+    } else if (ann.type === 'vline') {
+      _placedAnnotations.push({ ...ann, x: xRel });
+      finishPlacement(ann.id);
+    } else if (ann.type === 'text') {
+      _placedAnnotations.push({ ...ann, x: xRel, y: yRel });
+      finishPlacement(ann.id);
+    } else if (ann.type === 'circle') {
+      _placedAnnotations.push({ ...ann, x: xRel, y: yRel, r: 0.05 });
+      finishPlacement(ann.id);
+    } else if (['arrow', 'trendline', 'zone'].includes(ann.type)) {
+      if (_placementMode.step === 1) {
+        _placementMode = { ann, step: 2, x1: xRel, y1: yRel };
+        document.getElementById('placement-label').textContent = `Now click end point: ${ann.label}`;
+      } else {
+        _placedAnnotations.push({ ...ann, x1: _placementMode.x1, y1: _placementMode.y1, x2: xRel, y2: yRel });
+        finishPlacement(ann.id);
+      }
+    }
+    redrawCanvas();
   });
 
   document.getElementById('keys-toggle-btn').addEventListener('click', () => {
@@ -1147,9 +1475,26 @@ function wireEvents() {
           zone.style.display = '';
           _testImage = null;
           _testHistory = [];
+          _placedAnnotations = [];
+          _suggestedAnnotations = [];
+          _placementMode = null;
+          const canvas = document.getElementById('annotation-canvas');
+          canvas.style.display = 'none';
+          canvas.classList.remove('placing');
+          document.getElementById('placement-indicator').style.display = 'none';
+          document.getElementById('annotation-panel').style.display = 'none';
+          document.getElementById('clear-annotations-btn').style.display = 'none';
+          if (_canvasRO) { _canvasRO.disconnect(); _canvasRO = null; }
           renderTestMessages();
         });
         wrap.appendChild(img);
+        _placedAnnotations = [];
+        _suggestedAnnotations = [];
+        _placementMode = null;
+        document.getElementById('annotation-panel').style.display = 'none';
+        document.getElementById('clear-annotations-btn').style.display = 'none';
+        document.getElementById('placement-indicator').style.display = 'none';
+        setupCanvas();
         renderTestMessages();
         document.getElementById('test-input').focus();
       };
