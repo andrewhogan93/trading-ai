@@ -283,6 +283,7 @@
       padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 0.8rem;
     }
     .ann-item:last-child { border-bottom: none; }
+    .ann-item.ann-selected { background: rgba(168,218,220,0.07); border-radius: 6px; }
     .ann-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
     .ann-badge {
       font-size: 0.65rem; color: var(--muted); background: var(--bg);
@@ -290,8 +291,13 @@
       padding: 1px 5px; white-space: nowrap; flex-shrink: 0;
     }
     .ann-label { flex: 1; color: var(--text); line-height: 1.3; }
-    .ann-place-btn { font-size: 0.7rem !important; padding: 3px 10px !important; flex-shrink: 0; }
-    .ann-place-btn.placed { background: transparent !important; color: var(--green) !important; border: 1px solid rgba(74,222,128,0.3); cursor: default; }
+    .ann-delete-btn {
+      background: transparent; border: 1px solid rgba(248,113,113,0.3);
+      color: var(--red); border-radius: 4px; padding: 1px 7px !important;
+      font-size: 0.85rem !important; cursor: pointer; flex-shrink: 0; line-height: 1.4;
+    }
+    .ann-delete-btn:hover { background: rgba(248,113,113,0.15); }
+    .ann-item { cursor: pointer; }
 
     @media (max-width: 900px) {
       #test-layout { grid-template-columns: 1fr; }
@@ -377,10 +383,6 @@
 
       <!-- Left: chart image + canvas -->
       <div id="test-left-panel">
-        <div id="placement-indicator">
-          <span id="placement-label">Click on the chart to place annotation</span>
-          <button class="btn btn-sm btn-ghost" id="cancel-placement-btn">Cancel</button>
-        </div>
         <div id="test-image-wrap">
           <div id="test-paste-zone" tabindex="0">
             <div class="paste-kbd">Ctrl+V</div>
@@ -391,15 +393,15 @@
           </div>
           <canvas id="annotation-canvas"></canvas>
         </div>
-        <div style="margin-top:8px;">
-          <button class="btn btn-sm btn-ghost btn-danger" id="clear-annotations-btn" style="display:none;">Clear Annotations</button>
-        </div>
       </div>
 
       <!-- Right: annotation panel + chat -->
       <div id="test-right-panel">
         <div class="card" id="annotation-panel" style="display:none;">
-          <div class="section-title" style="margin-bottom:10px;">Suggested Annotations — click Place to position on chart</div>
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+            <div class="section-title" style="margin-bottom:0;">Annotations — drag on chart to reposition</div>
+            <button class="btn btn-sm btn-ghost btn-danger" id="clear-annotations-btn">Clear all</button>
+          </div>
           <div id="annotation-list"></div>
         </div>
 
@@ -453,10 +455,11 @@ let _knowledgeData     = null; // loaded chapter_knowledge.json content
 let _testImage         = null; // {dataUrl, mediaType} pasted on test page
 let _testPasteActive   = false;
 let _testHistory       = [];   // [{role, content}] for test chat
-let _suggestedAnnotations = []; // annotations Claude suggested in latest response
-let _placedAnnotations    = []; // {id, type, color, label, x, y, x1, y1, x2, y2, r}
-let _placementMode        = null; // null | {ann, step, x1, y1}
-let _canvasRO             = null; // ResizeObserver for annotation canvas
+let _placedAnnotations = []; // {id, type, color, label, x, y, x1, y1, x2, y2, r}
+let _selectedAnnId     = null;
+let _hoverAnnId        = null;
+let _dragState         = null; // {annId, startXRel, startYRel, orig}
+let _canvasRO          = null; // ResizeObserver for annotation canvas
 
 // ── localStorage ─────────────────────────────────────────────────────────────
 function getAnthropicKey() { return localStorage.getItem(LS_AK) || ''; }
@@ -961,22 +964,29 @@ When analyzing a chart:
 
   if (_testImage) {
     prompt += `## ANNOTATION INSTRUCTIONS
-If your analysis references specific price levels, zones, or points on the chart that would benefit from visual annotation, include a JSON block at the END of your response in this exact format:
+When your analysis references specific price levels, zones, or points on the chart, place annotations directly on the chart by including a JSON block at the END of your response.
+
+Use normalized coordinates: (0,0) = top-left of the chart image, (1,1) = bottom-right.
 
 \`\`\`json
 {
   "annotations": [
-    {"id": 1, "type": "hline", "label": "Support", "color": "#4ade80"},
-    {"id": 2, "type": "zone", "label": "Resistance zone", "color": "#f87171"},
-    {"id": 3, "type": "trendline", "label": "Uptrend line", "color": "#a8dadc"},
-    {"id": 4, "type": "arrow", "label": "Entry signal", "color": "#fbbf24"},
-    {"id": 5, "type": "text", "label": "Key pivot", "color": "#e0e8ef"}
+    {"id": 1, "type": "hline", "y": 0.62, "label": "Support", "color": "#4ade80"},
+    {"id": 2, "type": "zone", "x1": 0.05, "y1": 0.28, "x2": 0.95, "y2": 0.38, "label": "Resistance zone", "color": "#f87171"},
+    {"id": 3, "type": "trendline", "x1": 0.08, "y1": 0.75, "x2": 0.88, "y2": 0.32, "label": "Uptrend", "color": "#a8dadc"},
+    {"id": 4, "type": "arrow", "x1": 0.45, "y1": 0.68, "x2": 0.45, "y2": 0.52, "label": "Entry", "color": "#fbbf24"},
+    {"id": 5, "type": "text", "x": 0.5, "y": 0.15, "label": "Key pivot", "color": "#e0e8ef"}
   ]
 }
 \`\`\`
 
-Annotation types: hline (horizontal line — 1 click), vline (vertical line — 1 click), text (label — 1 click), circle (circle — 1 click), trendline (diagonal — 2 clicks), arrow (2 clicks), zone (rectangle — 2 clicks).
-Only include this JSON block when you are suggesting specific annotations. Keep labels short (2–4 words). Do not include the JSON block if no annotations are relevant.
+Types and required coordinate fields:
+- hline: y only (horizontal line across full width)
+- vline: x only (vertical line full height)
+- text, circle: x, y (center point)
+- trendline, arrow, zone: x1, y1, x2, y2
+
+Look carefully at where features actually appear in the chart image and place annotations accurately. Keep labels short (2–4 words). Only include this JSON block when annotations add genuine value.
 
 `;
   }
@@ -1012,25 +1022,28 @@ function parseAnnotations(text) {
   }
 }
 
-// ── Annotation: render panel ─────────────────────────────────────────────────
-function renderAnnotationPanel(annotations) {
-  _suggestedAnnotations = annotations;
+// ── Annotation: add annotations from Claude and show list ────────────────────
+function addAnnotations(annotations) {
+  // Assign unique ids (avoid collision with any existing)
+  const maxId = _placedAnnotations.reduce((m, a) => Math.max(m, a.id), 0);
+  annotations.forEach((a, i) => { a.id = maxId + i + 1; });
+  _placedAnnotations.push(...annotations);
+  renderAnnotationList();
+  redrawCanvas();
+}
+
+function renderAnnotationList() {
   const panel = document.getElementById('annotation-panel');
   const list  = document.getElementById('annotation-list');
-  if (!annotations.length) { panel.style.display = 'none'; return; }
+  if (!_placedAnnotations.length) { panel.style.display = 'none'; return; }
   panel.style.display = 'block';
-  const needsTwoClicks = t => ['arrow', 'trendline', 'zone'].includes(t);
-  list.innerHTML = annotations.map(ann => {
-    const placed = _placedAnnotations.some(p => p.id === ann.id);
-    const hint   = needsTwoClicks(ann.type) ? '(2 clicks)' : '(1 click)';
-    return `<div class="ann-item" id="ann-item-${ann.id}">
+  list.innerHTML = _placedAnnotations.map(ann => {
+    const sel = ann.id === _selectedAnnId;
+    return `<div class="ann-item${sel ? ' ann-selected' : ''}" id="ann-item-${ann.id}" data-ann-id="${ann.id}">
       <div class="ann-dot" style="background:${escHtml(ann.color || '#a8dadc')}"></div>
-      <span class="ann-badge">${escHtml(ann.type)}&nbsp;${hint}</span>
+      <span class="ann-badge">${escHtml(ann.type)}</span>
       <span class="ann-label">${escHtml(ann.label)}</span>
-      <button class="btn btn-sm ann-place-btn${placed ? ' placed' : ''}"
-        data-ann-id="${ann.id}"${placed ? ' disabled' : ''}>
-        ${placed ? '✓ Placed' : 'Place'}
-      </button>
+      <button class="btn btn-sm ann-delete-btn" data-ann-id="${ann.id}" title="Delete">×</button>
     </div>`;
   }).join('');
 }
@@ -1066,13 +1079,22 @@ function redrawCanvas() {
   if (!canvas || !canvas.width) return;
   const ctx = canvas.getContext('2d');
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  _placedAnnotations.forEach(ann => drawAnnotation(ctx, ann, canvas.width, canvas.height));
+  _placedAnnotations.forEach(ann => {
+    const highlight = ann.id === _selectedAnnId;
+    const hover     = ann.id === _hoverAnnId && !highlight;
+    drawAnnotation(ctx, ann, canvas.width, canvas.height, highlight, hover);
+  });
 }
 
-function drawAnnotation(ctx, ann, w, h) {
+function drawAnnotation(ctx, ann, w, h, highlight = false, hover = false) {
   const color = ann.color || '#a8dadc';
   ctx.save();
   ctx.font = '11px "Segoe UI", system-ui, sans-serif';
+  if (highlight) {
+    ctx.shadowColor = '#ffffff'; ctx.shadowBlur = 8;
+  } else if (hover) {
+    ctx.shadowColor = color; ctx.shadowBlur = 6;
+  }
 
   switch (ann.type) {
     case 'hline':
@@ -1148,14 +1170,51 @@ function drawArrowLine(ctx, x1, y1, x2, y2, color) {
   ctx.closePath(); ctx.fill();
 }
 
-// ── Annotation: finish placement ─────────────────────────────────────────────
-function finishPlacement(annId) {
-  _placementMode = null;
-  document.getElementById('placement-indicator').style.display = 'none';
-  document.getElementById('annotation-canvas').classList.remove('placing');
-  const btn = document.querySelector(`.ann-place-btn[data-ann-id="${annId}"]`);
-  if (btn) { btn.classList.add('placed'); btn.disabled = true; btn.textContent = '✓ Placed'; }
-  document.getElementById('clear-annotations-btn').style.display = '';
+// ── Annotation: hit testing ───────────────────────────────────────────────────
+function hitTest(xRel, yRel, w, h) {
+  const THRESH = 8;
+  for (let i = _placedAnnotations.length - 1; i >= 0; i--) {
+    if (isHit(_placedAnnotations[i], xRel, yRel, w, h, THRESH)) return _placedAnnotations[i].id;
+  }
+  return null;
+}
+
+function isHit(ann, xRel, yRel, w, h, T) {
+  const px = xRel * w, py = yRel * h;
+  switch (ann.type) {
+    case 'hline': return Math.abs(py - ann.y * h) < T;
+    case 'vline': return Math.abs(px - ann.x * w) < T;
+    case 'text': case 'circle': {
+      const dx = px - ann.x * w, dy = py - ann.y * h;
+      return Math.sqrt(dx*dx + dy*dy) < 20;
+    }
+    case 'zone': {
+      const x1 = Math.min(ann.x1, ann.x2), x2 = Math.max(ann.x1, ann.x2);
+      const y1 = Math.min(ann.y1, ann.y2), y2 = Math.max(ann.y1, ann.y2);
+      return xRel >= x1 && xRel <= x2 && yRel >= y1 && yRel <= y2;
+    }
+    case 'trendline': case 'arrow': {
+      const x1 = ann.x1 * w, y1 = ann.y1 * h, x2 = ann.x2 * w, y2 = ann.y2 * h;
+      const dx = x2 - x1, dy = y2 - y1, len2 = dx*dx + dy*dy;
+      if (len2 === 0) return Math.sqrt((px-x1)**2 + (py-y1)**2) < T;
+      const t = Math.max(0, Math.min(1, ((px-x1)*dx + (py-y1)*dy) / len2));
+      return Math.sqrt((px - (x1+t*dx))**2 + (py - (y1+t*dy))**2) < T;
+    }
+    default: return false;
+  }
+}
+
+function moveAnnotation(ann, dxRel, dyRel) {
+  const cl = (v) => Math.max(0, Math.min(1, v));
+  switch (ann.type) {
+    case 'hline': ann.y = cl(ann.y + dyRel); break;
+    case 'vline': ann.x = cl(ann.x + dxRel); break;
+    case 'text': case 'circle':
+      ann.x = cl(ann.x + dxRel); ann.y = cl(ann.y + dyRel); break;
+    default: // zone, trendline, arrow
+      ann.x1 = cl(ann.x1 + dxRel); ann.y1 = cl(ann.y1 + dyRel);
+      ann.x2 = cl(ann.x2 + dxRel); ann.y2 = cl(ann.y2 + dyRel); break;
+  }
 }
 
 function renderTestMessages() {
@@ -1229,7 +1288,7 @@ async function sendTestMessage() {
     const rawReply = (await res.json()).content[0].text;
     const { displayText, annotations } = parseAnnotations(rawReply);
     _testHistory.push({ role: 'assistant', content: displayText });
-    renderAnnotationPanel(annotations);
+    if (annotations.length) addAnnotations(annotations);
   } catch (e) {
     _testHistory.push({ role: 'assistant', content: `Error: ${e.message}` });
   } finally {
@@ -1282,8 +1341,9 @@ function wireEvents() {
     _testImage   = null;
     _testPasteActive = false;
     _placedAnnotations = [];
-    _suggestedAnnotations = [];
-    _placementMode = null;
+    _selectedAnnId = null;
+    _hoverAnnId    = null;
+    _dragState     = null;
     const zone = document.getElementById('test-paste-zone');
     zone.style.display = '';
     zone.innerHTML = `<div class="paste-kbd">Ctrl+V</div>
@@ -1293,77 +1353,98 @@ function wireEvents() {
     if (existing) existing.remove();
     const canvas = document.getElementById('annotation-canvas');
     canvas.style.display = 'none';
-    document.getElementById('placement-indicator').style.display = 'none';
     document.getElementById('annotation-panel').style.display = 'none';
-    document.getElementById('clear-annotations-btn').style.display = 'none';
-    canvas.classList.remove('placing');
     if (_canvasRO) { _canvasRO.disconnect(); _canvasRO = null; }
     renderTestMessages();
   });
 
-  // Annotation: Place button click (delegated from annotation-list)
+  // Annotation: delete button (delegated from annotation-list)
   document.getElementById('annotation-list').addEventListener('click', e => {
-    const btn = e.target.closest('.ann-place-btn');
-    if (!btn || btn.classList.contains('placed')) return;
-    const annId = parseInt(btn.dataset.annId, 10);
-    const ann   = _suggestedAnnotations.find(a => a.id === annId);
-    if (!ann) return;
-    _placementMode = { ann, step: 1 };
-    const twoClick = ['arrow', 'trendline', 'zone'].includes(ann.type);
-    document.getElementById('placement-label').textContent =
-      twoClick ? `Click start point: ${ann.label}` : `Click to place: ${ann.label}`;
-    document.getElementById('placement-indicator').style.display = 'flex';
-    document.getElementById('annotation-canvas').classList.add('placing');
+    const btn = e.target.closest('.ann-delete-btn');
+    if (btn) {
+      const id = parseInt(btn.dataset.annId, 10);
+      _placedAnnotations = _placedAnnotations.filter(a => a.id !== id);
+      if (_selectedAnnId === id) _selectedAnnId = null;
+      renderAnnotationList();
+      redrawCanvas();
+      return;
+    }
+    // Click on row → select / highlight on canvas
+    const row = e.target.closest('.ann-item[data-ann-id]');
+    if (row) {
+      const id = parseInt(row.dataset.annId, 10);
+      _selectedAnnId = _selectedAnnId === id ? null : id;
+      renderAnnotationList();
+      redrawCanvas();
+    }
   });
 
-  // Annotation: Cancel placement
-  document.getElementById('cancel-placement-btn').addEventListener('click', () => {
-    _placementMode = null;
-    document.getElementById('placement-indicator').style.display = 'none';
-    document.getElementById('annotation-canvas').classList.remove('placing');
-  });
-
-  // Annotation: Clear all placed annotations
+  // Annotation: Clear all
   document.getElementById('clear-annotations-btn').addEventListener('click', () => {
     _placedAnnotations = [];
+    _selectedAnnId = null;
+    renderAnnotationList();
     redrawCanvas();
-    document.getElementById('clear-annotations-btn').style.display = 'none';
-    document.querySelectorAll('.ann-place-btn.placed').forEach(b => {
-      b.classList.remove('placed'); b.disabled = false; b.textContent = 'Place';
-    });
   });
 
-  // Annotation: Canvas click → place annotation
-  document.getElementById('annotation-canvas').addEventListener('click', e => {
-    if (!_placementMode) return;
-    const canvas = document.getElementById('annotation-canvas');
-    const rect   = canvas.getBoundingClientRect();
-    const xRel   = (e.clientX - rect.left) / rect.width;
-    const yRel   = (e.clientY - rect.top)  / rect.height;
-    const { ann } = _placementMode;
+  // Annotation: Canvas drag to move
+  const _canvas = document.getElementById('annotation-canvas');
+  _canvas.addEventListener('mousedown', e => {
+    if (e.button !== 0) return;
+    const rect  = _canvas.getBoundingClientRect();
+    const xRel  = (e.clientX - rect.left) / rect.width;
+    const yRel  = (e.clientY - rect.top)  / rect.height;
+    const annId = hitTest(xRel, yRel, _canvas.width, _canvas.height);
+    if (annId !== null) {
+      _selectedAnnId = annId;
+      const ann = _placedAnnotations.find(a => a.id === annId);
+      _dragState = { annId, startXRel: xRel, startYRel: yRel, orig: { ...ann } };
+      renderAnnotationList();
+      redrawCanvas();
+      e.preventDefault();
+    } else {
+      _selectedAnnId = null;
+      renderAnnotationList();
+      redrawCanvas();
+    }
+  });
 
-    if (ann.type === 'hline') {
-      _placedAnnotations.push({ ...ann, y: yRel });
-      finishPlacement(ann.id);
-    } else if (ann.type === 'vline') {
-      _placedAnnotations.push({ ...ann, x: xRel });
-      finishPlacement(ann.id);
-    } else if (ann.type === 'text') {
-      _placedAnnotations.push({ ...ann, x: xRel, y: yRel });
-      finishPlacement(ann.id);
-    } else if (ann.type === 'circle') {
-      _placedAnnotations.push({ ...ann, x: xRel, y: yRel, r: 0.05 });
-      finishPlacement(ann.id);
-    } else if (['arrow', 'trendline', 'zone'].includes(ann.type)) {
-      if (_placementMode.step === 1) {
-        _placementMode = { ann, step: 2, x1: xRel, y1: yRel };
-        document.getElementById('placement-label').textContent = `Now click end point: ${ann.label}`;
-      } else {
-        _placedAnnotations.push({ ...ann, x1: _placementMode.x1, y1: _placementMode.y1, x2: xRel, y2: yRel });
-        finishPlacement(ann.id);
+  _canvas.addEventListener('mousemove', e => {
+    const rect  = _canvas.getBoundingClientRect();
+    const xRel  = (e.clientX - rect.left) / rect.width;
+    const yRel  = (e.clientY - rect.top)  / rect.height;
+    if (_dragState) {
+      const ann = _placedAnnotations.find(a => a.id === _dragState.annId);
+      if (ann) {
+        Object.assign(ann, _dragState.orig);
+        moveAnnotation(ann, xRel - _dragState.startXRel, yRel - _dragState.startYRel);
+        redrawCanvas();
+      }
+    } else {
+      const hovered = hitTest(xRel, yRel, _canvas.width, _canvas.height);
+      if (hovered !== _hoverAnnId) {
+        _hoverAnnId = hovered;
+        _canvas.style.cursor = hovered !== null ? 'move' : 'default';
+        redrawCanvas();
       }
     }
-    redrawCanvas();
+  });
+
+  _canvas.addEventListener('mouseup', () => { _dragState = null; });
+
+  // Drag ends if mouse leaves canvas
+  document.addEventListener('mouseup', () => { _dragState = null; });
+
+  // Delete key removes selected annotation
+  document.addEventListener('keydown', e => {
+    if ((e.key === 'Delete' || e.key === 'Backspace') && _selectedAnnId !== null) {
+      const focused = document.activeElement;
+      if (focused && (focused.tagName === 'INPUT' || focused.tagName === 'TEXTAREA')) return;
+      _placedAnnotations = _placedAnnotations.filter(a => a.id !== _selectedAnnId);
+      _selectedAnnId = null;
+      renderAnnotationList();
+      redrawCanvas();
+    }
   });
 
   document.getElementById('keys-toggle-btn').addEventListener('click', () => {
@@ -1476,24 +1557,21 @@ function wireEvents() {
           _testImage = null;
           _testHistory = [];
           _placedAnnotations = [];
-          _suggestedAnnotations = [];
-          _placementMode = null;
+          _selectedAnnId = null;
+          _hoverAnnId    = null;
+          _dragState     = null;
           const canvas = document.getElementById('annotation-canvas');
           canvas.style.display = 'none';
-          canvas.classList.remove('placing');
-          document.getElementById('placement-indicator').style.display = 'none';
           document.getElementById('annotation-panel').style.display = 'none';
-          document.getElementById('clear-annotations-btn').style.display = 'none';
           if (_canvasRO) { _canvasRO.disconnect(); _canvasRO = null; }
           renderTestMessages();
         });
         wrap.appendChild(img);
         _placedAnnotations = [];
-        _suggestedAnnotations = [];
-        _placementMode = null;
+        _selectedAnnId = null;
+        _hoverAnnId    = null;
+        _dragState     = null;
         document.getElementById('annotation-panel').style.display = 'none';
-        document.getElementById('clear-annotations-btn').style.display = 'none';
-        document.getElementById('placement-indicator').style.display = 'none';
         setupCanvas();
         renderTestMessages();
         document.getElementById('test-input').focus();
