@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Recover Chapter History</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #1a1a2e; --bg2: #16213e; --bg3: #0f3460;
+      --teal: #a8dadc; --text: #eee; --muted: #7a8ba0;
+      --border: rgba(168,218,220,0.12); --green: #4ade80; --red: #f87171;
+    }
+    body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; font-size: 14px; padding: 32px 24px; }
+    h1 { font-size: 1.1rem; letter-spacing: 3px; color: var(--teal); margin-bottom: 6px; }
+    .sub { color: var(--muted); font-size: 0.82rem; margin-bottom: 24px; line-height: 1.5; }
+    .card { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin-bottom: 16px; }
+    label { font-size: 0.72rem; color: var(--muted); display: block; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em; }
+    input[type="password"] { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 0.85rem; padding: 8px 12px; outline: none; }
+    input[type="password"]:focus { border-color: var(--teal); }
+    .btn { background: var(--teal); color: #111; border: none; border-radius: 6px; padding: 9px 22px; font-weight: 700; font-size: 0.82rem; cursor: pointer; }
+    .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--muted); }
+    .btn-danger { background: transparent; border: 1px solid rgba(248,113,113,0.3); color: var(--red); }
+    .btn-green { background: var(--green); color: #111; }
+    .log { font-size: 0.78rem; color: var(--muted); line-height: 1.8; margin-top: 14px; min-height: 20px; }
+    .log .ok  { color: var(--green); }
+    .log .err { color: var(--red); }
+    .log .info { color: var(--teal); }
+
+    /* Chapter table */
+    #chapter-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    #chapter-table th { text-align: left; font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; padding: 6px 10px; border-bottom: 1px solid var(--border); }
+    #chapter-table td { padding: 10px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    #chapter-table tr:last-child td { border-bottom: none; }
+    .ch-title { font-weight: 600; }
+    .ch-meta  { color: var(--muted); font-size: 0.75rem; margin-top: 2px; }
+    .badge { display: inline-block; background: var(--bg3); border: 1px solid var(--border); border-radius: 4px; padding: 1px 7px; font-size: 0.7rem; color: var(--muted); }
+    .badge.best { border-color: rgba(74,222,128,0.4); color: var(--green); }
+    .versions-cell { display: flex; flex-direction: column; gap: 5px; }
+    .version-row { display: flex; align-items: center; gap: 8px; }
+    .ver-commit { font-family: monospace; font-size: 0.72rem; color: var(--muted); }
+    .ver-date   { font-size: 0.72rem; color: var(--muted); }
+    .ver-clips  { font-size: 0.72rem; }
+    .ver-clips.best { color: var(--green); font-weight: 700; }
+    .use-btn    { font-size: 0.68rem !important; padding: 2px 9px !important; }
+    .use-btn.selected { background: var(--green) !important; color: #111 !important; }
+
+    /* Output */
+    #output-area { background: #0d1117; border: 1px solid var(--border); border-radius: 8px; padding: 14px; font-family: monospace; font-size: 0.72rem; line-height: 1.6; color: #8b9cb0; white-space: pre-wrap; max-height: 340px; overflow-y: auto; margin-top: 12px; }
+    .action-row { display: flex; gap: 10px; align-items: center; margin-top: 14px; flex-wrap: wrap; }
+    #push-status { font-size: 0.8rem; }
+    #push-status.ok  { color: var(--green); }
+    #push-status.err { color: var(--red); }
+  </style>
+</head>
+<body>
+<h1>CHAPTER HISTORY RECOVERY</h1>
+<p class="sub">Fetches every historical version of <code>chapter_knowledge.json</code> from git history,<br>
+finds all unique chapters, and lets you push the merged result back to GitHub.</p>
+
+<div class="card">
+  <label>GitHub Personal Access Token</label>
+  <input type="password" id="pat-input" placeholder="github_pat_…">
+</div>
+
+<div class="card">
+  <button class="btn" id="scan-btn">Scan Commit History</button>
+  <div class="log" id="scan-log"></div>
+</div>
+
+<div class="card" id="results-card" style="display:none;">
+  <div style="font-size:0.75rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:14px;">
+    Found chapters — select which version to keep for each
+  </div>
+  <table id="chapter-table">
+    <thead>
+      <tr>
+        <th>Chapter</th>
+        <th>Versions found in history</th>
+        <th>Will use</th>
+      </tr>
+    </thead>
+    <tbody id="chapter-tbody"></tbody>
+  </table>
+
+  <div class="action-row">
+    <button class="btn" id="preview-btn">Preview merged JSON</button>
+    <button class="btn btn-green" id="push-btn" style="display:none;">Push to GitHub</button>
+    <span id="push-status"></span>
+  </div>
+  <div id="output-area" style="display:none;"></div>
+</div>
+
+<script>
+const GH_OWNER = 'andrewhogan93';
+const GH_REPO  = 'trading-ai';
+const GH_PATH  = 'chapter_knowledge.json';
+
+// { filename → [{commitSha, date, chapter}] }
+let _found   = {};
+// filename → selected commitSha
+let _choices = {};
+let _currentFileSha = null;
+
+function log(msg, cls = '') {
+  document.getElementById('scan-log').innerHTML +=
+    `<div class="${cls}">${msg}</div>`;
+}
+
+function gh(path, token) {
+  return fetch(`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}${path}`, {
+    headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' },
+  });
+}
+
+async function getFileAtCommit(commitSha, token) {
+  const r = await gh(`/contents/${GH_PATH}?ref=${commitSha}`, token);
+  if (!r.ok) return null;
+  const j = await r.json();
+  try {
+    return JSON.parse(atob(j.content.replace(/\n/g, '')));
+  } catch { return null; }
+}
+
+document.getElementById('scan-btn').addEventListener('click', async () => {
+  const token = document.getElementById('pat-input').value.trim()
+    || localStorage.getItem('gh_pat') || '';
+  if (!token) { alert('Enter your GitHub PAT first.'); return; }
+
+  document.getElementById('scan-log').innerHTML = '';
+  document.getElementById('results-card').style.display = 'none';
+  document.getElementById('scan-btn').disabled = true;
+
+  try {
+    // 1. Get all commits that touched the file
+    log('Fetching commit history…');
+    let commits = [];
+    let page = 1;
+    while (true) {
+      const r = await gh(`/commits?path=${GH_PATH}&per_page=100&page=${page}`, token);
+      if (!r.ok) throw new Error(`GitHub ${r.status}: ${(await r.json()).message}`);
+      const batch = await r.json();
+      if (!batch.length) break;
+      commits.push(...batch);
+      if (batch.length < 100) break;
+      page++;
+    }
+    log(`<span class="ok">Found ${commits.length} commit${commits.length !== 1 ? 's' : ''} touching ${GH_PATH}</span>`);
+
+    // 2. Also grab the current file SHA for later push
+    const curR = await gh(`/contents/${GH_PATH}`, token);
+    if (curR.ok) { const j = await curR.json(); _currentFileSha = j.sha; }
+
+    // 3. Fetch each version
+    _found = {};
+    for (let i = 0; i < commits.length; i++) {
+      const c = commits[i];
+      const sha  = c.sha;
+      const date = c.commit.committer.date.slice(0, 10);
+      const msg  = c.commit.message.slice(0, 60);
+      log(`Fetching commit ${i + 1}/${commits.length}: <span class="info">${sha.slice(0,7)}</span> ${date} — ${msg}`);
+      const data = await getFileAtCommit(sha, token);
+      if (!data || !data.chapters) { log(`  (no valid data)`, 'err'); continue; }
+      for (const ch of data.chapters) {
+        if (!ch.filename) continue;
+        if (!_found[ch.filename]) _found[ch.filename] = [];
+        _found[ch.filename].push({ commitSha: sha, date, chapter: ch });
+      }
+      await new Promise(r => setTimeout(r, 120)); // avoid rate limits
+    }
+
+    const filenames = Object.keys(_found);
+    if (!filenames.length) {
+      log('No chapters found in any historical version.', 'err');
+      document.getElementById('scan-btn').disabled = false;
+      return;
+    }
+
+    log(`<span class="ok">✓ Found ${filenames.length} unique chapter file${filenames.length !== 1 ? 's' : ''} across history.</span>`);
+
+    // 4. Default selection = version with most clips
+    _choices = {};
+    filenames.forEach(fn => {
+      const best = _found[fn].reduce((a, b) =>
+        (b.chapter.clips || b.chapter.pages || []).length >
+        (a.chapter.clips || a.chapter.pages || []).length ? b : a
+      );
+      _choices[fn] = best.commitSha;
+    });
+
+    renderTable();
+    document.getElementById('results-card').style.display = 'block';
+  } catch (e) {
+    log(`Error: ${e.message}`, 'err');
+  } finally {
+    document.getElementById('scan-btn').disabled = false;
+  }
+});
+
+function renderTable() {
+  const tbody = document.getElementById('chapter-tbody');
+  tbody.innerHTML = '';
+
+  for (const [fn, versions] of Object.entries(_found)) {
+    const maxClips = Math.max(...versions.map(v =>
+      (v.chapter.clips || v.chapter.pages || []).length));
+
+    const versionsHtml = versions.map(v => {
+      const clips = (v.chapter.clips || v.chapter.pages || []).length;
+      const isBest = clips === maxClips;
+      const isChosen = _choices[fn] === v.commitSha;
+      return `<div class="version-row">
+        <span class="ver-commit">${v.commitSha.slice(0,7)}</span>
+        <span class="ver-date">${v.date}</span>
+        <span class="ver-clips${isBest ? ' best' : ''}">${clips} clip${clips !== 1 ? 's' : ''}</span>
+        <button class="btn btn-sm btn-ghost use-btn${isChosen ? ' selected' : ''}"
+          data-fn="${fn}" data-sha="${v.commitSha}">
+          ${isChosen ? '✓ Using' : 'Use this'}
+        </button>
+      </div>`;
+    }).join('');
+
+    const chosen = versions.find(v => v.commitSha === _choices[fn]);
+    const chosenClips = (chosen.chapter.clips || chosen.chapter.pages || []).length;
+
+    tbody.innerHTML += `<tr>
+      <td>
+        <div class="ch-title">${chosen.chapter.title || fn}</div>
+        <div class="ch-meta">${fn}</div>
+      </td>
+      <td><div class="versions-cell">${versionsHtml}</div></td>
+      <td>
+        <span class="badge best">${chosenClips} clips</span>
+      </td>
+    </tr>`;
+  }
+
+  // Delegated click for Use buttons
+  tbody.onclick = e => {
+    const btn = e.target.closest('.use-btn');
+    if (!btn) return;
+    _choices[btn.dataset.fn] = btn.dataset.sha;
+    renderTable();
+    document.getElementById('output-area').style.display = 'none';
+    document.getElementById('push-btn').style.display = 'none';
+  };
+}
+
+function buildMerged() {
+  const chapters = Object.entries(_choices).map(([fn, sha]) => {
+    const v = _found[fn].find(v => v.commitSha === sha);
+    return v.chapter;
+  });
+  // Sort by committed date ascending
+  chapters.sort((a, b) => (a.committed || '').localeCompare(b.committed || ''));
+  return { chapters };
+}
+
+document.getElementById('preview-btn').addEventListener('click', () => {
+  const merged = buildMerged();
+  const el = document.getElementById('output-area');
+  el.textContent = JSON.stringify(merged, null, 2);
+  el.style.display = 'block';
+  document.getElementById('push-btn').style.display = '';
+});
+
+document.getElementById('push-btn').addEventListener('click', async () => {
+  const token = document.getElementById('pat-input').value.trim()
+    || localStorage.getItem('gh_pat') || '';
+  if (!token) { alert('Enter your GitHub PAT.'); return; }
+
+  const pushBtn   = document.getElementById('push-btn');
+  const statusEl  = document.getElementById('push-status');
+  pushBtn.disabled = true;
+  statusEl.className = '';
+  statusEl.textContent = 'Pushing…';
+
+  try {
+    const merged  = buildMerged();
+    const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(merged, null, 2))));
+
+    // Refetch current SHA before write
+    const curR = await gh(`/contents/${GH_PATH}`, token);
+    let sha = _currentFileSha;
+    if (curR.ok) { const j = await curR.json(); sha = j.sha; }
+
+    const body = {
+      message: `chore: restore merged chapter knowledge from history (${merged.chapters.length} chapters)`,
+      content: encoded,
+    };
+    if (sha) body.sha = sha;
+
+    const r = await fetch(
+      `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${GH_PATH}`,
+      {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          Accept: 'application/vnd.github+json',
+        },
+        body: JSON.stringify(body),
+      }
+    );
+    if (!r.ok) throw new Error(`GitHub ${r.status}: ${(await r.json()).message}`);
+
+    statusEl.className   = 'ok';
+    statusEl.textContent = `✓ Pushed! ${merged.chapters.length} chapters restored to GitHub.`;
+  } catch (e) {
+    statusEl.className   = 'err';
+    statusEl.textContent = `Error: ${e.message}`;
+  } finally {
+    pushBtn.disabled = false;
+  }
+});
+
+// Pre-fill from localStorage
+const saved = localStorage.getItem('gh_pat');
+if (saved) document.getElementById('pat-input').placeholder = '(using saved token — or paste a new one)';
+</script>
+</body>
+</html>
