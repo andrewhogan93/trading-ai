@@ -846,6 +846,12 @@
       font-size:0.82rem; line-height:1.65; color:var(--text);
       white-space:pre-wrap; max-height:420px; overflow-y:auto;
     }
+    .analysis-meta {
+      margin-top:10px; padding-top:8px; border-top:1px solid var(--border);
+      font-size:0.74rem; color:var(--muted);
+    }
+    .sidebar-row .sr-label.sr-why { font-style:italic; opacity:0.7; padding-left:6px; }
+    .sidebar-row .sr-val.sr-why-val { font-size:0.71rem; color:var(--muted); font-style:italic; }
     /* page-4 key entry reuse */
     #p4-key-row { padding:0 24px 16px; display:none; }
   </style>
@@ -1180,6 +1186,7 @@
           <span class="verdict-confidence" id="verdict-confidence"></span>
         </div>
         <div class="analysis-reasoning" id="analysis-reasoning"></div>
+        <div class="analysis-meta" id="analysis-meta" style="display:none"></div>
       </div>
 
     </div><!-- /page-4 -->
@@ -3837,10 +3844,14 @@ function p4SidebarHtml(key, data) {
     return `<div class="sidebar-row"><span class="sr-label">${lbl}</span><span class="sr-val ${cls}">${escapeHtml(String(val || '—'))}</span></div>`;
   }
 
+  const isM5 = key === 'stockM5' || key === 'spyM5';
+
   let html = `<div class="sidebar-title">${label}</div>`;
   html += row('Price', data.price);
   html += row('Support', data.support);
+  if (isM5 && data.supportReason) html += `<div class="sidebar-row"><span class="sr-label sr-why">↳ why</span><span class="sr-val sr-why-val">${escapeHtml(String(data.supportReason))}</span></div>`;
   html += row('Resistance', data.resistance);
+  if (isM5 && data.resistanceReason) html += `<div class="sidebar-row"><span class="sr-label sr-why">↳ why</span><span class="sr-val sr-why-val">${escapeHtml(String(data.resistanceReason))}</span></div>`;
   if (!isSpy && data.rrs) {
     const rrsLower = data.rrs.toLowerCase();
     const rrsCls = rrsLower.includes('positive') ? 'good' : rrsLower.includes('negative') ? 'bad' : 'neutral';
@@ -3880,9 +3891,9 @@ CRITICAL: Every element of your analysis (trend, S/R, 1OP cycle, volume, RRS) mu
 You MUST begin your response with a JSON block in EXACTLY this format (no extra fields, no comments):
 \`\`\`json
 {
-  "stockM5":  { "price": "$X", "support": "$X", "resistance": "$X", "rrs": "positive/negative/neutral + increasing/decreasing", "oneOP": "description", "volume": "good/light/heavy" },
+  "stockM5":  { "price": "$X", "support": "$X", "supportReason": "why this is support per chapter rules", "resistance": "$X", "resistanceReason": "why this is resistance per chapter rules", "rrs": "positive/negative/neutral + increasing/decreasing", "oneOP": "description", "volume": "good/light/heavy" },
   "stockD1":  { "price": "$X", "support": "$X", "resistance": "$X", "rrs": "positive/negative/neutral + increasing/decreasing", "oneOP": "description", "volume": "good/light/heavy" },
-  "spyM5":    { "price": "$X", "support": "$X", "resistance": "$X", "oneOP": "description", "volume": "good/light/heavy" },
+  "spyM5":    { "price": "$X", "support": "$X", "supportReason": "why this is support per chapter rules", "resistance": "$X", "resistanceReason": "why this is resistance per chapter rules", "oneOP": "description", "volume": "good/light/heavy" },
   "spyD1":    { "price": "$X", "support": "$X", "resistance": "$X", "oneOP": "description", "volume": "good/light/heavy" },
   "verdict":    "LONG",
   "confidence": "High"
@@ -3890,6 +3901,7 @@ You MUST begin your response with a JSON block in EXACTLY this format (no extra 
 \`\`\`
 verdict must be exactly one of: LONG, SHORT, NO TRADE
 confidence must be exactly one of: High, Medium, Low
+supportReason and resistanceReason are REQUIRED for stockM5 and spyM5 — always explain what makes that level significant (e.g. prior high/low, moving average, VWAP, AVWAPQ, trendline, etc.) per the chapter rules.
 
 After the JSON block, provide your full chapter-referenced reasoning as plain text.`;
 
@@ -3920,11 +3932,11 @@ After the JSON block, provide your full chapter-referenced reasoning as plain te
     const errJson = await res.json().catch(() => ({}));
     throw new Error(`Claude API ${res.status}: ${errJson.error?.message || ''}`);
   }
-  const json  = await res.json();
-  return json.content[0].text;
+  const json = await res.json();
+  return { text: json.content[0].text, usage: json.usage };
 }
 
-function p4RenderResult(responseText) {
+function p4RenderResult(responseText, meta) {
   // Extract JSON block
   const jsonMatch = responseText.match(/```json\s*([\s\S]+?)\s*```/);
   let parsed = null;
@@ -3932,8 +3944,6 @@ function p4RenderResult(responseText) {
   if (jsonMatch) {
     try {
       parsed = JSON.parse(jsonMatch[1]);
-      reasoning = responseText.slice(responseText.indexOf('```json'));
-      // remove the json block from reasoning display
       reasoning = responseText.replace(/```json[\s\S]+?```/, '').trim();
     } catch (_) {}
   }
@@ -3946,7 +3956,6 @@ function p4RenderResult(responseText) {
       sb.classList.add('populated');
     });
 
-    // Verdict chip
     const verdict    = (parsed.verdict || 'NO TRADE').trim().toUpperCase();
     const confidence = parsed.confidence || '';
     const chip       = document.getElementById('verdict-chip');
@@ -3956,6 +3965,22 @@ function p4RenderResult(responseText) {
   }
 
   document.getElementById('analysis-reasoning').textContent = reasoning;
+
+  // Token + timing meta
+  const metaEl = document.getElementById('analysis-meta');
+  if (meta) {
+    const parts = [];
+    if (meta.usage) {
+      const { input_tokens, output_tokens } = meta.usage;
+      parts.push(`${(input_tokens + output_tokens).toLocaleString()} tokens (${input_tokens.toLocaleString()} in / ${output_tokens.toLocaleString()} out)`);
+    }
+    if (meta.elapsedMs != null) parts.push(`${(meta.elapsedMs / 1000).toFixed(1)}s`);
+    metaEl.textContent = parts.join(' · ');
+    metaEl.style.display = '';
+  } else {
+    metaEl.style.display = 'none';
+  }
+
   document.getElementById('analysis-result').style.display = '';
 }
 
@@ -3979,16 +4004,18 @@ document.getElementById('p4-key-save-btn').addEventListener('click', () => {
 document.getElementById('analyze-btn').addEventListener('click', async () => {
   const btn     = document.getElementById('analyze-btn');
   const spinner = document.getElementById('analyze-spinner');
-  btn.disabled     = true;
+  btn.disabled          = true;
   spinner.style.display = '';
   document.getElementById('analysis-result').style.display = 'none';
+  const t0 = Date.now();
   try {
-    const text = await callTradeAnalysis();
-    p4RenderResult(text);
+    const { text, usage } = await callTradeAnalysis();
+    p4RenderResult(text, { usage, elapsedMs: Date.now() - t0 });
   } catch (err) {
     document.getElementById('analysis-reasoning').textContent = `Error: ${err.message}`;
     document.getElementById('verdict-chip').textContent = '';
     document.getElementById('verdict-confidence').textContent = '';
+    document.getElementById('analysis-meta').style.display = 'none';
     document.getElementById('analysis-result').style.display = '';
   } finally {
     spinner.style.display = 'none';
