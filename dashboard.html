@@ -756,6 +756,98 @@
       display: none;
     }
     #open-banner strong { color: #fde68a; }
+
+    /* ── TRADE ANALYSIS — PAGE 4 ── */
+    #page-4 header { display:flex; align-items:center; justify-content:space-between; padding:20px 24px 12px; gap:12px; }
+    .analysis-ticker-row { display:flex; align-items:center; gap:10px; font-size:0.85rem; color:var(--muted); }
+    .analysis-ticker-row input {
+      background:var(--bg3); border:1px solid var(--border); color:var(--text);
+      border-radius:6px; padding:5px 10px; font-size:0.85rem; font-family:inherit;
+      outline:none; width:100px; text-transform:uppercase;
+    }
+    .analysis-ticker-row input:focus { border-color:var(--teal); }
+    .analysis-grid {
+      display:grid; grid-template-columns:1fr 1fr; gap:12px;
+      padding:0 24px; margin-bottom:16px;
+    }
+    .paste-zone {
+      position:relative; min-height:280px;
+      border:2px dashed var(--border); border-radius:var(--radius);
+      background:var(--bg2); cursor:pointer;
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      overflow:hidden; transition:border-color 0.15s;
+    }
+    .paste-zone:hover { border-color:var(--teal); }
+    .paste-zone.has-image { border-style:solid; border-color:var(--border); }
+    .paste-zone.drag-over { border-color:var(--teal); background:rgba(45,212,191,0.06); }
+    .paste-label {
+      font-size:0.78rem; font-weight:600; letter-spacing:0.06em;
+      color:var(--muted); text-transform:uppercase; margin-bottom:6px;
+    }
+    .paste-hint { font-size:0.75rem; color:var(--muted); opacity:0.6; }
+    .paste-clear-hint { font-size:0.7rem; color:var(--muted); opacity:0.5; margin-top:4px; }
+    .paste-preview {
+      position:absolute; inset:0; width:100%; height:100%;
+      object-fit:contain; background:var(--bg2);
+    }
+    .paste-zone-labels {
+      position:absolute; top:8px; left:10px;
+      display:flex; flex-direction:column; gap:3px; z-index:2; pointer-events:none;
+    }
+    .paste-zone.has-image .paste-label-overlay {
+      background:rgba(10,10,18,0.7); color:var(--text);
+      font-size:0.72rem; font-weight:600; letter-spacing:0.05em;
+      padding:2px 7px; border-radius:4px;
+    }
+    /* hover sidebar */
+    .chart-hover-sidebar {
+      display:none; flex-direction:column; gap:5px;
+      position:absolute; top:0; right:0; bottom:0; width:190px;
+      background:rgba(12,12,22,0.93); backdrop-filter:blur(4px);
+      border-left:1px solid var(--border); padding:12px 10px;
+      font-size:0.75rem; z-index:5; overflow-y:auto;
+    }
+    .paste-zone:hover .chart-hover-sidebar.populated { display:flex; }
+    .sidebar-title {
+      font-size:0.72rem; font-weight:700; letter-spacing:0.07em;
+      color:var(--teal); text-transform:uppercase; margin-bottom:4px;
+      border-bottom:1px solid var(--border); padding-bottom:4px;
+    }
+    .sidebar-row { display:flex; justify-content:space-between; gap:6px; line-height:1.4; }
+    .sidebar-row .sr-label { color:var(--muted); flex-shrink:0; }
+    .sidebar-row .sr-val { color:var(--text); text-align:right; word-break:break-word; }
+    .sr-val.good { color:#4ade80; }
+    .sr-val.bad  { color:#f87171; }
+    .sr-val.neutral { color:var(--muted); }
+    /* analyze button + result */
+    .analysis-actions { padding:0 24px 16px; display:flex; align-items:center; gap:12px; }
+    #analyze-btn {
+      background:var(--teal); color:#0a0a12; border:none; border-radius:8px;
+      padding:9px 28px; font-size:0.88rem; font-weight:700; cursor:pointer;
+      transition:opacity 0.15s;
+    }
+    #analyze-btn:disabled { opacity:0.35; cursor:not-allowed; }
+    #analyze-btn:not(:disabled):hover { opacity:0.85; }
+    #analyze-spinner { color:var(--muted); font-size:0.82rem; display:none; }
+    .analysis-result {
+      margin:0 24px 24px; background:var(--bg2); border:1px solid var(--border);
+      border-radius:var(--radius); padding:18px 20px; display:none;
+    }
+    .verdict-row { display:flex; align-items:center; gap:14px; margin-bottom:14px; }
+    .verdict-chip {
+      font-size:0.95rem; font-weight:800; letter-spacing:0.08em;
+      padding:5px 18px; border-radius:6px;
+    }
+    .verdict-chip.long  { background:rgba(74,222,128,0.18); color:#4ade80; border:1px solid rgba(74,222,128,0.4); }
+    .verdict-chip.short { background:rgba(248,113,113,0.18); color:#f87171; border:1px solid rgba(248,113,113,0.4); }
+    .verdict-chip.no-trade { background:rgba(148,163,184,0.12); color:var(--muted); border:1px solid var(--border); }
+    .verdict-confidence { font-size:0.78rem; color:var(--muted); }
+    .analysis-reasoning {
+      font-size:0.82rem; line-height:1.65; color:var(--text);
+      white-space:pre-wrap; max-height:420px; overflow-y:auto;
+    }
+    /* page-4 key entry reuse */
+    #p4-key-row { padding:0 24px 16px; display:none; }
   </style>
 </head>
 <body>
@@ -805,6 +897,15 @@
         <circle cx="17" cy="10" r="1" fill="currentColor"/>
         <circle cx="10" cy="17" r="1" fill="currentColor"/>
         <circle cx="3" cy="10" r="1" fill="currentColor"/>
+      </svg>
+    </button>
+    <button class="nav-btn" data-page="page-4" title="Trade Analysis">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <rect x="2" y="14" width="3" height="4" rx="1" fill="currentColor"/>
+        <rect x="6.5" y="10" width="3" height="8" rx="1" fill="currentColor"/>
+        <rect x="11" y="6" width="3" height="12" rx="1" fill="currentColor"/>
+        <rect x="15.5" y="2" width="3" height="16" rx="1" fill="currentColor" opacity="0.5"/>
+        <path d="M3.5 13 L8 9 L12.5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     </button>
   </nav>
@@ -999,6 +1100,89 @@
 
       </div>
     </div><!-- /page-3 -->
+
+    <!-- Page 4: Trade Analysis -->
+    <div id="page-4" class="page">
+      <header>
+        <h1>TRADE ANALYSIS</h1>
+        <div class="analysis-ticker-row">
+          <span>Symbol:</span>
+          <input type="text" id="p4-ticker" placeholder="e.g. AAPL" maxlength="10">
+        </div>
+      </header>
+
+      <!-- API key entry (shown if no Anthropic key) -->
+      <div id="p4-key-row">
+        <div class="chart-key-row" style="padding:0 24px 16px">
+          <a href="https://console.anthropic.com/" target="_blank">Get API key ↗</a>
+          <input type="password" id="p4-key-input" placeholder="Paste Anthropic API key…">
+          <button class="chart-key-save" id="p4-key-save-btn">Save</button>
+        </div>
+      </div>
+
+      <!-- 2×2 chart grid -->
+      <div class="analysis-grid">
+
+        <!-- Stock M5 -->
+        <div class="paste-zone" id="pz-stockM5" data-chart="stockM5" tabindex="0">
+          <div class="paste-label">Stock M5</div>
+          <div class="paste-hint">Click to focus, then Ctrl+V</div>
+          <div class="paste-clear-hint">Click image to clear</div>
+          <img class="paste-preview" id="prev-stockM5" style="display:none" alt="Stock M5">
+          <div class="chart-hover-sidebar" id="sb-stockM5">
+            <div class="sidebar-title">Stock M5</div>
+          </div>
+        </div>
+
+        <!-- SPY M5 -->
+        <div class="paste-zone" id="pz-spyM5" data-chart="spyM5" tabindex="0">
+          <div class="paste-label">SPY M5</div>
+          <div class="paste-hint">Click to focus, then Ctrl+V</div>
+          <div class="paste-clear-hint">Click image to clear</div>
+          <img class="paste-preview" id="prev-spyM5" style="display:none" alt="SPY M5">
+          <div class="chart-hover-sidebar" id="sb-spyM5">
+            <div class="sidebar-title">SPY M5</div>
+          </div>
+        </div>
+
+        <!-- Stock D1 -->
+        <div class="paste-zone" id="pz-stockD1" data-chart="stockD1" tabindex="0">
+          <div class="paste-label">Stock D1</div>
+          <div class="paste-hint">Click to focus, then Ctrl+V</div>
+          <div class="paste-clear-hint">Click image to clear</div>
+          <img class="paste-preview" id="prev-stockD1" style="display:none" alt="Stock D1">
+          <div class="chart-hover-sidebar" id="sb-stockD1">
+            <div class="sidebar-title">Stock D1</div>
+          </div>
+        </div>
+
+        <!-- SPY D1 -->
+        <div class="paste-zone" id="pz-spyD1" data-chart="spyD1" tabindex="0">
+          <div class="paste-label">SPY D1</div>
+          <div class="paste-hint">Click to focus, then Ctrl+V</div>
+          <div class="paste-clear-hint">Click image to clear</div>
+          <img class="paste-preview" id="prev-spyD1" style="display:none" alt="SPY D1">
+          <div class="chart-hover-sidebar" id="sb-spyD1">
+            <div class="sidebar-title">SPY D1</div>
+          </div>
+        </div>
+
+      </div><!-- /analysis-grid -->
+
+      <div class="analysis-actions">
+        <button id="analyze-btn" disabled>Analyze</button>
+        <span id="analyze-spinner">Analyzing charts…</span>
+      </div>
+
+      <div class="analysis-result" id="analysis-result">
+        <div class="verdict-row">
+          <span class="verdict-chip" id="verdict-chip"></span>
+          <span class="verdict-confidence" id="verdict-confidence"></span>
+        </div>
+        <div class="analysis-reasoning" id="analysis-reasoning"></div>
+      </div>
+
+    </div><!-- /page-4 -->
 
   </div><!-- /pages -->
   </div><!-- /main -->
@@ -3542,6 +3726,280 @@ document.getElementById('intel-clear-btn').addEventListener('click', () => {
 document.querySelectorAll('.nav-btn[data-page]').forEach(btn => {
   if (btn.dataset.page === 'page-3') {
     btn.addEventListener('click', renderPage3);
+  }
+});
+
+// ================================================================
+//  TRADE ANALYSIS — PAGE 4
+// ================================================================
+const analysisImages    = { stockM5: null, spyM5: null, stockD1: null, spyD1: null };
+const analysisChartData = { stockM5: null, spyM5: null, stockD1: null, spyD1: null };
+
+function p4ImageBlock(b64) {
+  return { type: 'image', source: { type: 'base64', media_type: 'image/png', data: b64 } };
+}
+
+function p4UpdateAnalyzeBtn() {
+  document.getElementById('analyze-btn').disabled = !analysisImages.stockM5;
+}
+
+function p4SetImage(key, b64) {
+  analysisImages[key] = b64;
+  const img = document.getElementById('prev-' + key);
+  const zone = document.getElementById('pz-' + key);
+  img.src = 'data:image/png;base64,' + b64;
+  img.style.display = '';
+  zone.classList.add('has-image');
+  p4UpdateAnalyzeBtn();
+}
+
+function p4ClearImage(key) {
+  analysisImages[key] = null;
+  const img = document.getElementById('prev-' + key);
+  const zone = document.getElementById('pz-' + key);
+  img.style.display = 'none';
+  img.src = '';
+  zone.classList.remove('has-image');
+  // clear sidebar
+  const sb = document.getElementById('sb-' + key);
+  sb.classList.remove('populated');
+  sb.innerHTML = `<div class="sidebar-title">${zone.querySelector('.paste-label').textContent}</div>`;
+  p4UpdateAnalyzeBtn();
+}
+
+// Read image from clipboard items and return base64 string (no data: prefix)
+function p4ReadClipboardImage(items) {
+  return new Promise((resolve, reject) => {
+    for (const item of items) {
+      if (item.type.startsWith('image/')) {
+        const blob = item.getAsFile();
+        const reader = new FileReader();
+        reader.onload = e => resolve(e.target.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+        return;
+      }
+    }
+    reject(new Error('No image in clipboard'));
+  });
+}
+
+// Wire up paste zones
+['stockM5', 'spyM5', 'stockD1', 'spyD1'].forEach(key => {
+  const zone = document.getElementById('pz-' + key);
+  const img  = document.getElementById('prev-' + key);
+
+  // Click to focus (for paste target) or clear if already has image
+  zone.addEventListener('click', e => {
+    if (analysisImages[key] && e.target !== zone && !e.target.classList.contains('paste-label') &&
+        !e.target.classList.contains('paste-hint') && !e.target.classList.contains('paste-clear-hint')) {
+      // clicked on the image or sidebar — clear
+      if (e.target === img || e.target.closest('.paste-preview')) {
+        p4ClearImage(key);
+        return;
+      }
+    }
+    if (analysisImages[key] && (e.target === img)) {
+      p4ClearImage(key);
+      return;
+    }
+    zone.focus();
+  });
+
+  // Paste event on the zone itself
+  zone.addEventListener('paste', async e => {
+    e.preventDefault();
+    try {
+      const b64 = await p4ReadClipboardImage(e.clipboardData.items);
+      p4SetImage(key, b64);
+    } catch (_) {}
+  });
+});
+
+// Also catch global paste and route to the currently focused paste zone
+document.addEventListener('paste', async e => {
+  const active = document.activeElement;
+  if (!active || !active.classList.contains('paste-zone')) return;
+  const key = active.dataset.chart;
+  if (!key) return;
+  e.preventDefault();
+  try {
+    const b64 = await p4ReadClipboardImage(e.clipboardData.items);
+    p4SetImage(key, b64);
+  } catch (_) {}
+});
+
+function p4SidebarHtml(key, data) {
+  const isSpy = key.startsWith('spy');
+  const label = { stockM5: 'Stock M5', spyM5: 'SPY M5', stockD1: 'Stock D1', spyD1: 'SPY D1' }[key];
+
+  function row(lbl, val, cls = '') {
+    return `<div class="sidebar-row"><span class="sr-label">${lbl}</span><span class="sr-val ${cls}">${escapeHtml(String(val || '—'))}</span></div>`;
+  }
+
+  let html = `<div class="sidebar-title">${label}</div>`;
+  html += row('Price', data.price);
+  html += row('Support', data.support);
+  html += row('Resistance', data.resistance);
+  if (!isSpy && data.rrs) {
+    const rrsLower = data.rrs.toLowerCase();
+    const rrsCls = rrsLower.includes('positive') ? 'good' : rrsLower.includes('negative') ? 'bad' : 'neutral';
+    html += row('RRS', data.rrs, rrsCls);
+  }
+  if (data.oneOP) html += row('1OP', data.oneOP);
+  if (data.volume) {
+    const vLower = data.volume.toLowerCase();
+    const vCls = vLower === 'good' || vLower === 'heavy' ? 'good' : vLower === 'light' ? 'bad' : 'neutral';
+    html += row('Volume', data.volume, vCls);
+  }
+  return html;
+}
+
+async function callTradeAnalysis() {
+  const apiKey = getAnthropicKey();
+  if (!apiKey) { renderPage4(); return; }
+
+  const ticker = (document.getElementById('p4-ticker').value.trim().toUpperCase()) || 'the stock';
+  const docs   = getMarketDocs();
+
+  const systemPrompt =
+`You are an intraday day trader who follows the OneOption trading framework EXCLUSIVELY.
+
+Your ONLY source of trading rules is the chapter knowledge below. Do NOT apply general trading knowledge, personal judgment, or any framework outside of what is written in the chapter knowledge. Every conclusion — LONG, SHORT, or NO TRADE — must be traceable to a specific rule or concept from the chapter knowledge. If the charts do not clearly satisfy the rules, the answer is NO TRADE.
+
+${docs}
+
+ANALYSIS HIERARCHY (apply strictly per chapter knowledge rules):
+1. Stock D1 — directional bias filter: LONG only if chapter rules confirm uptrend, SHORT only if downtrend
+2. SPY D1 — overall market context and key S/R levels per chapter rules
+3. SPY M5 — intraday direction: lean long if chapter rules confirm uptrend, short if downtrend
+4. Stock M5 — PRIMARY signal: final entry decision per chapter rules
+
+CRITICAL: Every element of your analysis (trend, S/R, 1OP cycle, volume, RRS) must reference the specific chapter rule you are applying. If a chart is ambiguous or rules conflict, say so and default to NO TRADE.
+
+You MUST begin your response with a JSON block in EXACTLY this format (no extra fields, no comments):
+\`\`\`json
+{
+  "stockM5":  { "price": "$X", "support": "$X", "resistance": "$X", "rrs": "positive/negative/neutral + increasing/decreasing", "oneOP": "description", "volume": "good/light/heavy" },
+  "stockD1":  { "price": "$X", "support": "$X", "resistance": "$X", "rrs": "positive/negative/neutral + increasing/decreasing", "oneOP": "description", "volume": "good/light/heavy" },
+  "spyM5":    { "price": "$X", "support": "$X", "resistance": "$X", "oneOP": "description", "volume": "good/light/heavy" },
+  "spyD1":    { "price": "$X", "support": "$X", "resistance": "$X", "oneOP": "description", "volume": "good/light/heavy" },
+  "verdict":    "LONG",
+  "confidence": "High"
+}
+\`\`\`
+verdict must be exactly one of: LONG, SHORT, NO TRADE
+confidence must be exactly one of: High, Medium, Low
+
+After the JSON block, provide your full chapter-referenced reasoning as plain text.`;
+
+  const content = [];
+  if (analysisImages.stockM5) { content.push(p4ImageBlock(analysisImages.stockM5)); content.push({ type: 'text', text: `${ticker} M5 chart (5-minute) — THIS IS THE PRIMARY SIGNAL` }); }
+  if (analysisImages.spyM5)   { content.push(p4ImageBlock(analysisImages.spyM5));   content.push({ type: 'text', text: 'SPY M5 chart (5-minute) — intraday market direction' }); }
+  if (analysisImages.stockD1) { content.push(p4ImageBlock(analysisImages.stockD1)); content.push({ type: 'text', text: `${ticker} D1 chart (daily) — directional bias filter` }); }
+  if (analysisImages.spyD1)   { content.push(p4ImageBlock(analysisImages.spyD1));   content.push({ type: 'text', text: 'SPY D1 chart (daily) — overall market context' }); }
+  content.push({ type: 'text', text: 'Provide your JSON analysis block then your full chapter-referenced reasoning.' });
+
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'content-type': 'application/json',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 2000,
+      system: systemPrompt,
+      messages: [{ role: 'user', content }],
+    }),
+  });
+
+  if (!res.ok) {
+    const errJson = await res.json().catch(() => ({}));
+    throw new Error(`Claude API ${res.status}: ${errJson.error?.message || ''}`);
+  }
+  const json  = await res.json();
+  return json.content[0].text;
+}
+
+function p4RenderResult(responseText) {
+  // Extract JSON block
+  const jsonMatch = responseText.match(/```json\s*([\s\S]+?)\s*```/);
+  let parsed = null;
+  let reasoning = responseText;
+  if (jsonMatch) {
+    try {
+      parsed = JSON.parse(jsonMatch[1]);
+      reasoning = responseText.slice(responseText.indexOf('```json'));
+      // remove the json block from reasoning display
+      reasoning = responseText.replace(/```json[\s\S]+?```/, '').trim();
+    } catch (_) {}
+  }
+
+  if (parsed) {
+    ['stockM5', 'spyM5', 'stockD1', 'spyD1'].forEach(key => {
+      if (!parsed[key]) return;
+      const sb = document.getElementById('sb-' + key);
+      sb.innerHTML = p4SidebarHtml(key, parsed[key]);
+      sb.classList.add('populated');
+    });
+
+    // Verdict chip
+    const verdict    = (parsed.verdict || 'NO TRADE').trim().toUpperCase();
+    const confidence = parsed.confidence || '';
+    const chip       = document.getElementById('verdict-chip');
+    chip.textContent = verdict;
+    chip.className   = 'verdict-chip ' + (verdict === 'LONG' ? 'long' : verdict === 'SHORT' ? 'short' : 'no-trade');
+    document.getElementById('verdict-confidence').textContent = confidence ? `Confidence: ${confidence}` : '';
+  }
+
+  document.getElementById('analysis-reasoning').textContent = reasoning;
+  document.getElementById('analysis-result').style.display = '';
+}
+
+function renderPage4() {
+  const keyRow = document.getElementById('p4-key-row');
+  if (!getAnthropicKey()) {
+    keyRow.style.display = '';
+  } else {
+    keyRow.style.display = 'none';
+  }
+}
+
+document.getElementById('p4-key-save-btn').addEventListener('click', () => {
+  const val = document.getElementById('p4-key-input').value.trim();
+  if (!val) return;
+  localStorage.setItem(ANTHROPIC_KEY_STORAGE, val);
+  document.getElementById('p4-key-input').value = '';
+  renderPage4();
+});
+
+document.getElementById('analyze-btn').addEventListener('click', async () => {
+  const btn     = document.getElementById('analyze-btn');
+  const spinner = document.getElementById('analyze-spinner');
+  btn.disabled     = true;
+  spinner.style.display = '';
+  document.getElementById('analysis-result').style.display = 'none';
+  try {
+    const text = await callTradeAnalysis();
+    p4RenderResult(text);
+  } catch (err) {
+    document.getElementById('analysis-reasoning').textContent = `Error: ${err.message}`;
+    document.getElementById('verdict-chip').textContent = '';
+    document.getElementById('verdict-confidence').textContent = '';
+    document.getElementById('analysis-result').style.display = '';
+  } finally {
+    spinner.style.display = 'none';
+    btn.disabled = !analysisImages.stockM5;
+  }
+});
+
+// Hook page-4 nav button
+document.querySelectorAll('.nav-btn[data-page]').forEach(btn => {
+  if (btn.dataset.page === 'page-4') {
+    btn.addEventListener('click', renderPage4);
   }
 });
 
