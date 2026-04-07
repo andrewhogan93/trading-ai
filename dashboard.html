@@ -3981,7 +3981,7 @@ function p4RenderResult(responseText, meta) {
     metaEl.style.display = 'none';
   }
 
-  document.getElementById('analysis-result').style.display = '';
+  document.getElementById('analysis-result').style.display = 'block';
 }
 
 function renderPage4() {
@@ -4016,7 +4016,7 @@ document.getElementById('analyze-btn').addEventListener('click', async () => {
     document.getElementById('verdict-chip').textContent = '';
     document.getElementById('verdict-confidence').textContent = '';
     document.getElementById('analysis-meta').style.display = 'none';
-    document.getElementById('analysis-result').style.display = '';
+    document.getElementById('analysis-result').style.display = 'block';
   } finally {
     spinner.style.display = 'none';
     btn.disabled = !analysisImages.stockM5;
