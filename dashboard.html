@@ -437,7 +437,7 @@
       background: var(--bg2);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      width: 90vw; max-width: 900px;
+      width: 95vw; max-width: 1300px;
       display: flex; flex-direction: column;
     }
     #chart-container {
@@ -447,12 +447,12 @@
     }
     #chart-main {
       flex: 3;
-      height: 400px;
+      height: 540px;
       min-width: 0;
     }
     #chart-spy {
       flex: 2;
-      height: 400px;
+      height: 540px;
       min-width: 0;
       position: relative;
     }
@@ -1021,6 +1021,7 @@
           <th data-key="holdMs">Hold Time <span class="sort-icon">↕</span></th>
           <th class="rule-col-hdr" title="SPY Rule: Long only when SPY up; Short only when SPY down">SPY</th>
           <th class="rule-col-hdr" title="VWAP Rule: Long only above VWAP M5; Short only below VWAP M5">VWAP</th>
+          <th class="walkaway-hdr" title="Maximum Adverse Excursion: worst unrealised loss % vs avg entry during the hold (open chart to compute)">MAE</th>
           <th class="walkaway-hdr" title="Walk-away: additional % return if held 5 more minutes">+5m</th>
           <th class="walkaway-hdr" title="Walk-away: additional % return if held 15 more minutes">+15m</th>
           <th class="walkaway-hdr" title="Walk-away: additional % return if held 30 more minutes">+30m</th>
@@ -1923,7 +1924,7 @@ function renderTable(trades, sortKey, sortDir) {
 
   const tbody = document.getElementById('t-body');
   if (!trades.length) {
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="21">No trades match the current filters.</td></tr>';
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="22">No trades match the current filters.</td></tr>';
     return;
   }
 
@@ -1964,6 +1965,12 @@ function renderTable(trades, sortKey, sortDir) {
       const sign = v >= 0 ? '+' : '';
       return `<td class="walkaway-cell ${cls}">${sign}${v.toFixed(2)}%</td>`;
     };
+    const maeCell = () => {
+      if (!rc || rc.mae == null) return '<td class="walkaway-cell wa-na">—</td>';
+      const v = rc.mae;
+      const style = v > 10 ? 'color:var(--red)' : v > 5 ? 'color:var(--yellow)' : 'color:var(--muted)';
+      return `<td class="walkaway-cell" style="${style}">−${v.toFixed(2)}%</td>`;
+    };
 
     return `<tr data-fp="${fp}">
       <td>${statusBadge}</td>
@@ -1982,6 +1989,7 @@ function renderTable(trades, sortKey, sortDir) {
       <td>${holdDisp}</td>
       ${ruleCell(rc ? rc.spy  : null)}
       ${ruleCell(rc ? rc.vwap : null)}
+      ${maeCell()}
       ${walkCell('w5')}
       ${walkCell('w15')}
       ${walkCell('w30')}
@@ -2760,9 +2768,9 @@ function loadRulesCache() {
   try { return JSON.parse(localStorage.getItem(RULES_CACHE_KEY)) || {}; }
   catch { return {}; }
 }
-function saveRuleResult(fp, spy, vwap, walkaway) {
+function saveRuleResult(fp, spy, vwap, walkaway, mae) {
   const cache = loadRulesCache();
-  cache[fp] = { spy, vwap, ...walkaway };
+  cache[fp] = { spy, vwap, ...walkaway, mae };
   localStorage.setItem(RULES_CACHE_KEY, JSON.stringify(cache));
   scheduleGithubSave();
 }
@@ -3136,7 +3144,7 @@ function fetchAndRenderChart(trade, apiKey) {
     const walkaway = computeWalkaway(m5CloseCandles, closeSec, trade);
 
     // Persist results so the table columns can show them without re-fetching
-    saveRuleResult(trade._fp, spyFollowed, vwapFollowed, walkaway);
+    saveRuleResult(trade._fp, spyFollowed, vwapFollowed, walkaway, maePct);
     refresh();
 
     // MAE panel section
