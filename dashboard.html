@@ -3037,6 +3037,20 @@ function fetchAndRenderChart(trade, apiKey) {
                           shape: 'arrowUp',   text: 'Exit' });
     }
 
+    // MAE (Maximum Adverse Excursion) — worst price reached during the hold
+    const holdCandles = mainCandles.filter(c => c.time >= openSec && c.time <= closeSec);
+    let maePrice = null;
+    let maePct   = null;
+    if (holdCandles.length && trade.avgEntryPrice) {
+      if (trade.side === 'Long') {
+        maePrice = Math.min(...holdCandles.map(c => c.low));
+        maePct   = (trade.avgEntryPrice - maePrice) / trade.avgEntryPrice * 100;
+      } else {
+        maePrice = Math.max(...holdCandles.map(c => c.high));
+        maePct   = (maePrice - trade.avgEntryPrice) / trade.avgEntryPrice * 100;
+      }
+    }
+
     // VWAP for main chart (M5 cumulative, resets each day)
     const openDateEST = new Date(openSec * 1000).toLocaleDateString('en-US', { timeZone: 'America/New_York' });
     const vwapData    = m5Candles ? computeDayVwap(m5Candles, openDateEST) : [];
@@ -3046,6 +3060,20 @@ function fetchAndRenderChart(trade, apiKey) {
     if (span !== 'day') {
       addDayLines(chartInstance,    mainContainer, mainCandles);
       addDayLines(spyChartInstance, spyContainer,  spyCandles);
+    }
+
+    // Dashed red horizontal line on the main chart at the MAE price
+    if (maePrice !== null && holdCandles.length >= 2) {
+      const maeSeries = chartInstance.addLineSeries({
+        color: 'rgba(248,113,113,0.5)',
+        lineWidth: 1,
+        lineStyle: 2,
+        priceLineVisible: false,
+        lastValueVisible: false,
+        crosshairMarkerVisible: false,
+        title: `MAE −${maePct.toFixed(2)}%`,
+      });
+      maeSeries.setData(holdCandles.map(c => ({ time: c.time, value: maePrice })));
     }
 
     // ── Rule panel ──────────────────────────────────────────────
@@ -3111,6 +3139,17 @@ function fetchAndRenderChart(trade, apiKey) {
     saveRuleResult(trade._fp, spyFollowed, vwapFollowed, walkaway);
     refresh();
 
+    // MAE panel section
+    let maeHtml = '<div class="rule-trade-note">No data</div>';
+    if (maePrice !== null) {
+      const severity = maePct > 10 ? 'var(--red)' : maePct > 5 ? 'var(--yellow)' : 'var(--muted)';
+      const arrow    = trade.side === 'Long' ? '↓' : '↑';
+      maeHtml = `
+        <div class="rule-spy-pct" style="color:${severity}">−${maePct.toFixed(2)}%</div>
+        <div class="rule-trade-note">${arrow} $${fmtPrice(maePrice)}</div>
+      `;
+    }
+
     ruleEl.innerHTML = `
       <div class="rule-heading">Rules</div>
       <div class="rule-section-lbl">SPY</div>
@@ -3118,6 +3157,9 @@ function fetchAndRenderChart(trade, apiKey) {
       <div class="rule-divider"></div>
       <div class="rule-section-lbl">VWAP M5</div>
       ${vwapHtml}
+      <div class="rule-divider"></div>
+      <div class="rule-section-lbl">MAX LOSS</div>
+      ${maeHtml}
     `;
 
     showChartStatus('', false);
