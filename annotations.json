@@ -1,5 +1,9 @@
 {
-  "setups": {},
+  "setups": {
+    "CLRO|1795014029000|1795014061000|Long|1": [
+      "explosion alert"
+    ]
+  },
   "rulesCache": {
     "GOOG|1774374728000|1774377286000|Short|2": {
       "spy": false,
