@@ -2,6 +2,9 @@
   "setups": {
     "CLRO|1795014029000|1795014061000|Long|1": [
       "explosion alert"
+    ],
+    "UNH|1795102675000|1795103334000|Short|10": [
+      "Added"
     ]
   },
   "rulesCache": {
