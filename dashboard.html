@@ -1512,7 +1512,9 @@ function parseTradeHistorySection(rawText) {
 
     const action    = side === 'BUY' ? 'BOT' : 'SOLD';
     const signedQty = side === 'BUY' ? `+${qty}` : `-${qty}`;
-    const amount    = side === 'BUY' ? -(qty * price) : (qty * price);
+    // Option fills are per-share prices on 100-share contracts (Cash Balance AMOUNT includes ×100)
+    const mult      = (!exp || typeStr === 'STOCK') ? 1 : 100;
+    const amount    = side === 'BUY' ? -(qty * price * mult) : (qty * price * mult);
 
     // Synthesise a description that matches STOCK_RE or OPTION_RE
     let description;
@@ -1624,16 +1626,18 @@ function buildPositionKey(leg) {
   return leg.symbol;
 }
 
-function optInfo(od) {
-  return od ? { expiry: od.expiry.getTime(), strike: od.strike, type: od.type } : null;
+function cmpStr(a, b) {
+  a = String(a || ''); b = String(b || '');
+  return (a.length - b.length) || (a < b ? -1 : a > b ? 1 : 0);
 }
 
-function matchTrades(legs, seedLegs = [], asOf = null) {
-  // Parse descriptions and keep only valid, recognised legs.
-  // seedLegs are synthetic opening legs rebuilt from positions that were still open after
-  // earlier imports (see openTradeToSeedLeg). They are already parsed, so skip the regex step.
-  const valid = [...seedLegs, ...legs].filter(l => l._seeded || parseLegDescription(l));
-  valid.sort((a, b) => a.datetime - b.datetime);
+// legs: every stored fill (all imports). asOf: last day covered by any imported statement.
+// The result depends ONLY on the set of legs (never on import order), because ties on the
+// same second are broken deterministically by Schwab REF # and then description.
+function matchTrades(legs, asOf = null) {
+  // Parse descriptions and keep only valid, recognised legs
+  const valid = legs.filter(l => parseLegDescription(l));
+  valid.sort((a, b) => (a.datetime - b.datetime) || cmpStr(a.ref, b.ref) || cmpStr(a.description, b.description));
 
   // Each queue entry tracks the position lifecycle for a symbol.
   // tradeGroupId is assigned when the position opens (queue goes empty→non-empty)
@@ -1689,7 +1693,6 @@ function matchTrades(legs, seedLegs = [], asOf = null) {
         openerMiscFees:     opener.leg.miscFees    * oProp,
         closerCommissions:  leg.commissions        * cProp,
         closerMiscFees:     leg.miscFees           * cProp,
-        opt:                optInfo(opener.leg.optionDetails),
       });
 
       opener.remaining -= fill;
@@ -1716,11 +1719,11 @@ function matchTrades(legs, seedLegs = [], asOf = null) {
   // When a short (or long) option expires worthless, Schwab generates no closing
   // transaction. Synthesise a close at $0 on the expiry date so the trade appears
   // in the table rather than as a phantom open position.
-  // "Expired" is judged as of the last day this statement covers (asOf), not today's date.
-  // Otherwise importing an old statement today would book an option as expiring worthless even
-  // when a LATER statement shows it was bought back early — and that buyback would then have
-  // nothing to close against. An option still open past expiry stays open until a statement
-  // covering the expiry date is imported.
+  // "Expired" is judged as of the last day covered by the imported statements (asOf), capped
+  // at today — not merely because today's date is past expiry. Otherwise importing an old
+  // statement now would book an option as expiring worthless even though a later statement
+  // shows it was bought back early. An option still open past expiry stays open until a
+  // statement covering a day after its expiry has been imported.
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const sweepBefore = asOf && asOf < today ? asOf : today;
@@ -1756,8 +1759,6 @@ function matchTrades(legs, seedLegs = [], asOf = null) {
         openerMiscFees:     leg.miscFees    * prop,
         closerCommissions:  0,
         closerMiscFees:     0,
-        autoExpired:        true,
-        opt:                optInfo(leg.optionDetails),
       });
 
       item.remaining = 0; // remove from open positions
@@ -1771,12 +1772,8 @@ function matchTrades(legs, seedLegs = [], asOf = null) {
       if (item.remaining <= 0) continue;
       const leg = item.leg;
       const fp  = `open|${leg.symbol}|${leg.datetime.getTime()}|${leg.action}|${item.remaining}`;
-      const od  = leg.optionDetails;
       openTrades.push({
-        _fp: fp, _isOpen: true,
-        // Kept so a later statement's closing leg can be matched against this position
-        _opt:  optInfo(od),
-        _fees: (leg.commissions + leg.miscFees) * (item.remaining / leg.qty),
+        _fp: fp, _isOpen: true, _derived: true,
         status: 'Open',
         symbol: leg.symbol,
         type:   leg.isOption ? 'Option' : 'Stock',
@@ -1793,40 +1790,6 @@ function matchTrades(legs, seedLegs = [], asOf = null) {
   }
 
   return { closedTrades: mergeSubs(subTrades), openTrades };
-}
-
-// Rebuild an opening leg from a position that is still open from an earlier import,
-// so a closing fill in a LATER statement has something to match against.
-// Returns null when the contract can't be reconstructed (legacy option rows saved
-// before _opt existed) — those are left untouched as open trades.
-function openTradeToSeedLeg(t) {
-  if (!t || !t._isOpen || !t.openDate || !t.symbol || !(t.size > 0) || !(t.avgEntryPrice > 0)) return null;
-  const isOpt = t.type === 'Option';
-  if (isOpt && !(t._opt && t._opt.expiry)) return null;
-  const action = t.side === 'Long' ? 'BOT' : 'SOLD';
-  const cost   = t.avgEntryPrice * t.size * (isOpt ? 100 : 1);
-  return {
-    _seeded: true, ref: '',
-    dateStr: '', timeStr: '',
-    date: new Date(t.openDate.getFullYear(), t.openDate.getMonth(), t.openDate.getDate()),
-    datetime: t.openDate,
-    description: `(carried open) ${action} ${t.size} ${t.symbol}`,
-    amount: action === 'BOT' ? -cost : cost,
-    miscFees: 0, commissions: t._fees || 0,
-    action, symbol: t.symbol, qty: t.size, price: t.avgEntryPrice,
-    isOption: isOpt,
-    optionDetails: isOpt ? { expiry: new Date(t._opt.expiry), strike: t._opt.strike, type: t._opt.type } : null,
-  };
-}
-
-// True for trades that were auto-closed at $0 on the expiry date (not a real fill).
-// Older saved data has no flag, so also recognise the signature: option, exit exactly 0,
-// closed at exactly 16:00:00.
-function isAutoExpired(t) {
-  if (t._autoExpired) return true;
-  const c = t.closeDate;
-  return t.type === 'Option' && t.avgExitPrice === 0 && c instanceof Date &&
-         c.getHours() === 16 && c.getMinutes() === 0 && c.getSeconds() === 0;
 }
 
 function mergeSubs(subs) {
@@ -1864,10 +1827,8 @@ function mergeSubs(subs) {
     const side = group[0].side;
     const fp   = `${sym}|${openDt.getTime()}|${closeDt.getTime()}|${side}|${totalQty}`;
     trades.push({
-      _fp: fp,
+      _fp: fp, _derived: true,
       status, symbol: sym,
-      _autoExpired: group.every(x => x.autoExpired) || undefined,
-      _opt: group[0].opt || null,
       type:   group[0].isOption ? 'Option' : 'Stock',
       side,
       openDate: openDt, closeDate: closeDt,
@@ -2068,6 +2029,8 @@ function renderOpenBanner(openTrades) {
 const state = {
   allTrades:  [],
   openTrades: [],   // unmatched / still-active positions
+  legs: [],         // every imported fill (deduped). null = data saved by the old import engine
+  deleted: [],      // fingerprints of trades the user deleted (so a rebuild doesn't resurrect them)
   startBalance: 0,
   minDate: null,
   maxDate: null,
@@ -2154,6 +2117,8 @@ function saveToStorage() {
       openDate:  serDate(t.openDate),
       closeDate: serDate(t.closeDate),
     })),
+    legs: state.legs,
+    deleted: state.deleted,
     startBalance: state.startBalance,
     minDate: state.minDate ? state.minDate.getTime() : null,
     maxDate: state.maxDate ? state.maxDate.getTime() : null,
@@ -2185,6 +2150,10 @@ function loadFromStorage() {
       openDate:  restoreDate(t.openDate),
       closeDate: restoreDate(t.closeDate),
     }));
+    // Old saves have trades but no stored fills -> null marks "legacy" (see loadCSV)
+    state.legs = Array.isArray(payload.legs) ? payload.legs
+               : ((payload.trades || []).length || (payload.openTrades || []).length ? null : []);
+    state.deleted = Array.isArray(payload.deleted) ? payload.deleted : [];
     state.startBalance = payload.startBalance || 0;
     state.minDate = payload.minDate ? new Date(payload.minDate) : null;
     state.maxDate = payload.maxDate ? new Date(payload.maxDate) : null;
@@ -2251,108 +2220,131 @@ function updatePeriodLabel() {
   document.getElementById('period-label-2').textContent = txt;
 }
 
+// ================================================================
+//  FILL STORE + REBUILD
+//  Every imported fill is stored (deduped). All trades are re-derived from the COMPLETE set
+//  of stored fills on every import, so the result depends only on which fills you have
+//  imported — not on import order, overlap, or re-uploads. Exits in a later statement always
+//  find their opening fill, and nothing is ever matched against partial information.
+// ================================================================
+function legToRecord(l) {
+  return { r: l.ref || '', ms: l.datetime.getTime(), d: l.description,
+           a: l.amount, mf: l.miscFees || 0, c: l.commissions || 0 };
+}
+
+function recordToLeg(r) {
+  const dt = new Date(r.ms);
+  return {
+    ref: r.r, dateStr: '', timeStr: '',
+    date: new Date(dt.getFullYear(), dt.getMonth(), dt.getDate()),
+    datetime: dt, description: r.d,
+    amount: r.a, miscFees: r.mf, commissions: r.c,
+    action: null, symbol: null, qty: 0, price: 0, isOption: false, optionDetails: null,
+  };
+}
+
+// Dedupe: a fill with a Schwab REF # is identified by it. A fill without one (synthesised from
+// "Account Trade History" in a mid-session export) is identified by its timestamp, and is
+// superseded by the real Cash Balance row for the same fill when that arrives later.
+function mergeLegRecords(existing, incoming) {
+  const out   = existing.slice();
+  const refs  = new Set(out.filter(x => x.r).map(x => x.r));
+  const times = new Set(out.map(x => x.ms));
+  for (const r of incoming) {
+    if (r.r) {
+      if (refs.has(r.r)) continue;
+      const j = out.findIndex(x => !x.r && x.ms === r.ms);
+      if (j >= 0) out[j] = r; else out.push(r);
+      refs.add(r.r); times.add(r.ms);
+    } else {
+      if (times.has(r.ms)) continue;
+      out.push(r); times.add(r.ms);
+    }
+  }
+  return out;
+}
+
+// Stable identity for a position (symbol, side, time of its first fill), used to carry setups
+// tags when later fills change a trade's fingerprint — including open -> closed.
+function lcKey(t) { return `${t.symbol}|${t.side}|${t.openDate.getTime()}`; }
+
+function rebuildFromLegs() {
+  const legs = state.legs.map(recordToLeg);
+  const asOf = state.maxDate
+    ? new Date(state.maxDate.getFullYear(), state.maxDate.getMonth(), state.maxDate.getDate())
+    : null;
+  const { closedTrades, openTrades } = matchTrades(legs, asOf);
+
+  const deleted = new Set(state.deleted || []);
+  const oldAll  = [...state.allTrades, ...state.openTrades];
+  const oldByFp = new Map(oldAll.map(t => [t._fp, t]));
+  const oldSetups = new Map();
+  for (const t of oldAll) {
+    if (t._derived && t.openDate && t.setups && t.setups.length) {
+      oldSetups.set(lcKey(t), t.setups);
+    }
+  }
+
+  // A position the user closed by hand in the edit modal keeps its open| fingerprint. Keep that
+  // row for as long as the position is still open in the fills; once a real closing fill
+  // arrives, the real trade replaces it.
+  const freshOpenFps = new Set(openTrades.map(t => t._fp));
+  const manualClosed = state.allTrades.filter(t => t._fp.startsWith('open|') && freshOpenFps.has(t._fp));
+  const manualFps    = new Set(manualClosed.map(t => t._fp));
+
+  // Trades are always re-derived from the fills, so numbers can never go stale. Two things are
+  // carried over from the previous version of a trade: (1) a trade the user hand-edited
+  // (_edited) is kept as-is while its fingerprint is unchanged; (2) setups tags, matched by
+  // fingerprint, or by lifecycle when later fills changed the fingerprint.
+  const adopt = (fresh, kind) => {
+    const old = oldByFp.get(fresh._fp);
+    const sameKind = old && !!old._isOpen === (kind === 'o');
+    if (sameKind && old._edited) return old;
+    const setups = (sameKind && old.setups && old.setups.length) ? old.setups
+                 : oldSetups.get(lcKey(fresh));
+    return setups ? { ...fresh, setups } : fresh;
+  };
+
+  state.allTrades = [
+    ...closedTrades.filter(t => !deleted.has(t._fp)).map(t => adopt(t, 'c')),
+    ...manualClosed,
+  ].sort((a, b) => a.openDate - b.openDate);
+  state.openTrades = openTrades
+    .filter(t => !deleted.has(t._fp) && !manualFps.has(t._fp))
+    .map(t => adopt(t, 'o'));
+}
+
 function loadCSV(text) {
   try {
     const { startBalance, legs, minDate, maxDate } = parseCashBalanceSection(text);
     supplementFromTradeHistory(text, legs);
     if (!legs.length) throw new Error('No trade rows found in the Cash Balance section.');
 
-    // Positions still open from earlier imports whose opening fill is NOT in this CSV's date
-    // range are carried in as seed legs, so an exit in this statement closes them instead of
-    // creating a phantom opposite-side open trade. Open trades dated inside this CSV's range
-    // are dropped and regenerated from the CSV itself (it contains their opening fills).
-    const rangeStart = new Date(minDate); rangeStart.setHours(0, 0, 0, 0);
-    const rangeEnd   = new Date(maxDate); rangeEnd.setHours(23, 59, 59, 999);
-    const seedLegs = [], unseedable = [];
-    for (const t of state.openTrades) {
-      if (t.openDate && t.openDate >= rangeStart && t.openDate <= rangeEnd) continue;
-      const seed = openTradeToSeedLeg(t);
-      if (seed) seedLegs.push(seed); else unseedable.push(t);
+    // Data saved by the previous import engine has no stored fills, so it can't be rebuilt and
+    // may contain phantom open positions. Rebuild from the CSVs instead of merging into it.
+    if (state.legs === null) {
+      const ok = confirm(
+        'Your saved trades were created by the previous import engine and may include phantom ' +
+        'open positions. The dashboard needs to rebuild them from your statements.\n\n' +
+        'OK = clear the saved trades and import this file (then upload your other statements, ' +
+        'oldest first or any order). Manual edits to trades will be lost; setups tags re-apply ' +
+        'from GitHub sync.\n\nCancel = leave everything as it is.');
+      if (!ok) return;
+      state.allTrades = []; state.openTrades = [];
+      state.legs = []; state.deleted = [];
+      state.startBalance = 0; state.minDate = null; state.maxDate = null;
     }
 
-    const asOf = new Date(maxDate); asOf.setHours(0, 0, 0, 0);
-    const { closedTrades, openTrades } = matchTrades(legs, seedLegs, asOf);
+    state.legs = mergeLegRecords(state.legs, legs.filter(l => l.datetime).map(legToRecord));
 
-    // Earlier imports booked options as "expired worthless" using today's date. If this CSV
-    // re-contains the opening fill and no longer expires it (statement ends before expiry),
-    // drop the stale auto-expired row so the position can be closed by a later statement.
-    const regenerated = new Set(closedTrades.map(fingerprintTrade));
-    state.allTrades = state.allTrades.filter(t =>
-      !(isAutoExpired(t) && t.openDate >= rangeStart && t.openDate <= rangeEnd &&
-        !regenerated.has(fingerprintTrade(t)) && !(t.setups && t.setups.length))
-    );
-
-    // Merge: keep existing trades, add only new ones (dedup by fingerprint).
-    // Also patch openDate/closeDate/holdMs on existing trades from the fresh parse
-    // so re-uploading the CSV automatically repairs any previously mis-parsed times.
-    const freshByFp = new Map(closedTrades.map(t => [fingerprintTrade(t), t]));
-
-    // Fuzzy fallback: match by symbol + open-day + side when the exact _fp doesn't match.
-    // This handles the case where stale localStorage data has wrong timestamps baked into _fp.
-    // Collisions (two trades, same symbol+day+side) are detected and excluded from fuzzy matching.
-    const freshByDay = new Map();
-    for (const t of closedTrades) {
-      const dayKey = `${t.symbol}|${t.openDate.toDateString()}|${t.side}`;
-      freshByDay.set(dayKey, freshByDay.has(dayKey) ? null : t); // null = collision
-    }
-
-    const existingFps = new Set(state.allTrades.map(fingerprintTrade));
-    state.allTrades = state.allTrades.map(existing => {
-      let fresh = freshByFp.get(fingerprintTrade(existing));
-      if (!fresh) {
-        const dayKey = `${existing.symbol}|${existing.openDate.toDateString()}|${existing.side}`;
-        fresh = freshByDay.get(dayKey) || null;
-        // Only repair when it is plausibly the SAME trade: same size, and the candidate isn't
-        // already a trade we hold. Without this, a position closed in pieces across statements
-        // (same symbol/day/side) got overwritten by its own later close and one trade vanished.
-        if (fresh && (fresh.size !== existing.size || existingFps.has(fresh._fp))) fresh = null;
-      }
-      if (!fresh) return existing;
-      // Carry over correct timing + updated _fp; preserve user-added metadata (setups, etc.)
-      return { ...existing, _fp: fresh._fp, openDate: fresh.openDate, closeDate: fresh.closeDate, holdMs: fresh.holdMs };
-    });
-    const priorClosed = state.allTrades; // trades held BEFORE this import (for isReplayedExit)
-    const seen  = new Set(state.allTrades.map(fingerprintTrade));
-    const added = closedTrades.filter(t => !seen.has(fingerprintTrade(t)));
-    state.allTrades = [...state.allTrades, ...added]
-      .sort((a, b) => a.openDate - b.openDate);
-
-    // Re-importing a statement whose exit was already matched to a position that has since
-    // been closed would recreate the opposite-side phantom. A "new" open trade that sits inside
-    // the lifetime of an existing closed trade on the same contract, on the OPPOSITE side, is
-    // that closing fill again — skip it. (Options need contract info; legacy rows without it
-    // are never hidden.)
-    const prevOpenFps = new Set(state.openTrades.map(t => t._fp));
-    const sameContract = (o, c) => {
-      if (o.type !== c.type || o.symbol !== c.symbol) return false;
-      if (o.type !== 'Option') return true;
-      return !!(o._opt && c._opt && o._opt.expiry === c._opt.expiry &&
-                o._opt.strike === c._opt.strike && o._opt.type === c._opt.type);
-    };
-    const isReplayedExit = o => !prevOpenFps.has(o._fp) && priorClosed.some(c =>
-      c.side !== o.side && c.closeDate && sameContract(o, c) &&
-      c.openDate <= o.openDate && o.openDate <= c.closeDate);
-
-    // Open trades = legacy rows we couldn't re-match + everything still open after matching
-    // (this includes carried-in positions that this CSV did not close). Keep any user metadata
-    // (setups etc.) on rows whose fingerprint is unchanged, and skip positions the user already
-    // closed by hand in the edit modal (their _fp is retained on the closed row).
-    const oldOpenByFp = new Map(state.openTrades.map(t => [t._fp, t]));
-    const manuallyClosed = new Set(state.allTrades.map(t => t._fp));
-    state.openTrades = [
-      ...unseedable,
-      ...openTrades
-        .filter(t => !manuallyClosed.has(t._fp) && !isReplayedExit(t))
-        .map(t => oldOpenByFp.has(t._fp) ? { ...oldOpenByFp.get(t._fp), ...t } : t),
-    ];
-
-    // Keep earliest start balance
+    // Keep earliest start balance; track the span covered by imported statements
     if (!state.startBalance || (minDate && state.minDate && minDate < state.minDate)) {
       state.startBalance = startBalance;
     }
     if (!state.minDate || minDate < state.minDate) state.minDate = minDate;
     if (!state.maxDate || maxDate > state.maxDate) state.maxDate = maxDate;
 
+    rebuildFromLegs();
     saveToStorage();
     showDashboard();
   } catch (err) {
@@ -2441,6 +2433,7 @@ document.getElementById('clear-btn').addEventListener('click', () => {
   if (!confirm('Clear all saved trade data? This cannot be undone.')) return;
   clearStorage();
   state.allTrades = []; state.openTrades = []; state.startBalance = 0;
+  state.legs = []; state.deleted = [];
   state.minDate = null; state.maxDate = null;
   state.filters = { dateFrom: '', dateTo: '', type: 'All', side: 'All', statuses: new Set(['Win','Loss','Breakeven']) };
   state.sortKey = 'openDate'; state.sortDir = 'desc';
@@ -3377,6 +3370,7 @@ function deleteTradeFromModal() {
   if (!confirm(`Delete ${t.symbol} trade from the dashboard? This cannot be undone.`)) return;
   state.allTrades  = state.allTrades.filter(x => x._fp !== t._fp);
   state.openTrades = state.openTrades.filter(x => x._fp !== t._fp);
+  state.deleted    = [...new Set([...(state.deleted || []), t._fp])];
   saveToStorage();
   scheduleGithubSave();
   closeEditModal();
@@ -3393,12 +3387,18 @@ function saveEditModal() {
   const exitVal  = parseFloat(document.getElementById('m-exit').value);
   const sizeVal  = parseInt(document.getElementById('m-size').value);
 
-  if (openVal) {
+  // Snapshot so we can tell a real edit from just adding a setups tag.
+  const sig = () => [t.openDate && t.openDate.getTime(), t.closeDate && t.closeDate.getTime(),
+                     t.side, t.avgEntryPrice, t.avgExitPrice, t.size].join('|');
+  const sigBefore = sig();
+
+  // Only touch a date when the user changed the DAY (re-saving used to truncate it to the hour).
+  if (openVal && (!t.openDate || openVal !== toDateInputVal(t.openDate))) {
     const [y, m, d] = openVal.split('-').map(Number);
     const h = t.openDate ? t.openDate.getHours() : 9;
     t.openDate = new Date(y, m - 1, d, h);
   }
-  if (closeVal) {
+  if (closeVal && (!t.closeDate || closeVal !== toDateInputVal(t.closeDate))) {
     const [y, m, d] = closeVal.split('-').map(Number);
     const h = t.closeDate ? t.closeDate.getHours() : 16;
     t.closeDate = new Date(y, m - 1, d, h);
@@ -3409,6 +3409,8 @@ function saveEditModal() {
   if (!isNaN(entryVal) && entryVal > 0) t.avgEntryPrice = entryVal;
   if (!isNaN(exitVal) && exitVal >= 0) t.avgExitPrice = exitVal;
   if (!isNaN(sizeVal) && sizeVal > 0) t.size = sizeVal;
+  const edited = sig() !== sigBefore;
+  if (edited) t._edited = true;   // rebuilds keep hand-edited trades as the user left them
 
   // When an open trade gets a close date + exit price, compute P&L and move it to allTrades
   if (t._isOpen && t.closeDate && t.avgExitPrice != null) {
@@ -3424,8 +3426,9 @@ function saveEditModal() {
     state.allTrades   = [...state.allTrades, t].sort((a, b) => a.openDate - b.openDate);
   }
 
-  // Recalculate derived fields for closed trades
-  if (!t._isOpen && t.openDate && t.closeDate) {
+  // Recalculate derived fields for closed trades — only when the user actually changed
+  // something (this recalculation ignores fees, so don't apply it when just tagging a setup)
+  if (edited && !t._isOpen && t.openDate && t.closeDate) {
     t.holdMs = t.closeDate - t.openDate;
     const multiplier = t.type === 'Option' ? 100 : 1;
     t.cost      = t.avgEntryPrice * t.size * multiplier;

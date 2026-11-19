@@ -29,9 +29,12 @@ Everything lives in `dashboard.html` — one HTML file with embedded `<style>` a
 ```
 CSV upload (FileReader)
   → parseCashBalanceSection()     isolates the Cash Balance section from the multi-section Schwab CSV
-  → parseLegDescription()         regex-parses each trade row into a typed leg object
-  → matchTrades()                 FIFO queue matching: pairs open/close legs into roundtrip trades
-  → mergeSubs()                   collapses all partial fills for one position lifecycle into a single row
+  → supplementFromTradeHistory()  adds fills only present in "Account Trade History" (mid-session exports)
+  → mergeLegRecords()             dedupes + stores EVERY fill in state.legs (persisted)
+  → rebuildFromLegs()             re-derives ALL trades from the complete stored fill set:
+      → parseLegDescription()       regex-parses each stored fill into a typed leg object
+      → matchTrades()               FIFO queue matching: pairs open/close legs into roundtrip trades
+      → mergeSubs()                 collapses all partial fills for one position lifecycle into a single row
   → state.allTrades               array of completed trade objects (closed)
   → state.openTrades              array of open/unmatched trade objects (_isOpen: true)
   → refresh()                     applies filters → sorts → renders metrics, table, and charts
@@ -49,11 +52,16 @@ Option contracts use a composite position key (`SYMBOL_STRIKE_PUTCALL_YYYY-MM-DD
 
 `EXP` rows (option assignment/expiry) are included in parsing via `ASSIGN_RE = /^(BOT|SOLD)\s+([\d.]+)\s+([A-Z0-9]+)\s+UPON\b/i`. Price is derived as `Math.abs(leg.amount) / leg.qty`.
 
-**Cross-statement matching.** Matching runs per CSV, but positions still open from earlier imports are carried in as *seed legs* (`openTradeToSeedLeg`) so an exit in a later statement closes them instead of creating a phantom opposite-side open trade. Open trades store `_opt` (option contract: expiry/strike/type) and `_fees` so they can be rebuilt as legs. Open trades dated inside the incoming CSV's range are dropped and regenerated from the CSV (it contains their opening fills). A new open trade that sits inside the lifetime of an existing closed trade on the same contract, on the opposite side, is treated as a re-imported closing fill and skipped (`isReplayedExit`). Positions closed in pieces across statements show as separate closed rows.
+### Fill store and rebuild (import is order-independent)
 
-**Option expiry.** `matchTrades(legs, seedLegs, asOf)` only auto-closes an option at $0 when the statement covers a day *after* its expiry (`asOf` = last statement day, capped at today) — not merely because today's date is past expiry. An option whose statement ends before expiry stays open until a later statement covers the expiry date or closes it. Closed trades created by the sweep carry `_autoExpired`; `isAutoExpired()` also recognises older rows (option, exit 0, closed 16:00:00) so re-importing the statement that opened them removes the stale row.
+Every import adds its fills to `state.legs` (deduped) and then **all trades are re-derived from the complete fill set** (`rebuildFromLegs`). The result depends only on *which fills have been imported* — never on import order, overlap, or re-uploads. So an exit in one statement always finds its opening fill from another, whichever you upload first, and re-uploading a statement is a no-op. (Previously matching ran per-CSV, so an exit whose opener was in an earlier statement became a phantom opposite-side open trade.)
 
-Legacy open option rows saved before `_opt` existed can't be rebuilt as legs and are left untouched (re-upload the statement that opened them to regenerate). Import statements in chronological order; re-importing an *older* statement after a newer one that partially closed the same position is not supported. Use the edit modal to manually close anything still unresolved.
+- **Dedupe (`mergeLegRecords`)**: a fill with a Schwab REF # is identified by it. A fill without one (synthesised from Account Trade History in a mid-session export) is identified by timestamp and is superseded by the real Cash Balance row when that arrives.
+- **Deterministic order**: `matchTrades` sorts by time, then REF #, then description, so same-second fills are ordered the same way every time.
+- **Option expiry**: an option is auto-closed at $0 only when the imported statements cover a day *after* its expiry (`asOf` = latest covered day, capped at today) — not merely because today is past expiry. An option whose statements end before expiry stays open until a later statement closes it or covers the expiry date.
+- **What survives a rebuild** (`adopt` in `rebuildFromLegs`): trades are always re-derived so numbers never go stale. Kept from the previous version: hand-edited trades (`_edited`, set by the edit modal when entry/exit/size/side/dates actually change) while their fingerprint is unchanged; setups tags (by fingerprint, or by `symbol|side|first-fill-time` when later fills change the fingerprint — including open → closed); trades the user closed by hand (`open|` fingerprint) while the position is still open in the fills; and deletions (`state.deleted` holds deleted fingerprints so they aren't resurrected).
+- A position closed in pieces across statements shows as one closed row once fully closed (and as a closed row + open row while partly open).
+- **Legacy data**: saves from the old engine have trades but no `state.legs` (`state.legs === null`). The next CSV import asks to rebuild: OK clears the saved trades and imports from CSVs; Cancel changes nothing. (Phantom opens from the old engine can't be told apart from real ones, so they are not merged in.)
 
 ### App state
 
@@ -61,6 +69,8 @@ Legacy open option rows saved before `_opt` existed can't be rebuilt as legs and
 state = {
   allTrades,       // closed trades
   openTrades,      // open/unmatched trades (_isOpen: true)
+  legs,            // every imported fill, deduped (null = data saved by the pre-rebuild engine)
+  deleted,         // fingerprints of trades the user deleted
   startBalance, minDate, maxDate,
   sortKey,         // default: 'openDate'
   sortDir,         // default: 'desc' (newest first)
