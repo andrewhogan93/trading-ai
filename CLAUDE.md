@@ -49,7 +49,11 @@ Option contracts use a composite position key (`SYMBOL_STRIKE_PUTCALL_YYYY-MM-DD
 
 `EXP` rows (option assignment/expiry) are included in parsing via `ASSIGN_RE = /^(BOT|SOLD)\s+([\d.]+)\s+([A-Z0-9]+)\s+UPON\b/i`. Price is derived as `Math.abs(leg.amount) / leg.qty`.
 
-Trades from before the statement period (e.g. positions opened in a prior CSV) will appear as open trades with no entry data — they cannot be auto-resolved without uploading earlier statements. Use the edit modal to manually close them.
+**Cross-statement matching.** Matching runs per CSV, but positions still open from earlier imports are carried in as *seed legs* (`openTradeToSeedLeg`) so an exit in a later statement closes them instead of creating a phantom opposite-side open trade. Open trades store `_opt` (option contract: expiry/strike/type) and `_fees` so they can be rebuilt as legs. Open trades dated inside the incoming CSV's range are dropped and regenerated from the CSV (it contains their opening fills). A new open trade that sits inside the lifetime of an existing closed trade on the same contract, on the opposite side, is treated as a re-imported closing fill and skipped (`isReplayedExit`). Positions closed in pieces across statements show as separate closed rows.
+
+**Option expiry.** `matchTrades(legs, seedLegs, asOf)` only auto-closes an option at $0 when the statement covers a day *after* its expiry (`asOf` = last statement day, capped at today) — not merely because today's date is past expiry. An option whose statement ends before expiry stays open until a later statement covers the expiry date or closes it. Closed trades created by the sweep carry `_autoExpired`; `isAutoExpired()` also recognises older rows (option, exit 0, closed 16:00:00) so re-importing the statement that opened them removes the stale row.
+
+Legacy open option rows saved before `_opt` existed can't be rebuilt as legs and are left untouched (re-upload the statement that opened them to regenerate). Import statements in chronological order; re-importing an *older* statement after a newer one that partially closed the same position is not supported. Use the edit modal to manually close anything still unresolved.
 
 ### App state
 
