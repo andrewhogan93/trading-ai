@@ -1,40 +1,5 @@
 {
-  "setups": {
-    "open|APH|1774016170000|BOT|3": [
-      "Day Trade"
-    ],
-    "NOW|1774361793000|1774363662000|Short|9": [
-      "Day Trade",
-      "own trade"
-    ],
-    "VG|1774373296000|1774373554000|Long|50": [
-      "Copied Pro",
-      "Day Trade"
-    ],
-    "GOOG|1774374728000|1774377286000|Short|2": [
-      "Day Trade",
-      "own trade"
-    ],
-    "META|1774535534000|1774536357000|Short|4": [
-      "Day Trade"
-    ],
-    "GIL|1774536493000|1774537378000|Short|8": [
-      "Day Trade"
-    ],
-    "PLTR|1774621767000|1774624504000|Short|8": [
-      "Copied Pro",
-      "Day Trade"
-    ],
-    "PLTR|1774629494000|1774632519000|Short|8": [
-      "Day Trade"
-    ],
-    "APLD|1774880447000|1774880484000|Short|270": [
-      "Day Trade"
-    ],
-    "open|PL|1774376355000|SOLD|1": [
-      "Day Trade"
-    ]
-  },
+  "setups": {},
   "rulesCache": {
     "GOOG|1774374728000|1774377286000|Short|2": {
       "spy": false,
@@ -803,6 +768,15 @@
       "w30": -14.683844330606316,
       "w60": -14.904121110176618,
       "mae": 64.05688508295742
+    },
+    "open|RCL|1785250072000|SOLD|5": {
+      "spy": false,
+      "vwap": false,
+      "w5": null,
+      "w15": null,
+      "w30": null,
+      "w60": null,
+      "mae": 7.209520826808638
     }
   }
 }
